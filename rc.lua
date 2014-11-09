@@ -650,7 +650,7 @@ globalkeys = awful.util.table.join(
     --awful.key({ modkey, "Control" }, "f",      function () shexec(newsbeuter) end),
 -- Dropdown terminal
    awful.key({ modkey,	          }, "k",      function () drop(terminal) end), 
-   awful.key({ modkey, "Control"  }, "x",      function () exec("/home/ivn/scripts/trackpoint/trackpointkeys.sh switch") end)
+   awful.key({ modkey, "Control"  }, "x",      function () exec("/home/ivn/scripts/trackpoint/trackpointkeys.sh switch &") end)
 
 --{ awful.key({ modkey, }, "k", function () quake.toggle({ terminal = "termite",
 --			name = "QuakeTermite",
