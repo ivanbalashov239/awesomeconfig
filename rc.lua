@@ -43,6 +43,10 @@ end
 
 -- | Fix's | --
 
+   --APWTimer = timer({ timeout = 1 }) -- set update interval in s
+   --APWTimer:connect_signal("timeout", APW.Update)
+  -- APWTimer:start()
+
 -- Disable cursor animation:
 
 local oldspawn = awful.util.spawn
@@ -763,7 +767,11 @@ awful.rules.rules = {
       properties = { floating = true } },
     { rule = { class = "xmag" },
       properties = { floating = true } },
+
     { rule = { class = "veromix" },
+      properties = { floating = true } },
+
+    { rule = { name = "Громкость" },
       properties = { floating = true } },
 
     { rule = { class = "gvim" },
@@ -885,6 +893,28 @@ end)
 client.connect_signal("unfocus", function(c) 
 	if awful.rules.match(c, {class = "veromix"}) then  
 		c:kill()
+		APW.Update()
+        end
+
+end)
+client.connect_signal("unfocus", function(c) 
+	if awful.rules.match(c, {class = "Pavucontrol"}) then  
+		c:kill()
+		APW.Update()
+        end
+
+end)
+client.connect_signal("manage", function(c) 
+	if awful.rules.match(c, {class = "veromix"}) then  
+		awful.placement.under_mouse(c)
+		c:geometry( {y = 22 } )
+        end
+
+end)
+client.connect_signal("manage", function(c) 
+	if awful.rules.match(c, {class = "Pavucontrol"}) then  
+		awful.placement.under_mouse(c)
+		c:geometry( {y = 22 } )
         end
 
 end)
