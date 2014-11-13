@@ -279,14 +279,14 @@ cpuwidget = wibox.widget.background()
 cpuwidget:set_widget(cpu_widget)
 cpuwidget:set_bgimage(beautiful.widget_display)
 
--- tmp_widget = wibox.widget.textbox()
--- vicious.register(tmp_widget, vicious.widgets.thermal, vspace1 .. "$1°C" .. vspace1, 9, "thermal_zone0")
+ tmp_widget = wibox.widget.textbox()
+ vicious.register(tmp_widget, vicious.widgets.thermal, vspace1 .. "$1°C" .. vspace1, 9, "thermal_zone0")
 
--- widget_tmp = wibox.widget.imagebox()
--- widget_tmp:set_image(beautiful.widget_tmp)
--- tmpwidget = wibox.widget.background()
--- tmpwidget:set_widget(tmp_widget)
--- tmpwidget:set_bgimage(beautiful.widget_display)
+ widget_tmp = wibox.widget.imagebox()
+ widget_tmp:set_image(beautiful.widget_tmp)
+ tmpwidget = wibox.widget.background()
+ tmpwidget:set_widget(tmp_widget)
+ tmpwidget:set_bgimage(beautiful.widget_display)
 
 -- | MEM | --
 
@@ -480,18 +480,20 @@ for s = 1, screen.count() do
     --right_layout:add(widget_display_r)
     --right_layout:add(spr5px)
 
+    right_layout:add(spr)
+    right_layout:add(widget_display_l)
     right_layout:add(APW) 
-
+    right_layout:add(widget_display_r)
     right_layout:add(spr)
 
     right_layout:add(widget_cpu)
     right_layout:add(widget_display_l)
     right_layout:add(cpuwidget)
     right_layout:add(widget_display_r)
-    -- right_layout:add(widget_display_c)
-    -- right_layout:add(tmpwidget)
-    -- right_layout:add(widget_tmp)
-    -- right_layout:add(widget_display_r)
+    right_layout:add(widget_display_c)
+    right_layout:add(tmpwidget)
+    right_layout:add(widget_tmp)
+    right_layout:add(widget_display_r)
     right_layout:add(spr5px)
 
     right_layout:add(spr)
@@ -763,6 +765,7 @@ awful.rules.rules = {
       properties = { floating = true } },
     { rule = { class = "veromix" },
       properties = { floating = true } },
+
     { rule = { class = "gvim" },
       properties = { tag = tags[2] } },
     { rule = { class = "thunderbird" },
@@ -877,7 +880,12 @@ end)
 client.connect_signal("unfocus", function(c) 
 	c.border_color = beautiful.border_normal 
 	if awful.rules.match(c, {class = "Firefox"}) then  os.execute("/home/ivn/scripts/trackpoint/trackpointkeys.sh switch &")
-                                           end
+	end
+end)
+client.connect_signal("unfocus", function(c) 
+	if awful.rules.match(c, {class = "veromix"}) then  
+		c:kill()
+        end
 
 end)
 
@@ -895,7 +903,8 @@ end
 -- | Autostart | --
 
 os.execute("pkill compton")
-os.execute("setxkbmap 'my(dvp),my(rus)' &")
+--os.execute("setxkbmap 'my(dvp),my(rus)' &")
+os.execute("xkbcomp $HOME/.config/xkb/my $DISPLAY &")
 -- os.execute("xrandr --output HDMI1 --mode 1920x1080 --left-of LVDS1 --output LVDS1 --auto --pos 0x500")
 os.execute("/home/ivn/scripts/trackpoint/trackpointkeys.sh normalmode &")
 run_once("kbdd")
@@ -906,6 +915,6 @@ run_once("qbittorrent")
 run_once("redshiftgui")
 run_once("thunderbird")
 run_once('xcape -t 1000 -e "Control_L=Tab;ISO_Level3_Shift=Multi_key"' )
--- run_once("parcellite")
+-- run_once("parcellite"
 --run_once("empathy")
 run_once("compton --config /home/ivn/.config/compton.conf -b &")
