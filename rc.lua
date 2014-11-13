@@ -13,6 +13,7 @@ local drop       = require("scratchdrop")
 local cyclefocus = require('cyclefocus')
 local revelation = require("revelation")      
 local quake 	 = require("quake")
+local unitybar 	 = require("unitybar")
 
 -- | Theme | --
 
@@ -360,6 +361,8 @@ clockwidget:buttons(awful.util.table.join(awful.button({}, 1,
 
 -- | Taglist | --
 
+
+
 mytaglist         = {}
 mytaglist.buttons = awful.util.table.join(
                     awful.button({ }, 1, awful.tag.viewonly),
@@ -422,7 +425,16 @@ for s = 1, screen.count() do
                            awful.button({ }, 4, function () awful.layout.inc(layouts, 1) end),
                            awful.button({ }, 5, function () awful.layout.inc(layouts, -1) end)))
     
-    mytaglist[s] = awful.widget.taglist(s, awful.widget.taglist.filter.all, mytaglist.buttons)
+    --mytaglist[s] = awful.widget.taglist(s, awful.widget.taglist.filter.all, mytaglist.buttons)
+
+    mytaglist[s] = unitybar({ screen = s,
+                                       width = 200,
+                                       fg_normal = "#888888",
+                                       bg_urgent = "#ff000088",
+                                       img_focused = beautiful.taglist_bg_focus,
+                                     })
+
+    
 
    -- mytaglist[s] = sharedtags.taglist(s, awful.widget.taglist.filter.all, mytaglist.buttons)
 
