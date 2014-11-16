@@ -13,6 +13,8 @@ local drop       = require("scratchdrop")
 local cyclefocus = require('cyclefocus')
 local revelation = require("revelation")      
 local quake 	 = require("quake")
+local utf8 	 = require("utf8_simple")
+local yawn 	 = require("yawn")
 
 -- | Theme | --
 
@@ -53,6 +55,13 @@ local oldspawn = awful.util.spawn
 awful.util.spawn = function (s)
     oldspawn(s, false)
 end
+
+-- change notify defaults
+
+--naughty.config.defaults({
+  --                      screen = client.focus and client.focus.screen or 1
+    --                })
+
 
 -- Java GUI's fix:
 
@@ -175,12 +184,18 @@ mpdwidget = lain.widgets.mpd({
         if mpd_now.state == "play" then
             mpd_now.artist = mpd_now.artist:upper():gsub("&.-;", string.lower)
             mpd_now.title = mpd_now.title:upper():gsub("&.-;", string.lower)
-            widget:set_markup(markup.font("Tamsyn 3", " ")
-                              .. markup.font("Tamsyn 7",
-                              mpd_now.artist
-                              .. " - " ..
-                              mpd_now.title
-                              .. markup.font("Tamsyn 2", " ")))
+--	    nowplayingtext = markup.font("Tamsyn 3", " ")
+--                              .. markup.font("Tamsyn 7",
+--                              mpd_now.artist
+--                              .. " - " ..
+--                              mpd_now.title
+--                              .. markup.font("Tamsyn 2", " "))
+            nowplayingtext = mpd_now.artist..mpd_now.title
+	    nowplayingtext = utf8.sub(nowplayingtext, 0, 35)
+	    --nowplayingtext = string.reverse(nowplayingtext)
+	    --print(nowplayingtext)
+            widget:set_markup(nowplayingtext)
+	    
             play_pause_icon:set_image(beautiful.mpd_pause)
             mpd_sepl:set_image(beautiful.mpd_sepl)
             mpd_sepr:set_image(beautiful.mpd_sepr)
@@ -200,31 +215,44 @@ mpdwidget = lain.widgets.mpd({
     end
 })
 
+function mpd_prev()
+    awful.util.spawn_with_shell("mpc prev & ")
+    mpdwidget.update()
+end
+function mpd_next()
+    awful.util.spawn_with_shell("mpc next & ")
+    mpdwidget.update()
+end
+function mpd_stop()
+    play_pause_icon:set_image(beautiful.play)
+    awful.util.spawn_with_shell("mpc stop & ")
+    mpdwidget.update()
+end
+function mpd_play_pause()
+    awful.util.spawn_with_shell("mpc toggle & ")
+    mpdwidget.update()
+end
 musicwidget = wibox.widget.background()
 musicwidget:set_widget(mpdwidget)
 musicwidget:set_bgimage(beautiful.widget_display)
 musicwidget:buttons(awful.util.table.join(awful.button({ }, 1,
-function () awful.util.spawn_with_shell(ncmpcpp) end)))
+function () awful.util.spawn_with_shell(cantata) end)))
+
 prev_icon:buttons(awful.util.table.join(awful.button({}, 1,
-function ()
-    awful.util.spawn_with_shell("mpc prev || ncmpcpp prev")
-    mpdwidget.update()
+function () 
+	mpd_prev() 
 end)))
 next_icon:buttons(awful.util.table.join(awful.button({}, 1,
 function ()
-    awful.util.spawn_with_shell("mpc next || ncmpcpp next")
-    mpdwidget.update()
+	mpd_next()
 end)))
 stop_icon:buttons(awful.util.table.join(awful.button({}, 1,
 function ()
-    play_pause_icon:set_image(beautiful.play)
-    awful.util.spawn_with_shell("mpc stop || ncmpcpp stop")
-    mpdwidget.update()
+	mpd_stop()
 end)))
 play_pause_icon:buttons(awful.util.table.join(awful.button({}, 1,
 function ()
-    awful.util.spawn_with_shell("mpc toggle || ncmpcpp toggle")
-    mpdwidget.update()
+	mpd_play_pause()
 end)))
 
 -- Keyboard map indicator and changer
@@ -240,8 +268,8 @@ local data = {...}
 local layout = data[2]
 kbdtext:set_markup(kbdstrings[layout])
 end
---kbdwidget:set_bgimage(beautiful.widget_display)
 )
+kbdwidget:set_bgimage(beautiful.widget_display)
 
 -- -- {{{ Menu
 -- freedesktop.utils.terminal = terminal
@@ -463,18 +491,18 @@ for s = 1, screen.count() do
 
     right_layout:add(spr)
 
-    --right_layout:add(spr)
+    right_layout:add(spr)
 
-    --right_layout:add(prev_icon)
-    --right_layout:add(spr)
-    --right_layout:add(stop_icon)
-    --right_layout:add(spr)
-    --right_layout:add(play_pause_icon)
-    --right_layout:add(spr)
-    --right_layout:add(next_icon)
-    --right_layout:add(mpd_sepl)
-    --right_layout:add(musicwidget)
-    --right_layout:add(mpd_sepr)
+    right_layout:add(mpd_sepl)
+    right_layout:add(musicwidget)
+    right_layout:add(mpd_sepr)
+    right_layout:add(prev_icon)
+    right_layout:add(spr)
+    right_layout:add(stop_icon)
+    right_layout:add(spr)
+    right_layout:add(play_pause_icon)
+    right_layout:add(spr)
+    right_layout:add(next_icon)
 
     --right_layout:add(spr)
 
@@ -483,6 +511,7 @@ for s = 1, screen.count() do
     --right_layout:add(mailwidget)
     --right_layout:add(widget_display_r)
     --right_layout:add(spr5px)
+
 
     right_layout:add(spr)
     right_layout:add(widget_display_l)
@@ -493,7 +522,7 @@ for s = 1, screen.count() do
     right_layout:add(widget_cpu)
     right_layout:add(widget_display_l)
     right_layout:add(cpuwidget)
-    right_layout:add(widget_display_r)
+    --right_layout:add(widget_display_r)
     right_layout:add(widget_display_c)
     right_layout:add(tmpwidget)
     right_layout:add(widget_tmp)
@@ -559,6 +588,40 @@ root.buttons(awful.util.table.join(
 -- | Key bindings | --
 
 globalkeys = awful.util.table.join(
+
+    awful.key({    }, "Prev", 
+		function ()
+			mpd_prev()
+		end),
+    awful.key({   }, "Stop", 
+		function ()
+			mpd_stop()
+		end),
+    awful.key({   }, "Play", 
+		function ()
+			mpd_play_pause()
+		end),
+    awful.key({   }, "Next", 
+		function ()
+			mpd_next()
+		end),
+    awful.key({ modkey,   }, "Home", 
+		function ()
+			mpd_prev()
+		end),
+    awful.key({ modkey,  }, "End", 
+		function ()
+			mpd_stop()
+		end),
+    awful.key({ modkey,  }, "Insert", 
+		function ()
+			mpd_play_pause()
+		end),
+    awful.key({ modkey,  }, "Delete", 
+		function ()
+			mpd_next()
+		end),
+
 
     awful.key({ modkey,           }, "w",      function () mainmenu:show() end),
     awful.key({ modkey,           }, "Escape", function () exec("/usr/local/sbin/zaprat --toggle") end),
@@ -637,10 +700,10 @@ globalkeys = awful.util.table.join(
     --awful.key({ modkey,           }, "s",      function () exec(filemanager) end),
     awful.key({ modkey            }, "g",      function () exec("gvim") end),
     awful.key({ modkey            }, "Print",  function () exec("screengrab") end),
-    awful.key({ modkey, "Control" }, "Print",  function () exec("screengrab --region") end),
+    awful.key({ modkey, "Control" }, "p",  function () exec("screengrab --region") end),
     awful.key({ modkey, "Shift"   }, "Print",  function () exec("screengrab --active") end),
-    awful.key({ modkey            }, "7",      function () exec("firefox") end),
-    awful.key({ modkey            }, "8",      function () exec("chromiu") end),
+    awful.key({ modkey            }, "c",      function () exec("firefox") end),
+    awful.key({ modkey            }, "8",      function () exec("chromium") end),
     awful.key({ modkey            }, "9",      function () exec("dwb") end),
     awful.key({ modkey            }, "0",      function () exec("thunderbird") end),
     --awful.key({ modkey            }, "'",      function () exec("leafpad") end),
@@ -687,7 +750,7 @@ clientkeys = awful.util.table.join(
         function (c)
             c.minimized = true
         end),
-    awful.key({ modkey,           }, "m",
+    awful.key({ modkey,           }, "x",
         function (c)
             c.maximized_horizontal = not c.maximized_horizontal
             c.maximized_vertical   = not c.maximized_vertical
@@ -933,18 +996,31 @@ end
 -- | Autostart | --
 
 os.execute("pkill compton")
+os.execute("pkill xcape")
 --os.execute("setxkbmap 'my(dvp),my(rus)' &")
 os.execute("xkbcomp $HOME/.config/xkb/my $DISPLAY &")
 -- os.execute("xrandr --output HDMI1 --mode 1920x1080 --left-of LVDS1 --output LVDS1 --auto --pos 0x500")
 os.execute("/home/ivn/scripts/trackpoint/trackpointkeys.sh normalmode &")
 run_once("kbdd")
+run_once("mpd /home/ivn/.config/mpd/mpd.conf")
 run_once("dropboxd")
 run_once("nm-applet")
 --run_once("pa-applet")
 run_once("qbittorrent")
 run_once("redshiftgui")
 run_once("thunderbird")
-run_once('xcape -t 1000 -e "Control_L=Tab;ISO_Level3_Shift=Multi_key"' )
+os.execute('xcape -t 1000 -e "Control_L=Tab;ISO_Level3_Shift=Multi_key"' )
 -- run_once("parcellite"
 --run_once("empathy")
 run_once("compton --config /home/ivn/.config/compton.conf -b &")
+
+
+
+naughty.notify({ preset = naughty.config.presets.critical,
+                     title = "Awesme start correct, though...",
+		     bg = beautiful.bg_normal,
+                     text = awesome.startup_errors,
+	     	     timeout = 2,
+		     position = "top_left"
+	     })
+

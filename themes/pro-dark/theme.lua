@@ -47,11 +47,12 @@ theme.layout_tiletop    = theme.icons .. "/panel/layouts/tiletop.png"
 
 -- | Taglist | --
 
-theme.taglist_bg_empty    = "png:" .. theme.icons .. "/panel/taglist/empty.png"
-theme.taglist_bg_occupied = "png:" .. theme.icons .. "/panel/taglist/occupied.png"
-theme.taglist_bg_urgent   = "png:" .. theme.icons .. "/panel/taglist/urgent.png"
-theme.taglist_bg_focus    = "png:" .. theme.icons .. "/panel/taglist/focus.png"
+--theme.taglist_bg_empty    = "png:" .. theme.icons .. "/panel/taglist/empty.png"
+--theme.taglist_bg_occupied = "png:" .. theme.icons .. "/panel/taglist/occupied.png"
+--theme.taglist_bg_urgent   = "png:" .. theme.icons .. "/panel/taglist/urgent.png"
+--theme.taglist_bg_focus    = "png:" .. theme.icons .. "/panel/taglist/focus.png"
 theme.taglist_font        = "Terminus 11"
+
 
 -- | Tasklist | --
 

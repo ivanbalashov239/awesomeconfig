@@ -51,6 +51,7 @@ local function worker(args)
     helpers.set_map("current mpd track", nil)
 
     function mpd.update()
+	
         async.request(echo .. " | curl --connect-timeout 1 -fsm 3 " .. mpdh, function (f)
             mpd_now = {
                 state  = "N/A",
