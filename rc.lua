@@ -14,7 +14,6 @@ local cyclefocus = require('cyclefocus')
 local revelation = require("revelation")      
 local quake 	 = require("quake")
 local utf8 	 = require("utf8_simple")
-local yawn 	 = require("yawn")
 
 -- | Theme | --
 
@@ -22,6 +21,8 @@ local theme = "pro-gotham"
 
 beautiful.init(os.getenv("HOME") .. "/.config/awesome/themes/" .. theme .. "/theme.lua")
 
+
+revelation.init()
 -- | Error handling | --
 
 if awesome.startup_errors then
@@ -83,6 +84,7 @@ ncmpcpp       = "urxvt -geometry 254x60+80+60 -e ncmpcpp"
 newsbeuter    = "urxvt -g 210x50+50+50 -e newsbeuter"
 browser       = "firefox"
 filemanager   = "spacefm"
+xautolock     = "xautolock -locker slimlock -nowlocker slimlock -time 5 &"
 configuration = termax .. ' -e "vim -O $HOME/.config/awesome/rc.lua $HOME/.config/awesome/themes/' ..theme.. '/theme.lua"'
 
 -- | Table of layouts | --
@@ -115,13 +117,14 @@ end
 for s = 1, screen.count() do 
 --  tags[s] = awful.tag(tags.names, s, tags.layout)
   awful.tag.setncol(3, tags[s][3])                         -- эта и следующая строчка нужна для Pidgin
-  awful.tag.setproperty(tags[s][3], "mwfact", 0.20)        -- здесь мы устанавливаем ширину списка контактов в 20% от ширины экрана
+  awful.tag.setproperty(tags[s][3], "mwfact", 0.15)        -- здесь мы устанавливаем ширину списка контактов в 20% от ширины экрана
 end
 
 
 -- | Menu | --
 
 menu_main = {
+  { "lock",    "xautolock -locknow"       },
   { "suspend", "systemctl suspend" },
   { "poweroff",  "systemctl poweroff"},
   { "restart",   awesome.restart     },
@@ -182,6 +185,7 @@ mpd_sepr:set_image(beautiful.mpd_sepr)
 mpdwidget = lain.widgets.mpd({
     settings = function ()
         if mpd_now.state == "play" then
+	    widget:set_markup(" Title loading ")
             mpd_now.artist = mpd_now.artist:upper():gsub("&.-;", string.lower)
             mpd_now.title = mpd_now.title:upper():gsub("&.-;", string.lower)
 --	    nowplayingtext = markup.font("Tamsyn 3", " ")
@@ -190,7 +194,7 @@ mpdwidget = lain.widgets.mpd({
 --                              .. " - " ..
 --                              mpd_now.title
 --                              .. markup.font("Tamsyn 2", " "))
-            nowplayingtext = mpd_now.artist..mpd_now.title
+            nowplayingtext = mpd_now.artist.." "..mpd_now.title
 	    nowplayingtext = utf8.sub(nowplayingtext, 0, 35)
 	    --nowplayingtext = string.reverse(nowplayingtext)
 	    --print(nowplayingtext)
@@ -232,6 +236,14 @@ function mpd_play_pause()
     awful.util.spawn_with_shell("mpc toggle & ")
     mpdwidget.update()
 end
+function mpd_play()
+    awful.util.spawn_with_shell("mpc play & ")
+    mpdwidget.update()
+end
+function mpd_pause()
+    awful.util.spawn_with_shell("mpc pause & ")
+    mpdwidget.update()
+end
 musicwidget = wibox.widget.background()
 musicwidget:set_widget(mpdwidget)
 musicwidget:set_bgimage(beautiful.widget_display)
@@ -255,12 +267,21 @@ function ()
 	mpd_play_pause()
 end)))
 
+-- Pusleaudio controll --
+
+pulseBar = APW
+pulseBox = pulseBar.getTextBox()
+pulsewidget = wibox.widget.background()
+pulsewidget:set_widget(pulseBox)
+pulsewidget:set_bgimage(beautiful.widget_display)
+
+
 -- Keyboard map indicator and changer
-	kbdtext = wibox.widget.textbox(" en ")
+	kbdtext = wibox.widget.textbox("en")
 	kbdwidget = wibox.widget.background(kbdtext, "#0E1318")
-	kbdstrings = {[0] = " en ",
-		      [1] = " ru ", 
-	      	      [2] = " ru "}
+	kbdstrings = {[0] = "en",
+		      [1] = "ru" 
+	      	      }
 	dbus.request_name("session", "ru.gentoo.kbdd")
 dbus.add_match("session", "interface='ru.gentoo.kbdd',member='layoutChanged'")
 dbus.connect_signal("ru.gentoo.kbdd", function(...)
@@ -334,6 +355,16 @@ memwidget = wibox.widget.background()
 memwidget:set_widget(mem_widget)
 memwidget:set_bgimage(beautiful.widget_display)
 
+memp_widget = lain.widgets.mem({
+    settings = function()
+        widget:set_markup(space3 .. math.ceil(mem_now.used/mem_now.total*100, 0, 3) .. "%" .. markup.font("Tamsyn 4", " "))
+    end
+})
+
+mempwidget = wibox.widget.background()
+mempwidget:set_widget(memp_widget)
+mempwidget:set_bgimage(beautiful.widget_display)
+
 -- | FS | --
 
 fs_widget = wibox.widget.textbox()
@@ -367,6 +398,10 @@ netwidgetul = wibox.widget.background()
 netwidgetul:set_widget(net_widgetul)
 netwidgetul:set_bgimage(beautiful.widget_display)
 
+
+-- | Weather | --
+
+
 -- | Clock / Calendar | --
 
 mytextclock    = awful.widget.textclock(markup(clockgf, space3 .. "%H:%M" .. markup.font("Tamsyn 3", " ")))
@@ -379,16 +414,24 @@ clockwidget = wibox.widget.background()
 clockwidget:set_widget(mytextclock)
 clockwidget:set_bgimage(beautiful.widget_display)
 
-local index = 1
-local loop_widgets = { mytextclock, mytextcalendar }
-local loop_widgets_icons = { beautiful.widget_clock, beautiful.widget_cal }
 
-clockwidget:buttons(awful.util.table.join(awful.button({}, 1,
-    function ()
-        index = index % #loop_widgets + 1
-        clockwidget:set_widget(loop_widgets[index])
-        widget_clock:set_image(loop_widgets_icons[index])
-    end)))
+widget_calendar = wibox.widget.imagebox()
+widget_calendar:set_image(beautiful.widget_cal)
+
+calendarwidget = wibox.widget.background()
+calendarwidget:set_widget(mytextcalendar)
+calendarwidget:set_bgimage(beautiful.widget_display)
+
+--local index = 1
+--local loop_widgets = { mytextclock, mytextcalendar }
+--local loop_widgets_icons = { beautiful.widget_clock, beautiful.widget_cal }
+
+--clockwidget:buttons(awful.util.table.join(awful.button({}, 1,
+--    function ()
+--        index = index % #loop_widgets + 1
+--        clockwidget:set_widget(loop_widgets[index])
+--        widget_clock:set_image(loop_widgets_icons[index])
+--    end)))
 
 -- | Taglist | --
 
@@ -469,6 +512,10 @@ for s = 1, screen.count() do
     left_layout:add(mytaglist[s])
     left_layout:add(spr5px)
 
+    local centr_layout = wibox.layout.fixed.horizontal()
+    centr_layout:add(mytasklist[s])
+    
+
     local right_layout = wibox.layout.fixed.horizontal()
     if s == 1 then
         right_layout:add(spr)
@@ -489,9 +536,9 @@ for s = 1, screen.count() do
     right_layout:add(widget_display_r)
 
 
-    right_layout:add(spr)
+--    right_layout:add(spr)
 
-    right_layout:add(spr)
+--    right_layout:add(spr)
 
     right_layout:add(mpd_sepl)
     right_layout:add(musicwidget)
@@ -513,9 +560,11 @@ for s = 1, screen.count() do
     --right_layout:add(spr5px)
 
 
+
     right_layout:add(spr)
+    right_layout:add(pulseBar) 
     right_layout:add(widget_display_l)
-    right_layout:add(APW) 
+    right_layout:add(pulsewidget) 
     right_layout:add(widget_display_r)
     right_layout:add(spr)
 
@@ -534,6 +583,8 @@ for s = 1, screen.count() do
     right_layout:add(widget_mem)
     right_layout:add(widget_display_l)
     right_layout:add(memwidget)
+    right_layout:add(widget_display_c)
+    right_layout:add(mempwidget)
     right_layout:add(widget_display_r)
     right_layout:add(spr5px)
 
@@ -545,18 +596,25 @@ for s = 1, screen.count() do
     right_layout:add(widget_display_r)
     right_layout:add(spr5px)
 
+    --right_layout:add(spr)
+
+    --right_layout:add(widget_netdl)
+    --right_layout:add(widget_display_l)
+    --right_layout:add(netwidgetdl)
+    --right_layout:add(widget_display_c)
+    --right_layout:add(netwidgetul)
+    --right_layout:add(widget_display_r)
+    --right_layout:add(widget_netul)
+
     right_layout:add(spr)
 
-    right_layout:add(widget_netdl)
+    right_layout:add(widget_calendar)
     right_layout:add(widget_display_l)
-    right_layout:add(netwidgetdl)
-    right_layout:add(widget_display_c)
-    right_layout:add(netwidgetul)
+    right_layout:add(calendarwidget)
     right_layout:add(widget_display_r)
-    right_layout:add(widget_netul)
+    right_layout:add(spr5px)
 
     right_layout:add(spr)
-
     right_layout:add(widget_clock)
     right_layout:add(widget_display_l)
     right_layout:add(clockwidget)
@@ -569,7 +627,7 @@ for s = 1, screen.count() do
 
     local layout = wibox.layout.align.horizontal()
     layout:set_left(left_layout)
-    layout:set_middle(mytasklist[s])
+    layout:set_middle(centr_layout)
     layout:set_right(right_layout)
 
     mywibox[s]:set_bg(beautiful.panel)
@@ -589,19 +647,19 @@ root.buttons(awful.util.table.join(
 
 globalkeys = awful.util.table.join(
 
-    awful.key({    }, "Prev", 
+    awful.key({ modkey, "Control"  }, "g", 
 		function ()
 			mpd_prev()
 		end),
-    awful.key({   }, "Stop", 
+    awful.key({ modkey, "Control" }, "c", 
 		function ()
 			mpd_stop()
 		end),
-    awful.key({   }, "Play", 
+    awful.key({ modkey, "Control" }, "r", 
 		function ()
 			mpd_play_pause()
 		end),
-    awful.key({   }, "Next", 
+    awful.key({ modkey, "Control" }, "l", 
 		function ()
 			mpd_next()
 		end),
@@ -624,7 +682,7 @@ globalkeys = awful.util.table.join(
 
 
     awful.key({ modkey,           }, "w",      function () mainmenu:show() end),
-    awful.key({ modkey,           }, "Escape", function () exec("/usr/local/sbin/zaprat --toggle") end),
+    --awful.key({ modkey,           }, "Escape", function () exec("/usr/local/sbin/zaprat --toggle") end),
     awful.key({ modkey            }, "r",      function () mypromptbox[mouse.screen]:run() end),
     awful.key({ altkey,           }, "t",
         function ()
@@ -644,11 +702,11 @@ globalkeys = awful.util.table.join(
     awful.key({ modkey }, "Escape", awful.tag.history.restore),
 
     -- Non-empty tag browsing
-    awful.key({ altkey }, "j", function () lain.util.tag_view_nonempty(-1) end),
-    awful.key({ altkey }, "k", function () lain.util.tag_view_nonempty(1) end),
+    awful.key({ modkey }, "j", function () lain.util.tag_view_nonempty(-1) end),
+    awful.key({ modkey }, "k", function () lain.util.tag_view_nonempty(1) end),
     
-    awful.key({ altkey, "Shift" }, "j",   awful.tag.viewprev       ),
-    awful.key({ altkey, "Shift" }, "k",  awful.tag.viewnext       ),
+    awful.key({ modkey, "Shift" }, "j",   awful.tag.viewprev       ),
+    awful.key({ modkey, "Shift" }, "k",  awful.tag.viewnext       ),
 
 
 
@@ -688,15 +746,16 @@ globalkeys = awful.util.table.join(
     awful.key({ modkey, "Shift" }, "Tab", function(c)
             cyclefocus.cycle(-1, {modifier="Super_L"})
     end),
-    awful.key({ modkey, "Control" }, "r",      awesome.restart),
+    awful.key({ modkey, "Control" }, "Delete",      awesome.restart),
     awful.key({ modkey, "Shift"   }, "q",      awesome.quit),
     awful.key({ modkey,           }, "Return", function () exec(terminal) end),
     awful.key({ modkey, "Control" }, "Return", function () exec(rootterm) end),
     --awful.key({ modkey,           }, "t",      function () exec(tmux) end),
     awful.key({ modkey,           }, "space",  function () awful.layout.inc(layouts,  1) end),
     awful.key({ modkey, "Shift"   }, "space",  function () awful.layout.inc(layouts, -1) end),
-    awful.key({ modkey            }, "a",      function () shexec(configuration) end),
-    awful.key({ modkey,           }, "u",      function () exec("urxvt -geometry 254x60+80+60") end),
+    --awful.key({ modkey            }, "a",      function () shexec(configuration) end),
+    awful.key({ modkey,    }, "a",  revelation),
+    --awful.key({ modkey,           }, "u",      function () exec("urxvt -geometry 254x60+80+60") end),
     --awful.key({ modkey,           }, "s",      function () exec(filemanager) end),
     awful.key({ modkey            }, "g",      function () exec("gvim") end),
     awful.key({ modkey            }, "Print",  function () exec("screengrab") end),
@@ -708,7 +767,7 @@ globalkeys = awful.util.table.join(
     awful.key({ modkey            }, "0",      function () exec("thunderbird") end),
     --awful.key({ modkey            }, "'",      function () exec("leafpad") end),
     --awful.key({ modkey            }, "\\",     function () exec("sublime_text") end),
-    awful.key({ modkey            }, "i",      function () exec("gcolor2") end),
+    awful.key({ modkey            }, "$",      function () exec("gcolor2") end),
     awful.key({ modkey            }, "`",      function () exec("xwinmosaic") end),
     awful.key({ }, "XF86AudioRaiseVolume",  APW.Up),
     awful.key({ }, "XF86AudioLowerVolume",  APW.Down),
@@ -718,7 +777,8 @@ globalkeys = awful.util.table.join(
     --awful.key({ modkey, "Control" }, "m",      function () shexec(ncmpcpp) end),
     --awful.key({ modkey, "Control" }, "f",      function () shexec(newsbeuter) end),
 -- Dropdown terminal
-   awful.key({ modkey,	          }, "k",      function () drop(terminal) end), 
+   awful.key({ modkey,	          }, "i",      function () drop(terminal) end), 
+   awful.key({ modkey,	          }, "u",      function () drop(terminal) end), 
    awful.key({ modkey, "Control"  }, "x",      function () exec("/home/ivn/scripts/trackpoint/trackpointkeys.sh switch &") end)
 
 --{ awful.key({ modkey, }, "k", function () quake.toggle({ terminal = "termite",
@@ -798,13 +858,15 @@ end
 clientbuttons = awful.util.table.join(
     awful.button({ }, 1, function (c) client.focus = c; c:raise() end),
     awful.button({ modkey }, 1, awful.mouse.client.move),
-    awful.button({ modkey }, 3, awful.mouse.client.resize))
+    awful.button({ modkey }, 3, awful.mouse.client.resize),
+    awful.button({ modkey, "Control" }, 4, APW.UP),
+    awful.button({ modkey, "Control" }, 5, APW.DOWN))
 
 awful.menu.menu_keys = {
-    up    = { "t", "Up" },
-    down  = { "n", "Down" },
+    up    = { "n", "Up" },
+    down  = { "t", "Down" },
     exec  = { "l", "Return", "Space" },
-    enter = { "l", "Right" },
+    enter = { "s", "Right" },
     back  = { "h", "Left" },
     close = { "q", "Escape" }
 }
@@ -839,12 +901,16 @@ awful.rules.rules = {
 
     { rule = { class = "gvim" },
       properties = { tag = tags[2] } },
-    { rule = { class = "thunderbird" },
-      properties = { tag = tags[3] } }, 
-    { rule = { class = "Empathy", role = "contact_list"},
-         properties = { tag = tags[3] } },
-    { rule = { class = "Empathy", role = "chat"},
-         properties = { tag = tags[3]}, callback = awful.client.setslave },
+    { rule = { class = "Thunderbird" },
+      properties = { tag = tags[4] } }, 
+    { rule = { class = "Gvim"},
+         properties = { tag = tags[1][2] } },
+    { rule = { class = "Firefox"},
+         properties = { tag = tags[1][5] } },
+    { rule = { class = "Pidgin", role = "buddy_list"},
+         properties = { tag = tags[1][3] } },
+    { rule = { class = "Pidgin", role = "conversation"},
+         properties = { tag = tags[1][3]}, callback = awful.client.setslave },
     
 }
 
@@ -862,7 +928,9 @@ local function remove_client(tabl, c)
         table.remove(tabl, index)
         if #tabl == 0 then
             awful.util.spawn("xset s on")
-            awful.util.spawn("xset +dpms")
+            awful.util.spawn("xset -dpms")
+              run_once(xautolock)
+	      naughty.resume()
         end             
     end
 end
@@ -871,10 +939,16 @@ client.connect_signal("property::fullscreen",
     function(c)
         if c.fullscreen then
             table.insert(fullscreened_clients, c)
-            if #fullscreened_clients == 1 then
-                awful.util.spawn("xset s off")
-                awful.util.spawn("xset -dpms")
-            end
+	    if (c.class == "VirtualBox") then
+	    else
+            	if #fullscreened_clients == 1 then
+              	  awful.util.spawn("xset s off")
+              	  awful.util.spawn("xset -dpms")
+              		naughty.suspend()
+			mpd_pause()
+			os.execute("pkill xautolock")
+            	end
+    	    end
         else
             remove_client(fullscreened_clients, c)
         end
@@ -902,8 +976,8 @@ client.connect_signal("manage", function (c, startup)
         end
     end
 
-    local titlebars_enabled = false
-    if titlebars_enabled and (c.type == "normal" or c.type == "dialog") then
+    local titlebars_enabled = true
+    if titlebars_enabled and (c.type == "dialog") then  --{ c.type == "normal" or 
         local buttons = awful.util.table.join(
                 awful.button({ }, 1, function()
                     client.focus = c
@@ -953,6 +1027,8 @@ client.connect_signal("unfocus", function(c)
 	if awful.rules.match(c, {class = "Firefox"}) then  os.execute("/home/ivn/scripts/trackpoint/trackpointkeys.sh switch &")
 	end
 end)
+
+
 client.connect_signal("unfocus", function(c) 
 	if awful.rules.match(c, {class = "veromix"}) then  
 		c:kill()
@@ -981,7 +1057,6 @@ client.connect_signal("manage", function(c)
         end
 
 end)
-
 -- | run_once | --
 
 function run_once(cmd)
@@ -1001,6 +1076,8 @@ os.execute("pkill xcape")
 os.execute("xkbcomp $HOME/.config/xkb/my $DISPLAY &")
 -- os.execute("xrandr --output HDMI1 --mode 1920x1080 --left-of LVDS1 --output LVDS1 --auto --pos 0x500")
 os.execute("/home/ivn/scripts/trackpoint/trackpointkeys.sh normalmode &")
+os.execute("xset s off")
+run_once("linconnect-server &")
 run_once("kbdd")
 run_once("mpd /home/ivn/.config/mpd/mpd.conf")
 run_once("dropboxd")
@@ -1010,9 +1087,10 @@ run_once("qbittorrent")
 run_once("redshiftgui")
 run_once("thunderbird")
 os.execute('xcape -t 1000 -e "Control_L=Tab;ISO_Level3_Shift=Multi_key"' )
--- run_once("parcellite"
---run_once("empathy")
+-- run_once("parcellite")
+run_once("pidgin")
 run_once("compton --config /home/ivn/.config/compton.conf -b &")
+run_once(xautolock)
 
 
 
@@ -1022,5 +1100,4 @@ naughty.notify({ preset = naughty.config.presets.critical,
                      text = awesome.startup_errors,
 	     	     timeout = 2,
 		     position = "top_left"
-	     })
-
+	     }) 

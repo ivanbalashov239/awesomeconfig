@@ -145,6 +145,7 @@ local debug = function(s, level)
         text = tostring(s),
         timeout = 30,
         font = "monospace 10",
+	position = "top_left"
     })
 end
 cyclefocus.debug = debug  -- Used as reference in the filters above.
