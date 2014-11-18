@@ -13,7 +13,9 @@ local drop       = require("scratchdrop")
 local cyclefocus = require('cyclefocus')
 local revelation = require("revelation")      
 local quake 	 = require("quake")
+local scratch	 = require("scratch")
 local utf8 	 = require("utf8_simple")
+
 
 -- | Theme | --
 
@@ -777,8 +779,9 @@ globalkeys = awful.util.table.join(
     --awful.key({ modkey, "Control" }, "m",      function () shexec(ncmpcpp) end),
     --awful.key({ modkey, "Control" }, "f",      function () shexec(newsbeuter) end),
 -- Dropdown terminal
-   awful.key({ modkey,	          }, "i",      function () drop(terminal) end), 
-   awful.key({ modkey,	          }, "u",      function () drop(terminal) end), 
+   --awful.key({ modkey,	          }, "i",      function () drop(terminal) end), 
+   awful.key({ modkey,	          }, "u",      function () scratch.drop(terminal) end), 
+   --awful.key({ modkey,	          }, "u",      function () drop(terminal) end), 
    awful.key({ modkey, "Control"  }, "x",      function () exec("/home/ivn/scripts/trackpoint/trackpointkeys.sh switch &") end)
 
 --{ awful.key({ modkey, }, "k", function () quake.toggle({ terminal = "termite",
