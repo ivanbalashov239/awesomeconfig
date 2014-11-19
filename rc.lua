@@ -668,7 +668,7 @@ root.buttons(awful.util.table.join(
 
 globalkeys = awful.util.table.join(
 
-    awful.key({ modkey, "Control"  }, "g", 
+    awful.key({ modkey, "Control"  }, "h", 
 		function ()
 			mpd_prev()
 		end),
@@ -680,10 +680,12 @@ globalkeys = awful.util.table.join(
 		function ()
 			mpd_play_pause()
 		end),
-    awful.key({ modkey, "Control" }, "l", 
+    awful.key({ modkey, "Control" }, "s", 
 		function ()
 			mpd_next()
 		end),
+    awful.key({  modkey, "Control" }, "n",  APW.Up),
+    awful.key({ }, "t",  APW.Down),
     awful.key({ modkey,   }, "Home", 
 		function ()
 			mpd_prev()
