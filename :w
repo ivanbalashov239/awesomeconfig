@@ -331,15 +331,14 @@ cpu_widget = lain.widgets.cpu({
     end
 })
 
-cpubuttons = awful.util.table.join(awful.button({ }, 1,
-function () run_or_kill(htop_cpu, { role = "HTOP_CPU" }) end))
-
 widget_cpu = wibox.widget.imagebox()
 widget_cpu:set_image(beautiful.widget_cpu)
 cpuwidget = wibox.widget.background()
 cpuwidget:set_widget(cpu_widget)
 cpuwidget:set_bgimage(beautiful.widget_display)
 
+cpuwidget:buttons(awful.util.table.join(awful.button({ }, 1,
+function () awful.util.spawn_with_shell(htop_cpu) end)))
 
  tmp_widget = wibox.widget.textbox()
  vicious.register(tmp_widget, vicious.widgets.thermal, vspace1 .. "$1°C" .. vspace1, 9, "thermal_zone0")
@@ -350,15 +349,7 @@ cpuwidget:set_bgimage(beautiful.widget_display)
  tmpwidget:set_widget(tmp_widget)
  tmpwidget:set_bgimage(beautiful.widget_display)
 
- tmpwidget:buttons(cpubuttons)
- widget_cpu:buttons(cpubuttons)
- cpuwidget:buttons(cpubuttons)
-
 -- | MEM | --
-
-
-membuttons = awful.util.table.join(awful.button({ }, 1,
-function () run_or_kill(htop_mem, { role = "HTOP_MEM" }) end))
 
 mem_widget = lain.widgets.mem({
     settings = function()
@@ -381,10 +372,6 @@ memp_widget = lain.widgets.mem({
 mempwidget = wibox.widget.background()
 mempwidget:set_widget(memp_widget)
 mempwidget:set_bgimage(beautiful.widget_display)
-
- memp_widget:buttons(membuttons)
- widget_mem:buttons(membuttons)
- memwidget:buttons(membuttons)
 
 -- | FS | --
 
@@ -921,11 +908,6 @@ awful.rules.rules = {
     { rule = { name = "Громкость" },
       properties = { floating = true } },
 
-    { rule = { role = "HTOP_CPU" },
-      properties = { floating = true } },
-    { rule = { role = "HTOP_MEM" },
-      properties = { floating = true } },
-
     { rule = { class = "gvim" },
       properties = { tag = tags[2] } },
     { rule = { class = "Thunderbird" },
@@ -938,7 +920,7 @@ awful.rules.rules = {
          properties = { tag = tags[1][3] } },
     { rule = { class = "Pidgin", role = "conversation"},
          properties = { tag = tags[1][3]}, callback = awful.client.setslave },
-   
+    
 }
 
 -- | Signals | --
@@ -1084,81 +1066,6 @@ client.connect_signal("manage", function(c)
         end
 
 end)
-
-client.connect_signal("unfocus", function(c) 
-	if awful.rules.match(c, {role = "HTOP_CPU"}) then  
-		c:kill()
-        end
-
-end)
-client.connect_signal("manage", function(c) 
-	if awful.rules.match(c, {role = "HTOP_CPU"}) then  
-		awful.placement.under_mouse(c)
-		c:geometry( {y = 22 } )
-        end
-end)
-client.connect_signal("unfocus", function(c) 
-	if awful.rules.match(c, {role = "HTOP_MEM"}) then  
-		c:kill()
-        end
-
-end)
-client.connect_signal("manage", function(c) 
-	if awful.rules.match(c, {role = "HTOP_MEM"}) then  
-		awful.placement.under_mouse(c)
-		c:geometry( {y = 22 } )
-        end
-end)
--- | run or kill | --
-
-function run_or_kill(cmd, properties)
-   local clients = client.get()
-   local focused = awful.client.next(0)
-   local findex = 0
-   local matched_clients = {}
-   local n = 0
-   for i, c in pairs(clients) do
-      --make an array of matched clients
-      if match(properties, c) then
-         n = n + 1
-         matched_clients[n] = c
-         if c == focused then
-            findex = n
-         end
-      end
-   end
-   if n > 0 then
-      local c = matched_clients[1]
-      -- if the focused window matched switch focus to next in list
-      if 0 < findex and findex < n then
-         c = matched_clients[findex+1]
-      end
-      local ctags = c:tags()
-      if #ctags == 0 then
-         -- ctags is empty, show client on current tag
-         local curtag = awful.tag.selected()
-         awful.client.movetotag(curtag, c)
-      else
-         -- Otherwise, pop to first tag client is visible on
-         awful.tag.viewonly(ctags[1])
-      end
-      -- And then kill the client
-      c:kill()
-      return
-   end
-   awful.util.spawn(cmd)
-end
-
--- Returns true if all pairs in table1 are present in table2
-function match (table1, table2)
-   for k, v in pairs(table1) do
-      if table2[k] ~= v and not table2[k]:find(v) then
-         return false
-      end
-   end
-   return true
-end
-
 -- | run_once | --
 
 function run_once(cmd)
