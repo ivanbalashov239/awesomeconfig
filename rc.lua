@@ -684,8 +684,8 @@ globalkeys = awful.util.table.join(
 		function ()
 			mpd_next()
 		end),
-    awful.key({  modkey, "Control" }, "n",  APW.Up),
-    awful.key({ }, "t",  APW.Down),
+    awful.key({ modkey, "Control" }, "n",  APW.Up),
+    awful.key({ modkey, "Control" }, "t",  APW.Down),
     awful.key({ modkey,   }, "Home", 
 		function ()
 			mpd_prev()
