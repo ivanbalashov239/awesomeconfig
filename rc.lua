@@ -16,6 +16,7 @@ local quake 	 = require("quake")
 local scratch	 = require("scratch")
 local utf8 	 = require("utf8_simple")
 
+os.execute("/home/ivn/scripts/run_slimlock_onstart.sh")
 
 -- | Theme | --
 
@@ -193,17 +194,26 @@ mpdwidget = lain.widgets.mpd({
 	    widget:set_markup(" Title loading ")
             mpd_now.artist = mpd_now.artist:upper():gsub("&.-;", string.lower)
             mpd_now.title = mpd_now.title:upper():gsub("&.-;", string.lower)
---	    nowplayingtext = markup.font("Tamsyn 3", " ")
---                              .. markup.font("Tamsyn 7",
---                              mpd_now.artist
---                              .. " - " ..
---                              mpd_now.title
---                              .. markup.font("Tamsyn 2", " "))
-            nowplayingtext = mpd_now.artist.." "..mpd_now.title
-	    nowplayingtext = utf8.sub(nowplayingtext, 0, 35)
+            artistsub = utf8.sub(mpd_now.artist:upper():gsub("&.-;", string.lower), 0, 15)
+            titlesub = utf8.sub(mpd_now.title:upper():gsub("&.-;", string.lower), 0, 20)
+	    nowplayingtext = markup.font("Tamsyn 3", " ")
+                              .. markup.font("tamsyn 7",
+                              mpd_now.artist
+                              .. "—" ..
+                              mpd_now.title)
+                              .. markup.font("Tamsyn 2", " ")
+	    nowtext = markup.font("Tamsyn 3", " ")
+                              .. markup.font("tamsyn 7",
+                              artistsub
+                              .. "—" ..
+                              titlesub)
+                              .. markup.font("Tamsyn 2", " ")
+	
+            --nowplayingtext = mpd_now.artist.." "..mpd_now.title
+	    --nowplayingtext = utf8.sub(nowplayingtext, 0, 35)
 	    --nowplayingtext = string.reverse(nowplayingtext)
 	    --print(nowplayingtext)
-            widget:set_markup(nowplayingtext)
+            widget:set_markup(nowtext)
 	    
             play_pause_icon:set_image(beautiful.mpd_pause)
             mpd_sepl:set_image(beautiful.mpd_sepl)
@@ -249,28 +259,52 @@ function mpd_pause()
     awful.util.spawn_with_shell("mpc pause & ")
     mpdwidget.update()
 end
+function mpd_seek_forward()
+    awful.util.spawn_with_shell("mpc seek +00:00:10 &")
+    mpdwidget.update()
+end
+function mpd_seek_backward()
+    awful.util.spawn_with_shell("mpc seek -00:00:10 &")
+    mpdwidget.update()
+end
+
+
 musicwidget = wibox.widget.background()
 musicwidget:set_widget(mpdwidget)
 musicwidget:set_bgimage(beautiful.widget_display)
-musicwidget:buttons(awful.util.table.join(awful.button({ }, 1,
-function () awful.util.spawn_with_shell(cantata) end)))
+musicwidget:buttons(awful.util.table.join(
+awful.button({ }, 12, function () run_once("cantata") end),
+awful.button({ }, 2, function () run_once("cantata") end),
+awful.button({ }, 3, function () mpd_seek_forward()  end),
+awful.button({ }, 1, function () mpd_seek_backward() end)
+))
 
-prev_icon:buttons(awful.util.table.join(awful.button({}, 1,
-function () 
-	mpd_prev() 
-end)))
-next_icon:buttons(awful.util.table.join(awful.button({}, 1,
-function ()
-	mpd_next()
-end)))
-stop_icon:buttons(awful.util.table.join(awful.button({}, 1,
-function ()
-	mpd_stop()
-end)))
-play_pause_icon:buttons(awful.util.table.join(awful.button({}, 1,
-function ()
-	mpd_play_pause()
-end)))
+prev_icon:buttons(awful.util.table.join(
+awful.button({}, 1, function () mpd_prev() end),
+awful.button({ }, 4, function () mpd_seek_forward()  end),
+awful.button({ }, 5, function () mpd_seek_backward() end),
+awful.button({ }, 3, function () mpd_seek_backward() end)
+
+))
+next_icon:buttons(awful.util.table.join(
+awful.button({}, 1, function () mpd_next() end),
+awful.button({ }, 3, function () mpd_seek_forward()  end),
+awful.button({ }, 4, function () mpd_seek_forward()  end),
+awful.button({ }, 5, function () mpd_seek_backward() end)
+
+))
+stop_icon:buttons(awful.util.table.join(
+awful.button({}, 1, function () mpd_stop() end),
+awful.button({ }, 4, function () mpd_seek_forward()  end),
+awful.button({ }, 5, function () mpd_seek_backward() end)
+
+))
+play_pause_icon:buttons(awful.util.table.join(
+awful.button({}, 1, function () mpd_play_pause() end),
+awful.button({ }, 4, function () mpd_seek_forward()  end),
+awful.button({ }, 5, function () mpd_seek_backward() end)
+
+))
 
 -- Pusleaudio controll --
 
@@ -425,7 +459,10 @@ netwidgetul:set_bgimage(beautiful.widget_display)
 
 -- | Clock / Calendar | --
 
-mytextclock    = awful.widget.textclock(markup(clockgf, space3 .. "%H:%M" .. markup.font("Tamsyn 3", " ")))
+mytextclockbuttons = awful.util.table.join(awful.button({ }, 1,
+function () awful.util.spawn_with_shell("/home/ivn/scripts/say_time.sh") end))
+
+mytextclock    = awful.widget.textclock(markup(clockgf, space3 .. "%H:%M" .. markup.font("Tamsyn 3", " ")), 30)
 mytextcalendar = awful.widget.textclock(markup(clockgf, space3 .. "%a %d %b"))
 
 widget_clock = wibox.widget.imagebox()
@@ -436,6 +473,7 @@ clockwidget:set_widget(mytextclock)
 clockwidget:set_bgimage(beautiful.widget_display)
 
 
+
 widget_calendar = wibox.widget.imagebox()
 widget_calendar:set_image(beautiful.widget_cal)
 
@@ -443,6 +481,8 @@ calendarwidget = wibox.widget.background()
 calendarwidget:set_widget(mytextcalendar)
 calendarwidget:set_bgimage(beautiful.widget_display)
 
+clockwidget:buttons(mytextclockbuttons)
+calendarwidget:buttons(mytextclockbuttons)
 --local index = 1
 --local loop_widgets = { mytextclock, mytextcalendar }
 --local loop_widgets_icons = { beautiful.widget_clock, beautiful.widget_cal }
@@ -834,7 +874,7 @@ clientkeys = awful.util.table.join(
         function (c)
             c.minimized = true
         end),
-    awful.key({ modkey,           }, "x",
+    awful.key({ modkey,           }, "m",
         function (c)
             c.maximized_horizontal = not c.maximized_horizontal
             c.maximized_vertical   = not c.maximized_vertical
@@ -1195,6 +1235,7 @@ os.execute('xcape -t 1000 -e "Control_L=Tab;ISO_Level3_Shift=Multi_key"' )
 run_once("pidgin")
 run_once("compton --config /home/ivn/.config/compton.conf -b &")
 run_once(xautolock)
+run_once("firefox")
 
 
 
