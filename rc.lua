@@ -1,3 +1,5 @@
+-- слева таскменю из иконок, потом теги среди которых только не одиночные приложения, все приложения по умолчанию но собственных тегах,
+-- по возможности на тегах иконки, но не обязательно, новый тег создается с проверкой наличия подобной комбинации клиентов на других тегах.
 local gears      = require("gears")
 local awful      = require("awful")
 awful.rules      = require("awful.rules")
@@ -12,9 +14,11 @@ local lain       = require("lain")
 local drop       = require("scratchdrop")
 local cyclefocus = require('cyclefocus')
 local revelation = require("revelation")      
+local newtag	 = require("newtag")      
 local quake 	 = require("quake")
 local scratch	 = require("scratch")
 local utf8 	 = require("utf8_simple")
+local alttab     = require("alttab")
 
 os.execute("/home/ivn/scripts/run_slimlock_onstart.sh")
 
@@ -122,7 +126,6 @@ end
 
 for s = 1, screen.count() do 
 --  tags[s] = awful.tag(tags.names, s, tags.layout)
-  awful.tag.setncol(3, tags[s][3])                         -- эта и следующая строчка нужна для Pidgin
   awful.tag.setproperty(tags[s][3], "mwfact", 0.15)        -- здесь мы устанавливаем ширину списка контактов в 20% от ширины экрана
 end
 
@@ -562,7 +565,7 @@ for s = 1, screen.count() do
 
    -- mytaglist[s] = sharedtags.taglist(s, awful.widget.taglist.filter.all, mytaglist.buttons)
 
-    mytasklist[s] = awful.widget.tasklist(s, awful.widget.tasklist.filter.currenttags, mytasklist.buttons)
+    mytasklist[s] = awful.widget.tasklist(s, awful.widget.tasklist.filter.allscreen, mytasklist.buttons)
 
     mywibox[s] = awful.wibox({ position = "top", screen = s, height = "22" })
 
@@ -809,6 +812,18 @@ globalkeys = awful.util.table.join(
     awful.key({ modkey, "Shift" }, "Tab", function(c)
             cyclefocus.cycle(-1, {modifier="Super_L"})
     end),
+
+    awful.key({ altkey,           }, "Tab",
+       function ()
+           alttab.switch(1, "Alt_L", "Tab", "ISO_Left_Tab")
+       end
+       ),
+ 
+   awful.key({ altkey, "Shift"   }, "Tab",
+       function ()
+           alttab.switch(-1, "Alt_L", "Tab", "ISO_Left_Tab")
+       end
+       ),
     awful.key({ modkey, "Control" }, "Delete",      awesome.restart),
     awful.key({ modkey, "Shift"   }, "q",      awesome.quit),
     awful.key({ modkey,           }, "Return", function () exec(terminal) end),
@@ -817,7 +832,29 @@ globalkeys = awful.util.table.join(
     awful.key({ modkey,           }, "space",  function () awful.layout.inc(layouts,  1) end),
     awful.key({ modkey, "Shift"   }, "space",  function () awful.layout.inc(layouts, -1) end),
     --awful.key({ modkey            }, "a",      function () shexec(configuration) end),
-    awful.key({ modkey,    }, "a",  revelation),
+    awful.key({ modkey,    }, "a",  
+    	function () 
+	    revelation({
+	    rule={class="Pidgin"}, 
+	    is_excluded=true
+    }) 
+    	end),
+    awful.key({ modkey,    }, "b",  
+    	function () 
+	    newtag({
+	    rule={class="Pidgin"}, 
+	    is_excluded=true
+    }) 
+    	end),
+    awful.key({ modkey, "Shift",  }, "r",    function ()
+                    awful.prompt.run({ prompt = "Rename tab: ", text = awful.tag.selected().name, },
+                    mypromptbox[mouse.screen].widget,
+                    function (s)
+                        awful.tag.selected().name = s
+                    end)
+            end),
+
+    awful.key({ modkey            }, "x",      function () awful.tag.delete() end),
     --awful.key({ modkey,           }, "u",      function () exec("urxvt -geometry 254x60+80+60") end),
     --awful.key({ modkey,           }, "s",      function () exec(filemanager) end),
     awful.key({ modkey            }, "g",      function () exec("gvim") end),
@@ -837,6 +874,7 @@ globalkeys = awful.util.table.join(
     awful.key({ }, "XF86AudioMute",         APW.ToggleMute),
     awful.key({ }, "XF86Sleep",         function () exec("systemctl suspend") end),
     awful.key({ }, "XF86Explorer",      function () exec("systemctl suspend") end),
+    awful.key({modkey		  }, "F12",      function () exec("systemctl suspend") end),
     --awful.key({ modkey, "Control" }, "m",      function () shexec(ncmpcpp) end),
     --awful.key({ modkey, "Control" }, "f",      function () shexec(newsbeuter) end),
 -- Dropdown terminal
@@ -862,12 +900,13 @@ globalkeys = awful.util.table.join(
     )
 
 clientkeys = awful.util.table.join(
-    awful.key({ modkey            }, "Next",   function () awful.client.moveresize( 20,  20, -40, -40) end),
-    awful.key({ modkey            }, "Prior",  function () awful.client.moveresize(-20, -20,  40,  40) end),
-    awful.key({ modkey            }, "Down",   function () awful.client.moveresize(  0,  20,   0,   0) end),
-    awful.key({ modkey            }, "Up",     function () awful.client.moveresize(  0, -20,   0,   0) end),
-    awful.key({ modkey            }, "Left",   function () awful.client.moveresize(-20,   0,   0,   0) end),
-    awful.key({ modkey            }, "Right",  function () awful.client.moveresize( 20,   0,   0,   0) end),
+    --awful.key({ modkey            }, "Next",   function () awful.client.moveresize( 20,  20, -40, -40) end),
+    --awful.key({ modkey            }, "Prior",  function () awful.client.moveresize(-20, -20,  40,  40) end),
+    --awful.key({ modkey            }, "Down",   function () awful.client.moveresize(  0,  20,   0,   0) end),
+    --awful.key({ modkey            }, "Up",     function () awful.client.moveresize(  0, -20,   0,   0) end),
+    --awful.key({ modkey            }, "Left",   function () awful.client.moveresize(-20,   0,   0,   0) end),
+    --awful.key({ modkey            }, "Right",  function () awful.client.moveresize( 20,   0,   0,   0) end),
+    awful.key({ modkey,		  }, "4",      function (c) c.fullscreen = not c.fullscreen  end),
     awful.key({ modkey,           }, "f",      function (c) c.fullscreen = not c.fullscreen  end),
     awful.key({ modkey,           }, "q",      function (c) c:kill()                         end),
     awful.key({ modkey,           }, "n",
@@ -963,6 +1002,8 @@ awful.rules.rules = {
     { rule = { name = "Громкость" },
       properties = { floating = true } },
 
+    { rule = { class = "Vlc" },
+      properties = { floating = true } },
     { rule = { role = "HTOP_CPU" },
       properties = { floating = true } },
     { rule = { role = "HTOP_MEM" },
@@ -1119,13 +1160,6 @@ client.connect_signal("manage", function(c)
         end
 
 end)
-client.connect_signal("manage", function(c) 
-	if awful.rules.match(c, {class = "Pavucontrol"}) then  
-		awful.placement.under_mouse(c)
-		c:geometry( {y = 22 } )
-        end
-
-end)
 
 client.connect_signal("unfocus", function(c) 
 	if awful.rules.match(c, {role = "HTOP_CPU"}) then  
@@ -1232,10 +1266,11 @@ run_once("redshiftgui")
 run_once("thunderbird")
 os.execute('xcape -t 1000 -e "Control_L=Tab;ISO_Level3_Shift=Multi_key"' )
 -- run_once("parcellite")
-run_once("pidgin")
+--run_once("pidgin")
 run_once("compton --config /home/ivn/.config/compton.conf -b &")
 run_once(xautolock)
 run_once("firefox")
+run_once("goldendict")
 
 
 

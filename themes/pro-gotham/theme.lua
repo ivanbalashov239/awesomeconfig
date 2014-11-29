@@ -44,7 +44,7 @@ theme.taglist_squares_sel = theme.icons .. "panel/taglist/square_sel.png"
 theme.taglist_squares_unsel = theme.icons .. "panel/taglist/square_unsel.png"
 -- | Tasklist | --
 theme.tasklist_font = "Terminus 8"
-theme.tasklist_disable_icon = true
+theme.tasklist_disable_icon = false
 theme.tasklist_bg_normal = "png:" .. theme.icons .. "panel/tasklist/normal.png"
 theme.tasklist_bg_focus = "png:" .. theme.icons .. "panel/tasklist/focus.png"
 theme.tasklist_bg_urgent = "png:" .. theme.icons .. "panel/tasklist/urgent.png"
