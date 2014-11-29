@@ -18,7 +18,6 @@ local newtag	 = require("newtag")
 local quake 	 = require("quake")
 local scratch	 = require("scratch")
 local utf8 	 = require("utf8_simple")
-local alttab     = require("alttab")
 
 os.execute("/home/ivn/scripts/run_slimlock_onstart.sh")
 
@@ -813,17 +812,6 @@ globalkeys = awful.util.table.join(
             cyclefocus.cycle(-1, {modifier="Super_L"})
     end),
 
-    awful.key({ altkey,           }, "Tab",
-       function ()
-           alttab.switch(1, "Alt_L", "Tab", "ISO_Left_Tab")
-       end
-       ),
- 
-   awful.key({ altkey, "Shift"   }, "Tab",
-       function ()
-           alttab.switch(-1, "Alt_L", "Tab", "ISO_Left_Tab")
-       end
-       ),
     awful.key({ modkey, "Control" }, "Delete",      awesome.restart),
     awful.key({ modkey, "Shift"   }, "q",      awesome.quit),
     awful.key({ modkey,           }, "Return", function () exec(terminal) end),
