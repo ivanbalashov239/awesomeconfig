@@ -1,24 +1,31 @@
--- слева таскменю из иконок, потом теги среди которых только не одиночные приложения, все приложения по умолчанию но собственных тегах,
--- по возможности на тегах иконки, но не обязательно, новый тег создается с проверкой наличия подобной комбинации клиентов на других тегах.
 local gears      = require("gears")
 local awful      = require("awful")
 awful.rules      = require("awful.rules")
---                   require("awful.autofocus")
-                  require("sharetags")
-local APW = require("apw/widget")
+local common 	 = require("awful.widget.common")
+local fixed 	 = require("wibox.layout.fixed")
+                   require("awful.autofocus")
+--                   require("sharetags")
+local hints 	 = require("hints")
+local tyrannical = require("tyrannical")
+local APW 	 = require("apw/widget")
 local wibox      = require("wibox")
 local beautiful  = require("beautiful")
 local vicious    = require("vicious")
 local naughty    = require("naughty")
 local lain       = require("lain")
-local drop       = require("scratchdrop")
+--local drop       = require("scratchdrop")
 local cyclefocus = require('cyclefocus')
 local revelation = require("revelation")      
 local newtag	 = require("newtag")      
 local quake 	 = require("quake")
 local scratch	 = require("scratch")
 local utf8 	 = require("utf8_simple")
-
+lain.helpers     = require("lain.helpers")
+local capi = {
+    mouse = mouse,
+    client = client,
+    screen = screen
+}
 os.execute("/home/ivn/scripts/run_slimlock_onstart.sh")
 
 -- | Theme | --
@@ -29,6 +36,8 @@ beautiful.init(os.getenv("HOME") .. "/.config/awesome/themes/" .. theme .. "/the
 
 
 revelation.init()
+
+hints.init()
 -- | Error handling | --
 
 if awesome.startup_errors then
@@ -93,7 +102,7 @@ ncmpcpp       = "urxvt -geometry 254x60+80+60 -e ncmpcpp"
 newsbeuter    = "urxvt -g 210x50+50+50 -e newsbeuter"
 browser       = "firefox"
 filemanager   = "spacefm"
-xautolock     = "xautolock -locker slimlock -nowlocker slimlock -time 5 &"
+xautolock     = "" --"xautolock -locker slimlock -nowlocker slimlock -time 5 &"
 configuration = termax .. ' -e "vim -O $HOME/.config/awesome/rc.lua $HOME/.config/awesome/themes/' ..theme.. '/theme.lua"'
 
 -- | Table of layouts | --
@@ -117,16 +126,152 @@ if beautiful.wallpaper then
 end
 
 -- | Tags | --
+tyrannical.tags = {
+    {
+	name        = "Others",                 -- Call the tag "Term"
+	init        = true,                   -- Load the tag on startup
+	exclusive   = true,                   -- Refuse any other type of clients (by classes)
+	screen      = {1,2},                  -- Create this tag on screen 1 and screen 2
+	fallback    = true,
+	layout      = awful.layout.suit.max,
+	--hide 	    = true,
+	--instance    = {"dev", "ops"},         -- Accept the following instances. This takes precedence over 'class'
+	class       = { --Accept the following classes, refuse everything else (because of "exclusive=true")
+	    "xterm" , "urxvt" , "aterm","URxvt","XTerm","konsole","terminator","gnome-terminal, termite, Termite"
+	}
+    } ,
+    ----{
+        ----name        = "Internet",
+        ----init        = true,
+        ----exclusive   = true,
+      ------icon        = "~net.png",                 -- Use this icon for the tag (uncomment with a real path)
+        ----screen      = screen.count()>1 and 2 or 1,-- Setup on screen 2 if there is more than 1 screen, else on screen 1
+        ----layout      = awful.layout.suit.max,      -- Use the max layout
+        ----class = {
+            ----"Opera"         , "Firefox"        , "Rekonq"    , "Dillo"        , "Arora",
+            ----"Chromium"      , "nightly"        , "minefield"     }
+    ----} ,
+    ----{
+        ----name = "Files",
+        ----init        = true,
+        ----exclusive   = true,
+        ----screen      = 1,
+        ----layout      = awful.layout.suit.tile,
+        ----exec_once   = {"dolphin"}, --When the tag is accessed for the first time, execute this command
+        ----class  = {
+            ----"Thunar", "Konqueror", "Dolphin", "ark", "Nautilus","emelfm"
+        ----}
+    ----} ,
+    --{
+        --name = "Develop",
+        --init        = true,
+        --exclusive   = true,
+        --screen      = {1,2},
+        --layout      = awful.layout.suit.tile                          ,
+	--class ={ 
+            --"Kate", "KDevelop", "Codeblocks", "Code::Blocks" , "DDD", "kate4", "gvim", "Gvim"
+            --}
+    --},
+    {
+	name        = "IM",
+	init        = true, -- This tag wont be created at startup, but will be when one of the
+	exclusive   = true,                     -- client in the "class" section will start. It will be created on
+	screen	    = 1,                     -- the client startup screen
+	hide	    = true,
+	ncol	    = 3,
+	mwfact      = 0.15,
+	exclusive   = true,
+	layout      = awful.layout.suit.tile,
+	no_focus_stealing_in = true,
+	
+	class = {
+		"Psi", "psi", "skype", "xchat", "choqok", "hotot", "qwit", "Pidgin"
+	}
+    } ,
+    --{
+        --name        = "Doc",
+        --init        = false, -- This tag wont be created at startup, but will be when one of the
+                             ---- client in the "class" section will start. It will be created on
+                             ---- the client startup screen
+        ----exclusive   = true,
+	--fallback = true,
+        --layout      = awful.layout.suit.tile,
+        --class       = {
+            --"Assistant"     , "Okular"         , "Evince"    , "EPDFviewer"   , "xpdf",
+            --"Xpdf"          ,                                        }
+    --} ,
+}
 
-tags = {}
-for s = 1, screen.count() do
-    tags[s] = awful.tag({ "TERM", "CODE", "IM", "MAIL", "WEB" }, s, layouts[1])
-end
+-- Ignore the tag "exclusive" property for the following clients (matched by classes)
+tyrannical.properties.intrusive = {
+    "ksnapshot"     , "pinentry"       , "gtksu"     , "kcalc"        , "xcalc"               ,
+    "feh"           , "Gradient editor", "About KDE" , "Paste Special", "Background color"    ,
+    "kcolorchooser" , "plasmoidviewer" , "Xephyr"    , "kruler"       , "plasmaengineexplorer", "veromix", "termite"
+}
 
-for s = 1, screen.count() do 
---  tags[s] = awful.tag(tags.names, s, tags.layout)
-  awful.tag.setproperty(tags[s][3], "mwfact", 0.15)        -- здесь мы устанавливаем ширину списка контактов в 20% от ширины экрана
-end
+-- Ignore the tiled layout for the matching clients
+tyrannical.properties.floating = {
+    "MPlayer"      , "pinentry"        , "ksnapshot"  , "pinentry"     , "gtksu"          ,
+    "xine"         , "feh"             , "kmix"       , "kcalc"        , "xcalc"          ,
+    "yakuake"      , "Select Color$"   , "kruler"     , "kcolorchooser", "Paste Special"  ,
+    "New Form"     , "Insert Picture"  , "kcharselect", "mythfrontend" , "plasmoidviewer" 
+}
+
+-- Make the matching clients (by classes) on top of the default layout
+tyrannical.properties.ontop = {
+    "Xephyr"       , "ksnapshot"       , "kruler"
+}
+
+-- Force the matching clients (by classes) to be centered on the screen on init
+tyrannical.properties.centered = {
+    "kcalc"
+}
+
+--tyrannical.settings.block_children_focus_stealing = true --Block popups ()
+tyrannical.settings.group_children = true --Force popups/dialogs to have the same tags as the parent client
+
+    --{ rule = { class = "Plugin-container" },
+                    --properties = { floating = true} },
+    --{ rule = { class = "gcolor2" },
+      --properties = { floating = true } },
+    --{ rule = { class = "xmag" },
+      --properties = { floating = true } },
+
+    --{ rule = { class = "veromix" },
+      --properties = { floating = true } },
+
+    --{ rule = { name = "Громкость" },
+      --properties = { floating = true } },
+
+    --{ rule = { class = "Vlc" },
+      --properties = { floating = true } },
+    --{ rule = { role = "HTOP_CPU" },
+      --properties = { floating = true } },
+    --{ rule = { role = "HTOP_MEM" },
+      --properties = { floating = true } },
+
+    --{ rule = { class = "gvim" },
+      --properties = { tag = tags[1][2], switchtotag = true}},
+    --{ rule = { class = "Thunderbird" },
+      --properties = { tag = tags[4] } }, 
+    --{ rule = { class = "Gvim"},
+         --properties = { tag = tags[1][2], switchtotag = true}},
+    --{ rule = { class = "Firefox"},
+         --properties = { tag = tags[1][5], switchtotag = true}},
+    --{ rule = { class = "Pidgin", role = "buddy_list"},
+         --properties = { tag = tags[1][3] } },
+    --{ rule = { class = "Pidgin", role = "conversation"},
+         --properties = { tag = tags[1][3]}, callback = awful.client.setslave },
+--tags = {}
+--for s = 1, screen.count() do
+    --tags[s] = awful.tag({ "TERM", "CODE", "IM", "MAIL", "WEB" }, s, layouts[1])
+--end
+
+--for s = 1, screen.count() do 
+----  tags[s] = awful.tag(tags.names, s, tags.layout)
+  --awful.tag.setncol(3, tags[s][3]) 			   -- эта и следующая строчка нужна для Pidgin
+  --awful.tag.setproperty(tags[s][3], "mwfact", 0.15)        -- здесь мы устанавливаем ширину списка контактов в 20% от ширины экрана
+--end
 
 
 -- | Menu | --
@@ -175,16 +320,16 @@ widget_display_c:set_image(beautiful.widget_display_c)
 
 -- | MPD | --
 
-prev_icon = wibox.widget.imagebox()
-prev_icon:set_image(beautiful.mpd_prev)
-next_icon = wibox.widget.imagebox()
-next_icon:set_image(beautiful.mpd_nex)
-stop_icon = wibox.widget.imagebox()
-stop_icon:set_image(beautiful.mpd_stop)
-pause_icon = wibox.widget.imagebox()
-pause_icon:set_image(beautiful.mpd_pause)
-play_pause_icon = wibox.widget.imagebox()
-play_pause_icon:set_image(beautiful.mpd_play)
+--prev_icon = wibox.widget.imagebox()
+--prev_icon:set_image(beautiful.mpd_prev)
+--next_icon = wibox.widget.imagebox()
+--next_icon:set_image(beautiful.mpd_nex)
+--stop_icon = wibox.widget.imagebox()
+--stop_icon:set_image(beautiful.mpd_stop)
+--pause_icon = wibox.widget.imagebox()
+--pause_icon:set_image(beautiful.mpd_pause)
+--play_pause_icon = wibox.widget.imagebox()
+--play_pause_icon:set_image(beautiful.mpd_play)
 mpd_sepl = wibox.widget.imagebox()
 mpd_sepl:set_image(beautiful.mpd_sepl)
 mpd_sepr = wibox.widget.imagebox()
@@ -194,16 +339,16 @@ mpdwidget = lain.widgets.mpd({
     settings = function ()
         if mpd_now.state == "play" then
 	    widget:set_markup(" Title loading ")
+	    mpd_now.artist = string.gsub(mpd_now.artist,"&amp;","and")
+	    mpd_now.title = string.gsub(mpd_now.title,"&amp;","and")
+	    mpd_now.artist = string.gsub(mpd_now.artist,"&apos;","'")
+	    mpd_now.title = string.gsub(mpd_now.title,"&apos;","'")
             mpd_now.artist = mpd_now.artist:upper():gsub("&.-;", string.lower)
             mpd_now.title = mpd_now.title:upper():gsub("&.-;", string.lower)
-            artistsub = utf8.sub(mpd_now.artist:upper():gsub("&.-;", string.lower), 0, 15)
-            titlesub = utf8.sub(mpd_now.title:upper():gsub("&.-;", string.lower), 0, 20)
-	    nowplayingtext = markup.font("Tamsyn 3", " ")
-                              .. markup.font("tamsyn 7",
-                              mpd_now.artist
-                              .. "—" ..
-                              mpd_now.title)
-                              .. markup.font("Tamsyn 2", " ")
+            artistsub = utf8.sub(mpd_now.artist:upper():gsub("&.-;", string.lower), 0, 7)
+            titlesub = utf8.sub(mpd_now.title:upper():gsub("&.-;", string.lower), 0, 12)
+	    nowplayingtext = mpd_now.artist .. "-" .. mpd_now.title .. " "
+	    mpdwidget.nowplaying = nowplayingtext
 	    nowtext = markup.font("Tamsyn 3", " ")
                               .. markup.font("tamsyn 7",
                               artistsub
@@ -217,24 +362,55 @@ mpdwidget = lain.widgets.mpd({
 	    --print(nowplayingtext)
             widget:set_markup(nowtext)
 	    
-            play_pause_icon:set_image(beautiful.mpd_pause)
+            --play_pause_icon:set_image(beautiful.mpd_pause)
             mpd_sepl:set_image(beautiful.mpd_sepl)
             mpd_sepr:set_image(beautiful.mpd_sepr)
         elseif mpd_now.state == "pause" then
             widget:set_markup(markup.font("Tamsyn 4", "") ..
                               markup.font("Tamsyn 7", "MPD PAUSED") ..
                               markup.font("Tamsyn 10", ""))
-            play_pause_icon:set_image(beautiful.mpd_play)
+            --play_pause_icon:set_image(beautiful.mpd_play)
             mpd_sepl:set_image(beautiful.mpd_sepl)
             mpd_sepr:set_image(beautiful.mpd_sepr)
         else
             widget:set_markup("")
-            play_pause_icon:set_image(beautiful.mpd_play)
+            --play_pause_icon:set_image(beautiful.mpd_play)
             mpd_sepl:set_image(nil)
             mpd_sepr:set_image(nil)
         end
     end
 })
+mpdwidget.nextchar = function()
+        if mpd_now.state == "play" then
+		--mpdwidget.nowplaying = "123456789abcdefghijklmnoprst"
+		text = mpdwidget.nowplaying.."|"
+		--text = string.gsub(mpdwidget.nowplaying,"&apos;","'")
+		mpdlength = utf8.len(text)
+		startpos = math.fmod(mpdwidget.startpos, mpdlength)
+		if startpos == 0 then startpos = mpdlength end
+		length   = mpdwidget.length or 20
+		--print("start:"..startpos)
+		--print("length:"..length)
+		--print("mpdlength:"..mpdlength)
+		nowtext = text
+		--print(mpdlength)
+		--print(length)
+		if not (mpdlength < length) then
+			if ((startpos + length - 1) > mpdlength) then
+				--print("problem")
+				nowtext = utf8.sub(text, startpos) .. utf8.sub(text,1, math.abs(mpdlength-startpos+1-length))
+			else
+				nowtext = utf8.sub(text, startpos, startpos+length-1)
+			end
+		end
+		--for k,v in pairs(mpdwidget) do
+			--print(k)
+		--end
+		mpdwidget.startpos = startpos + 1
+                mpdwidget.widget:set_markup(markup.font("Tamsyn 7", nowtext))
+		--print(nowtext)
+        end
+end
 
 function mpd_prev()
     awful.util.spawn_with_shell("mpc prev & ")
@@ -245,7 +421,7 @@ function mpd_next()
     mpdwidget.update()
 end
 function mpd_stop()
-    play_pause_icon:set_image(beautiful.play)
+    --play_pause_icon:set_image(beautiful.play)
     awful.util.spawn_with_shell("mpc stop & ")
     mpdwidget.update()
 end
@@ -278,35 +454,53 @@ musicwidget:buttons(awful.util.table.join(
 awful.button({ }, 12, function () run_once("cantata") end),
 awful.button({ }, 2, function () run_once("cantata") end),
 awful.button({ }, 3, function () mpd_seek_forward()  end),
-awful.button({ }, 1, function () mpd_seek_backward() end)
+awful.button({ }, 1, function () mpd_seek_backward() end),
+awful.button({"Ctrl" }, 1, function () mpd_prev() end),
+awful.button({"Ctrl" }, 3, function () mpd_play_pause() end),
+awful.button({"Ctrl" }, 2, function () mpd_next() end)
 ))
+runinglinetimer = timer({ timeout = 0.2 })
+runinglinetimer:connect_signal("timeout", function ()
+	mpdwidget.nextchar()
+end)
 
-prev_icon:buttons(awful.util.table.join(
-awful.button({}, 1, function () mpd_prev() end),
-awful.button({ }, 4, function () mpd_seek_forward()  end),
-awful.button({ }, 5, function () mpd_seek_backward() end),
-awful.button({ }, 3, function () mpd_seek_backward() end)
+musicwidget:connect_signal("mouse::enter", function () 
+	lain.helpers.timer_table["mpd"]:stop()
+	mpdwidget.length = 20
+	mpdwidget.startpos = 1
+	runinglinetimer:start()  end)
+musicwidget:connect_signal("mouse::leave", function () 
+	runinglinetimer:stop()
+	mpdwidget.update()
+	lain.helpers.timer_table["mpd"]:start()
+end)
 
-))
-next_icon:buttons(awful.util.table.join(
-awful.button({}, 1, function () mpd_next() end),
-awful.button({ }, 3, function () mpd_seek_forward()  end),
-awful.button({ }, 4, function () mpd_seek_forward()  end),
-awful.button({ }, 5, function () mpd_seek_backward() end)
+--prev_icon:buttons(awful.util.table.join(
+--awful.button({}, 1, function () mpd_prev() end),
+--awful.button({ }, 4, function () mpd_seek_forward()  end),
+--awful.button({ }, 5, function () mpd_seek_backward() end),
+--awful.button({ }, 3, function () mpd_seek_backward() end)
 
-))
-stop_icon:buttons(awful.util.table.join(
-awful.button({}, 1, function () mpd_stop() end),
-awful.button({ }, 4, function () mpd_seek_forward()  end),
-awful.button({ }, 5, function () mpd_seek_backward() end)
+--))
+--next_icon:buttons(awful.util.table.join(
+--awful.button({}, 1, function () mpd_next() end),
+--awful.button({ }, 3, function () mpd_seek_forward()  end),
+--awful.button({ }, 4, function () mpd_seek_forward()  end),
+--awful.button({ }, 5, function () mpd_seek_backward() end)
 
-))
-play_pause_icon:buttons(awful.util.table.join(
-awful.button({}, 1, function () mpd_play_pause() end),
-awful.button({ }, 4, function () mpd_seek_forward()  end),
-awful.button({ }, 5, function () mpd_seek_backward() end)
+--))
+--stop_icon:buttons(awful.util.table.join(
+--awful.button({}, 1, function () mpd_stop() end),
+--awful.button({ }, 4, function () mpd_seek_forward()  end),
+--awful.button({ }, 5, function () mpd_seek_backward() end)
 
-))
+--))
+--play_pause_icon:buttons(awful.util.table.join(
+--awful.button({}, 1, function () mpd_play_pause() end),
+--awful.button({ }, 4, function () mpd_seek_forward()  end),
+--awful.button({ }, 5, function () mpd_seek_backward() end)
+
+--))
 
 -- Pusleaudio controll --
 
@@ -474,6 +668,9 @@ clockwidget = wibox.widget.background()
 clockwidget:set_widget(mytextclock)
 clockwidget:set_bgimage(beautiful.widget_display)
 
+lain.widgets.calendar:attach(mytextclock, { font_size = 10 })
+
+
 
 
 widget_calendar = wibox.widget.imagebox()
@@ -509,6 +706,57 @@ mytaglist.buttons = awful.util.table.join(
                     )
 
 -- | Tasklist | --
+
+myiconlist         = {}
+myiconlist.buttons = awful.util.table.join(
+                     awful.button({ }, 1, function (c)
+                                              if c == client.focus then
+                                                  c.minimized = true
+                                              else
+                                                  c.minimized = false
+                                                  if not c:isvisible() then
+                                                      awful.tag.viewonly(c:tags()[1])
+                                                  end
+                                                  client.focus = c
+                                                  c:raise()
+                                              end
+                                          end),
+                     awful.button({ }, 2, function (c)
+			     			c:kill()
+                                          end),
+                     awful.button({ }, 3, function ()
+                                              if instance then
+                                                  instance:hide()
+                                                  instance = nil
+                                              else
+                                                  instance = awful.menu.clients({
+                                                      theme = { width = 250 }
+                                                  })
+                                              end
+                                          end),
+                     awful.button({ }, 4, function ()
+                                              awful.client.focus.byidx(1)
+                                              if client.focus then client.focus:raise() end
+                                          end),
+                     awful.button({ }, 5, function ()
+                                              awful.client.focus.byidx(-1)
+                                              if client.focus then client.focus:raise() end
+                                          end))
+
+-- | Tasklist | --
+
+local function matchrules(rules, exclude)
+    -- Only print client on the same screen as this widget
+    local exclude = exclude or false
+    return function(c, screen)
+    	if c.screen ~= screen then return false end
+    	-- Include sticky client too
+    	if c.sticky then return true end
+    	local ctags = c:tags()
+	if awful.rules.match(c, rules) then return not exclude end
+    	return exclude
+    end
+end
 
 mytasklist         = {}
 mytasklist.buttons = awful.util.table.join(
@@ -564,13 +812,18 @@ for s = 1, screen.count() do
 
    -- mytaglist[s] = sharedtags.taglist(s, awful.widget.taglist.filter.all, mytaglist.buttons)
 
-    mytasklist[s] = awful.widget.tasklist(s, awful.widget.tasklist.filter.allscreen, mytasklist.buttons)
+    mytasklist[s] = awful.widget.tasklist(s, matchrules({class = "Pidgin"}, false), mytasklist.buttons)
 
+    myiconlist[s] = awful.widget.tasklist(s, matchrules({class = "Pidgin"}, true),  myiconlist.buttons, {tasklist_only_icon=true}, common.list_update, fixed.horizontal())
+
+--tasklist.new(screen, filter, buttons, style, update_function, base_widget)
     mywibox[s] = awful.wibox({ position = "top", screen = s, height = "22" })
 
     local left_layout = wibox.layout.fixed.horizontal()
     
     --left_layout:add(mylauncher)
+    left_layout:add(spr5px)
+    left_layout:add(myiconlist[s])
     left_layout:add(spr5px)
     left_layout:add(mytaglist[s])
     left_layout:add(spr5px)
@@ -601,18 +854,18 @@ for s = 1, screen.count() do
 
 --    right_layout:add(spr)
 
---    right_layout:add(spr)
+    --right_layout:add(spr)
 
     right_layout:add(mpd_sepl)
     right_layout:add(musicwidget)
     right_layout:add(mpd_sepr)
-    right_layout:add(prev_icon)
-    right_layout:add(spr)
-    right_layout:add(stop_icon)
-    right_layout:add(spr)
-    right_layout:add(play_pause_icon)
-    right_layout:add(spr)
-    right_layout:add(next_icon)
+    --right_layout:add(prev_icon)
+    --right_layout:add(spr)
+    --right_layout:add(stop_icon)
+    --right_layout:add(spr)
+    --right_layout:add(play_pause_icon)
+    --right_layout:add(spr)
+    --right_layout:add(next_icon)
 
     --right_layout:add(spr)
 
@@ -646,9 +899,9 @@ for s = 1, screen.count() do
     right_layout:add(widget_mem)
     right_layout:add(widget_display_l)
     right_layout:add(memwidget)
-    right_layout:add(widget_display_c)
-    right_layout:add(mempwidget)
-    right_layout:add(widget_display_r)
+    --right_layout:add(widget_display_c)
+    --right_layout:add(mempwidget)
+    --right_layout:add(widget_display_r)
     right_layout:add(spr5px)
 
     right_layout:add(spr)
@@ -748,7 +1001,61 @@ globalkeys = awful.util.table.join(
 
     awful.key({ modkey,           }, "w",      function () mainmenu:show() end),
     --awful.key({ modkey,           }, "Escape", function () exec("/usr/local/sbin/zaprat --toggle") end),
-    awful.key({ modkey            }, "r",      function () mypromptbox[mouse.screen]:run() end),
+    --awful.key({ modkey            }, "r",      function () mypromptbox[mouse.screen]:run() end),
+    awful.key({ modkey 		  }, "r",
+	function ()
+	    awful.prompt.run({ prompt = "Huh_Run: ", hooks = {
+		{{         },"Return",function(command)
+			
+		naughty.notify({ preset = naughty.config.presets.critical,
+                     title = "return",
+	     	     timeout = 2,
+	     }) 
+		    local result = awful.util.spawn(command, { new_tag= {
+						name = 1,
+						--exclusive = true,
+						locked = true,
+						volatile = true,
+						selected = true,
+						layout = awful.layout.suit.tile,
+					}})
+		    mypromptbox[mouse.screen].widget:set_text(type(result) == "string" and result or "")
+		    return true
+		end},
+		{{"Mod1"   },"Return",function(command)
+			
+			naughty.notify({ preset = naughty.config.presets.critical,
+                     title = "mod return",
+	     	     timeout = 2,
+	             }) 
+		    local result = awful.util.spawn(command,{intrusive=true})
+		    mypromptbox[mouse.screen].widget:set_text(type(result) == "string" and result or "")
+		    return true
+		end},
+		{{"Shift"  },"Return",function(command)
+		    local result = awful.util.spawn(command,{intrusive=true,ontop=true,floating=true, sticky=true})
+		    mypromptbox[mouse.screen].widget:set_text(type(result) == "string" and result or "")
+		    return true
+		end}
+	    }},
+	    mypromptbox[mouse.screen].widget,
+	    function (com)
+		    local result = awful.util.spawn(com, { new_tag= {
+						name = 1,
+						exclusive = true,
+						locked = true,
+						volatile = true,
+						selected = true,
+						layout = awful.layout.suit.tile,
+					}})
+		    if type(result) == "string" then
+			    mypromptbox[mouse.screen].widget:set_text(result)
+		    end
+		    return true
+	    end,
+	    awful.completion.shell,
+	    awful.util.getdir("cache") .. "/history")
+	end),
     awful.key({ altkey,           }, "t",
         function ()
             awful.client.focus.byidx( 1)
@@ -811,7 +1118,6 @@ globalkeys = awful.util.table.join(
     awful.key({ modkey, "Shift" }, "Tab", function(c)
             cyclefocus.cycle(-1, {modifier="Super_L"})
     end),
-
     awful.key({ modkey, "Control" }, "Delete",      awesome.restart),
     awful.key({ modkey, "Shift"   }, "q",      awesome.quit),
     awful.key({ modkey,           }, "Return", function () exec(terminal) end),
@@ -820,6 +1126,13 @@ globalkeys = awful.util.table.join(
     awful.key({ modkey,           }, "space",  function () awful.layout.inc(layouts,  1) end),
     awful.key({ modkey, "Shift"   }, "space",  function () awful.layout.inc(layouts, -1) end),
     --awful.key({ modkey            }, "a",      function () shexec(configuration) end),
+    awful.key({ modkey }, ":", function () hints.focus() end),
+    awful.key({ modkey,    }, "i",  
+    	function ()
+		tag = awful.tag.gettags(1)[2]
+		awful.tag.viewonly(tag)
+		hints.focus(1)
+    	end),
     awful.key({ modkey,    }, "a",  
     	function () 
 	    revelation({
@@ -845,11 +1158,11 @@ globalkeys = awful.util.table.join(
     awful.key({ modkey            }, "x",      function () awful.tag.delete() end),
     --awful.key({ modkey,           }, "u",      function () exec("urxvt -geometry 254x60+80+60") end),
     --awful.key({ modkey,           }, "s",      function () exec(filemanager) end),
-    awful.key({ modkey            }, "g",      function () exec("gvim") end),
+    awful.key({ modkey            }, "g",      function () run_or_raise("gvim", { class = "Gvim" }) end),
     awful.key({ modkey            }, "Print",  function () exec("screengrab") end),
     awful.key({ modkey, "Control" }, "p",      function () exec("screengrab --region") end),
     awful.key({ modkey, "Shift"   }, "Print",  function () exec("screengrab --active") end),
-    awful.key({ modkey            }, "c",      function () exec("firefox") end),
+    awful.key({ modkey            }, "c",      function () run_or_raise("firefox", { class = "Firefox" }) end),
     awful.key({ modkey            }, "8",      function () exec("chromium") end),
     awful.key({ modkey            }, "9",      function () exec("dwb") end),
     awful.key({ modkey            }, "0",      function () exec("thunderbird") end),
@@ -903,8 +1216,8 @@ clientkeys = awful.util.table.join(
         end),
     awful.key({ modkey,           }, "m",
         function (c)
-            c.maximized_horizontal = not c.maximized_horizontal
-            c.maximized_vertical   = not c.maximized_vertical
+            c.maximized_horizontal = false --not c.maximized_horizontal
+            c.maximized_vertical   = false --not c.maximized_vertical
         end)
 )
 
@@ -977,38 +1290,38 @@ awful.rules.rules = {
                      buttons = clientbuttons } },
 
     --{ rule = { class = "Exe"}, properties = {floating = true} },
-    { rule = { class = "Plugin-container" },
-    		properties = { floating = true} },
-    { rule = { class = "gcolor2" },
-      properties = { floating = true } },
-    { rule = { class = "xmag" },
-      properties = { floating = true } },
+    --{ rule = { class = "Plugin-container" },
+		    --properties = { floating = true} },
+    --{ rule = { class = "gcolor2" },
+      --properties = { floating = true } },
+    --{ rule = { class = "xmag" },
+      --properties = { floating = true } },
 
     { rule = { class = "veromix" },
-      properties = { floating = true } },
+      properties = { floating = true, intrusive = true } },
 
     { rule = { name = "Громкость" },
-      properties = { floating = true } },
+      properties = { floating = true, intrusive = true } },
 
     { rule = { class = "Vlc" },
       properties = { floating = true } },
     { rule = { role = "HTOP_CPU" },
-      properties = { floating = true } },
+      properties = { floating = true, intrusive = true} },
     { rule = { role = "HTOP_MEM" },
-      properties = { floating = true } },
+      properties = { floating = true, intrusive = true } },
 
-    { rule = { class = "gvim" },
-      properties = { tag = tags[2] } },
-    { rule = { class = "Thunderbird" },
-      properties = { tag = tags[4] } }, 
-    { rule = { class = "Gvim"},
-         properties = { tag = tags[1][2] } },
-    { rule = { class = "Firefox"},
-         properties = { tag = tags[1][5] } },
-    { rule = { class = "Pidgin", role = "buddy_list"},
-         properties = { tag = tags[1][3] } },
+    --{ rule = { class = "gvim" },
+      --properties = { tag = tags[1][2], switchtotag = true}},
+    --{ rule = { class = "Thunderbird" },
+      --properties = { tag = tags[4] } }, 
+    --{ rule = { class = "Gvim"},
+	 --properties = { tag = tags[1][2], switchtotag = true}},
+    --{ rule = { class = "Firefox"},
+	 --properties = { tag = tags[1][5], switchtotag = true}},
+    --{ rule = { class = "Pidgin", role = "buddy_list"},
+	 --properties = { tag = tags[1][3] } },
     { rule = { class = "Pidgin", role = "conversation"},
-         properties = { tag = tags[1][3]}, callback = awful.client.setslave },
+	  callback = awful.client.setslave },
    
 }
 
@@ -1025,7 +1338,7 @@ local function remove_client(tabl, c)
     if index then
         table.remove(tabl, index)
         if #tabl == 0 then
-            awful.util.spawn("xset s on")
+            awful.util.spawn("xset s off")
             awful.util.spawn("xset -dpms")
               run_once(xautolock)
 	      naughty.resume()
@@ -1044,7 +1357,7 @@ client.connect_signal("property::fullscreen",
               	  awful.util.spawn("xset -dpms")
               		naughty.suspend()
 			mpd_pause()
-			os.execute("pkill xautolock")
+			os.execute("xautolock -exit")
             	end
     	    end
         else
@@ -1115,15 +1428,40 @@ client.connect_signal("manage", function (c, startup)
     end
 end)
 
+		local function moveMouse(x_co, y_co)
+   		 	mouse.coords({ x=x_co, y=y_co })
+		end
+client.connect_signal("focus", function(c) 
+	if not (c == mouse.object_under_pointer()) then
+		local function moveMouse(x_co, y_co)
+			    mouse.coords({ x=x_co, y=y_co })
+		end
+		geom=c.geometry(c)
+		x=geom.x+math.modf(geom.width/2)+1
+		y=geom.y+math.modf(geom.height/2)+1
+
+		moveMouse(x,y)
+		client.foucs = c
+	end
+end)
+
+keysmode = "normalmode"
 client.connect_signal("focus", function(c) 
 	c.border_color = beautiful.border_focus 
-	if awful.rules.match(c, {class = "Firefox"}) then  os.execute("/home/ivn/scripts/trackpoint/trackpointkeys.sh browsermode &")
-                                           end
+	local mode
+	if awful.rules.match(c, {class = "Firefox"}) then  
+		mode = "browsermode"
+	else
+		mode = "normalmode"
+	end
+	if not (mode == keysmode) then
+		keysmode = mode
+		os.execute("/home/ivn/scripts/trackpoint/trackpointkeys.sh "..keysmode.." &")
+	end
 end)
 client.connect_signal("unfocus", function(c) 
 	c.border_color = beautiful.border_normal 
-	if awful.rules.match(c, {class = "Firefox"}) then  os.execute("/home/ivn/scripts/trackpoint/trackpointkeys.sh switch &")
-	end
+--	if awful.rules.match(c, {class = "Firefox"}) then  	end
 end)
 
 
@@ -1173,6 +1511,54 @@ client.connect_signal("manage", function(c)
 		c:geometry( {y = 22 } )
         end
 end)
+tag.connect_signal("property::selected", function(t)
+	if t.name == "IM" and not t.selected then
+		awful.tag.viewonly(awful.tag.gettags(1)[1])
+	end
+end)
+--- Spawns cmd if no client can be found matching properties
+-- If such a client can be found, pop to first tag where it is visible, and give it focus
+-- @param cmd the command to execute
+-- @param properties a table of properties to match against clients.  Possible entries: any properties of the client object
+function run_or_raise(cmd, properties)
+   local clients = client.get()
+   local focused = awful.client.next(0)
+   local findex = 0
+   local matched_clients = {}
+   local n = 0
+   for i, c in pairs(clients) do
+      --make an array of matched clients
+      if matchtable(properties, c) then
+         n = n + 1
+         matched_clients[n] = c
+         if c == focused then
+            findex = n
+         end
+      end
+   end
+   if n > 0 then
+      local c = matched_clients[1]
+      -- if the focused window matched switch focus to next in list
+      if 0 < findex and findex < n then
+         c = matched_clients[findex+1]
+      end
+      local ctags = c:tags()
+      if #ctags == 0 then
+         -- ctags is empty, show client on current tag
+         local curtag = awful.tag.selected()
+         awful.client.movetotag(curtag, c)
+      else
+         -- Otherwise, pop to first tag client is visible on
+         awful.tag.viewonly(ctags[1])
+      end
+      -- And then focus the client
+      client.focus = c
+      c:raise()
+      return
+   end
+   awful.util.spawn(cmd)
+ 
+end
 -- | run or kill | --
 
 function run_or_kill(cmd, properties)
@@ -1183,7 +1569,7 @@ function run_or_kill(cmd, properties)
    local n = 0
    for i, c in pairs(clients) do
       --make an array of matched clients
-      if match(properties, c) then
+      if matchtable(properties, c) then
          n = n + 1
          matched_clients[n] = c
          if c == focused then
@@ -1214,7 +1600,7 @@ function run_or_kill(cmd, properties)
 end
 
 -- Returns true if all pairs in table1 are present in table2
-function match (table1, table2)
+function matchtable(table1, table2)
    for k, v in pairs(table1) do
       if table2[k] ~= v and not table2[k]:find(v) then
          return false
@@ -1243,6 +1629,7 @@ os.execute("xkbcomp $HOME/.config/xkb/my $DISPLAY &")
 -- os.execute("xrandr --output HDMI1 --mode 1920x1080 --left-of LVDS1 --output LVDS1 --auto --pos 0x500")
 os.execute("/home/ivn/scripts/trackpoint/trackpointkeys.sh normalmode &")
 os.execute("xset s off")
+os.execute("xset -dpms")
 run_once("linconnect-server &")
 run_once("kbdd")
 run_once("mpd /home/ivn/.config/mpd/mpd.conf")
@@ -1254,9 +1641,9 @@ run_once("redshiftgui")
 run_once("thunderbird")
 os.execute('xcape -t 1000 -e "Control_L=Tab;ISO_Level3_Shift=Multi_key"' )
 -- run_once("parcellite")
---run_once("pidgin")
+run_once("pidgin")
 run_once("compton --config /home/ivn/.config/compton.conf -b &")
-run_once(xautolock)
+--run_once(xautolock)
 run_once("firefox")
 run_once("goldendict")
 
