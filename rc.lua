@@ -13,8 +13,11 @@ local beautiful  = require("beautiful")
 local vicious    = require("vicious")
 local naughty    = require("naughty")
 local lain       = require("lain")
---local drop       = require("scratchdrop")
-local cyclefocus = require('cyclefocus')
+--local cyclefocus = require('cyclefocus')
+local rork = require("rork")      
+local run_or_raise = rork.run_or_raise
+local run_or_kill = rork.run_or_kill
+
 local revelation = require("revelation")      
 local newtag	 = require("newtag")      
 local quake 	 = require("quake")
@@ -30,7 +33,7 @@ os.execute("/home/ivn/scripts/run_slimlock_onstart.sh")
 
 -- | Theme | --
 
-local theme = "pro-gotham"
+local theme = "pro-dark"
 
 beautiful.init(os.getenv("HOME") .. "/.config/awesome/themes/" .. theme .. "/theme.lua")
 
@@ -91,8 +94,12 @@ local shexec = awful.util.spawn_with_shell
 
 modkey        = "Mod4"
 altkey        = "Mod1"
+
+-- table of apps and they classes
+apps = {}
+
 terminal      = "termite"
-dropdownterm  = "termite -r DROPDOWN"
+dropdownterm  = "termite -r DROPDOWN -e 'tmux attach -t dropdown '"
 tmux          = "termite -e tmux"
 termax        = "termite --geometry 1680x1034+0+22"
 htop_cpu      = "termite -e 'htop -s PERCENT_CPU' -r HTOP_CPU"
@@ -126,9 +133,10 @@ if beautiful.wallpaper then
 end
 
 -- | Tags | --
+tagnames = { "Others", "IM", "Dev"}
 tyrannical.tags = {
     {
-	name        = "Others",                 -- Call the tag "Term"
+	name        = tagnames[1], --"Others",                 -- Call the tag "Term"
 	init        = true,                   -- Load the tag on startup
 	exclusive   = true,                   -- Refuse any other type of clients (by classes)
 	screen      = {1,2},                  -- Create this tag on screen 1 and screen 2
@@ -137,7 +145,23 @@ tyrannical.tags = {
 	--hide 	    = true,
 	--instance    = {"dev", "ops"},         -- Accept the following instances. This takes precedence over 'class'
 	class       = { --Accept the following classes, refuse everything else (because of "exclusive=true")
-	    "xterm" , "urxvt" , "aterm","URxvt","XTerm","konsole","terminator","gnome-terminal, termite, Termite"
+	    "xterm" , "urxvt" , "aterm","URxvt","XTerm","konsole","terminator","gnome-terminal", "Termite", "Firefox", "Gvim"
+	}
+    } ,
+    {
+	name        = tagnames[2],
+	init        = true, -- This tag wont be created at startup, but will be when one of the
+	exclusive   = true,                     -- client in the "class" section will start. It will be created on
+	screen	    = 1,                     -- the client startup screen
+	hide	    = true,
+	ncol	    = 3,
+	mwfact      = 0.15,
+	exclusive   = true,
+	layout      = awful.layout.suit.tile,
+	no_focus_stealing_in = true,
+	
+	class = {
+		"Psi", "psi", "skype", "xchat", "choqok", "hotot", "qwit", "Pidgin"
 	}
     } ,
     ----{
@@ -162,32 +186,16 @@ tyrannical.tags = {
             ----"Thunar", "Konqueror", "Dolphin", "ark", "Nautilus","emelfm"
         ----}
     ----} ,
-    --{
-        --name = "Develop",
-        --init        = true,
-        --exclusive   = true,
-        --screen      = {1,2},
-        --layout      = awful.layout.suit.tile                          ,
-	--class ={ 
-            --"Kate", "KDevelop", "Codeblocks", "Code::Blocks" , "DDD", "kate4", "gvim", "Gvim"
-            --}
-    --},
     {
-	name        = "IM",
-	init        = true, -- This tag wont be created at startup, but will be when one of the
-	exclusive   = true,                     -- client in the "class" section will start. It will be created on
-	screen	    = 1,                     -- the client startup screen
-	hide	    = true,
-	ncol	    = 3,
-	mwfact      = 0.15,
+	name = tagnames[3],
+	init        = false,
 	exclusive   = true,
-	layout      = awful.layout.suit.tile,
-	no_focus_stealing_in = true,
-	
-	class = {
-		"Psi", "psi", "skype", "xchat", "choqok", "hotot", "qwit", "Pidgin"
-	}
-    } ,
+	screen      = {1,2},
+	layout      = awful.layout.suit.tile                          ,
+	class ={ 
+	    "Firefox", "gvim", "Gvim"
+	    }
+    },
     --{
         --name        = "Doc",
         --init        = false, -- This tag wont be created at startup, but will be when one of the
@@ -451,8 +459,8 @@ musicwidget = wibox.widget.background()
 musicwidget:set_widget(mpdwidget)
 musicwidget:set_bgimage(beautiful.widget_display)
 musicwidget:buttons(awful.util.table.join(
-awful.button({ }, 12, function () run_once("cantata") end),
-awful.button({ }, 2, function () run_once("cantata") end),
+awful.button({ }, 12, function () run_once("cantata --style gtk+") end),
+awful.button({ }, 2, function () run_once("cantata --style gtk+") end),
 awful.button({ }, 3, function () mpd_seek_forward()  end),
 awful.button({ }, 1, function () mpd_seek_backward() end),
 awful.button({"Ctrl" }, 1, function () mpd_prev() end),
@@ -510,6 +518,11 @@ pulsewidget = wibox.widget.background()
 pulsewidget:set_widget(pulseBox)
 pulsewidget:set_bgimage(beautiful.widget_display)
 
+pulseBar:buttons(awful.util.table.join(pulseBar.buttonsTable, awful.button({ }, 1, function () run_or_kill("veromix", { class = "veromix" }, {x = mouse.coords().x, y = 22, funcafter = APW.Update}) end),
+awful.button({ }, 3, function () run_or_kill("pavucontrol", { class = "Pavucontrol" }, {x = mouse.coords().x, y = 22, funcafter = APW.Update}) end)))
+pulseBox:buttons(awful.util.table.join(pulseBar.buttonsTable, awful.button({ }, 1, function () run_or_kill("veromix", { class = "veromix" }, {x = mouse.coords().x, y = 22, funcafter = APW.Update}) end),
+awful.button({ }, 3, function () run_or_kill("pavucontrol", { class = "Pavucontrol" }, {x = mouse.coords().x, y = 22, funcafter = APW.Update}) end)))
+
 
 -- Keyboard map indicator and changer
 	kbdtext = wibox.widget.textbox("en")
@@ -562,7 +575,7 @@ cpu_widget = lain.widgets.cpu({
 })
 
 cpubuttons = awful.util.table.join(awful.button({ }, 1,
-function () run_or_kill(htop_cpu, { role = "HTOP_CPU" }) end))
+function () run_or_kill(htop_cpu, { role = "HTOP_CPU" }, {x = mouse.coords().x, y = 22}) end))
 
 widget_cpu = wibox.widget.imagebox()
 widget_cpu:set_image(beautiful.widget_cpu)
@@ -588,10 +601,15 @@ cpuwidget:set_bgimage(beautiful.widget_display)
 
 
 membuttons = awful.util.table.join(awful.button({ }, 1,
-function () run_or_kill(htop_mem, { role = "HTOP_MEM" }) end))
+function () run_or_kill(htop_mem, { role = "HTOP_MEM" }, {x = mouse.coords().x, y = 22}) end))
 
+
+memp_widget = wibox.widget.textbox()
 mem_widget = lain.widgets.mem({
+	timeout = 15,
     settings = function()
+	    local perc = math.ceil(mem_now.used/mem_now.total*100, 0, 3)
+	    memp_widget:set_markup(space3 .. perc .. "%" .. markup.font("Tamsyn 4", " "))
         widget:set_markup(space3 .. mem_now.used .. "MB" .. markup.font("Tamsyn 4", " "))
     end
 })
@@ -602,11 +620,12 @@ memwidget = wibox.widget.background()
 memwidget:set_widget(mem_widget)
 memwidget:set_bgimage(beautiful.widget_display)
 
-memp_widget = lain.widgets.mem({
-    settings = function()
-        widget:set_markup(space3 .. math.ceil(mem_now.used/mem_now.total*100, 0, 3) .. "%" .. markup.font("Tamsyn 4", " "))
-    end
-})
+--memp_widget = lain.widgets.mem({
+	--timeout = 15,
+    --settings = function()
+        --widget:set_markup(space3 .. mem_now.perc .. "%" .. markup.font("Tamsyn 4", " "))
+    --end
+--})
 
 mempwidget = wibox.widget.background()
 mempwidget:set_widget(memp_widget)
@@ -655,7 +674,10 @@ netwidgetul:set_bgimage(beautiful.widget_display)
 
 -- | Clock / Calendar | --
 
-mytextclockbuttons = awful.util.table.join(awful.button({ }, 1,
+mytextclockbuttons = awful.util.table.join(
+awful.button({ }, 2,
+function () awful.util.spawn_with_shell("/home/ivn/scripts/say_time.sh") end),
+awful.button({ }, 12,
 function () awful.util.spawn_with_shell("/home/ivn/scripts/say_time.sh") end))
 
 mytextclock    = awful.widget.textclock(markup(clockgf, space3 .. "%H:%M" .. markup.font("Tamsyn 3", " ")), 30)
@@ -899,9 +921,9 @@ for s = 1, screen.count() do
     right_layout:add(widget_mem)
     right_layout:add(widget_display_l)
     right_layout:add(memwidget)
-    --right_layout:add(widget_display_c)
-    --right_layout:add(mempwidget)
-    --right_layout:add(widget_display_r)
+    right_layout:add(widget_display_c)
+    right_layout:add(mempwidget)
+    right_layout:add(widget_display_r)
     right_layout:add(spr5px)
 
     right_layout:add(spr)
@@ -1004,7 +1026,7 @@ globalkeys = awful.util.table.join(
     --awful.key({ modkey            }, "r",      function () mypromptbox[mouse.screen]:run() end),
     awful.key({ modkey 		  }, "r",
 	function ()
-	    awful.prompt.run({ prompt = "Huh_Run: ", hooks = {
+	    awful.prompt.run({ prompt = "Run: ", hooks = {
 		{{         },"Return",function(command)
 			
 		naughty.notify({ preset = naughty.config.presets.critical,
@@ -1112,12 +1134,22 @@ globalkeys = awful.util.table.join(
     --             client.focus:raise()
     --         end
     --     end),
-    awful.key({ modkey,         }, "Tab", function(c)
-            cyclefocus.cycle(1, {modifier="Super_L"})
-    end),
-    awful.key({ modkey, "Shift" }, "Tab", function(c)
-            cyclefocus.cycle(-1, {modifier="Super_L"})
-    end),
+    --awful.key({ modkey,         }, "Tab", function(c)
+            --cyclefocus.cycle(1, {modifier="Super_L"})
+    --end),
+    --awful.key({ modkey, "Shift" }, "Tab", function(c)
+            --cyclefocus.cycle(-1, {modifier="Super_L"})
+    --end),
+    awful.key({ modkey,         }, "Tab", 
+        function ()
+            awful.client.focus.byidx( 1)
+            if client.focus then client.focus:raise() end
+        end),
+    awful.key({ modkey, "Shift" }, "Tab", 
+        function ()
+            awful.client.focus.byidx( -1)
+            if client.focus then client.focus:raise() end
+        end),
     awful.key({ modkey, "Control" }, "Delete",      awesome.restart),
     awful.key({ modkey, "Shift"   }, "q",      awesome.quit),
     awful.key({ modkey,           }, "Return", function () exec(terminal) end),
@@ -1144,7 +1176,8 @@ globalkeys = awful.util.table.join(
     	function () 
 	    newtag({
 	    rule={class="Pidgin"}, 
-	    is_excluded=true
+	    is_excluded=true,
+	    screen = {capi.mouse.screen}
     }) 
     	end),
     awful.key({ modkey, "Shift",  }, "r",    function ()
@@ -1180,7 +1213,9 @@ globalkeys = awful.util.table.join(
     --awful.key({ modkey, "Control" }, "f",      function () shexec(newsbeuter) end),
 -- Dropdown terminal
    --awful.key({ modkey,	          }, "i",      function () drop(terminal) end), 
-   awful.key({ modkey,	          }, "u",      function () scratch.drop(dropdownterm) end), 
+   awful.key({ modkey,	          }, "u",      function () 
+	   awful.util.spawn_with_shell("tmux new -d -s dropdown") 
+	   scratch.drop(dropdownterm) end), 
    --awful.key({ modkey,	          }, "u",      function () drop(terminal) end), 
    awful.key({ modkey, "Control"  }, "x",      function () exec("/home/ivn/scripts/trackpoint/trackpointkeys.sh switch &") end)
 
@@ -1207,7 +1242,6 @@ clientkeys = awful.util.table.join(
     --awful.key({ modkey            }, "Up",     function () awful.client.moveresize(  0, -20,   0,   0) end),
     --awful.key({ modkey            }, "Left",   function () awful.client.moveresize(-20,   0,   0,   0) end),
     --awful.key({ modkey            }, "Right",  function () awful.client.moveresize( 20,   0,   0,   0) end),
-    awful.key({ modkey,		  }, "4",      function (c) c.fullscreen = not c.fullscreen  end),
     awful.key({ modkey,           }, "f",      function (c) c.fullscreen = not c.fullscreen  end),
     awful.key({ modkey,           }, "q",      function (c) c:kill()                         end),
     awful.key({ modkey,           }, "n",
@@ -1216,8 +1250,8 @@ clientkeys = awful.util.table.join(
         end),
     awful.key({ modkey,           }, "m",
         function (c)
-            c.maximized_horizontal = false --not c.maximized_horizontal
-            c.maximized_vertical   = false --not c.maximized_vertical
+            c.maximized_horizontal = not c.maximized_horizontal
+            c.maximized_vertical   = not c.maximized_vertical
         end)
 )
 
@@ -1322,6 +1356,12 @@ awful.rules.rules = {
 	 --properties = { tag = tags[1][3] } },
     { rule = { class = "Pidgin", role = "conversation"},
 	  callback = awful.client.setslave },
+	{rule = {role = "DROPDOWN"}, 
+ 	properties = {opacity = 0.8} },
+	{rule = {class = "Bomi"}, 
+ 	properties = {opacity = 0.8, floating = true} }
+
+
    
 }
 
@@ -1332,6 +1372,7 @@ awful.rules.rules = {
 
 
 local fullscreened_clients = {}
+local lastmpdstatus = "N/A"
 
 local function remove_client(tabl, c)
     local index = awful.util.table.hasitem(tabl, c)
@@ -1340,8 +1381,11 @@ local function remove_client(tabl, c)
         if #tabl == 0 then
             awful.util.spawn("xset s off")
             awful.util.spawn("xset -dpms")
-              run_once(xautolock)
+              --run_once(xautolock)
 	      naughty.resume()
+	      if lastmpdstatus == "play" then
+		      mpd_play()
+		end
         end             
     end
 end
@@ -1356,8 +1400,9 @@ client.connect_signal("property::fullscreen",
               	  awful.util.spawn("xset s off")
               	  awful.util.spawn("xset -dpms")
               		naughty.suspend()
+			lastmpdstatus = mpdwidget.state
 			mpd_pause()
-			os.execute("xautolock -exit")
+			--os.execute("xautolock -exit")
             	end
     	    end
         else
@@ -1365,11 +1410,41 @@ client.connect_signal("property::fullscreen",
         end
     end)
     
+client.connect_signal("untagged",
+    function(c,t)
+	--for i,t in pairs(c.tags(c)) do
+		local del = true
+		for _,n in pairs(tagnames) do
+			if t.name == n then
+				del = false
+			end
+		end
+		if del and #(t:clients()) < 2 then
+			awful.tag.delete(t)
+		end
+	--end
+
+    end)
 client.connect_signal("unmanage",
     function(c)
         if c.fullscreen then
             remove_client(fullscreened_clients, c)
         end
+	--print("check tags")
+	for i,t in pairs(c.tags(c)) do
+		--print(i.." "..t.name)
+		del = true
+		for _,n in pairs(tagnames) do
+			if t.name == n then
+				del = false
+			end
+		end
+		--print(del)
+		if del and #t:clients() < 2 then
+			awful.tag.delete(t)
+		end
+	end
+
     end)
 
 client.connect_signal("manage", function (c, startup)
@@ -1432,6 +1507,7 @@ end)
    		 	mouse.coords({ x=x_co, y=y_co })
 		end
 client.connect_signal("focus", function(c) 
+	if mouse.coords().y > 22 then
 	if not (c == mouse.object_under_pointer()) then
 		local function moveMouse(x_co, y_co)
 			    mouse.coords({ x=x_co, y=y_co })
@@ -1441,13 +1517,16 @@ client.connect_signal("focus", function(c)
 		y=geom.y+math.modf(geom.height/2)+1
 
 		moveMouse(x,y)
-		client.foucs = c
+		--client.foucs = c
 	end
+end
 end)
 
 keysmode = "normalmode"
 client.connect_signal("focus", function(c) 
-	c.border_color = beautiful.border_focus 
+	--if  not c.maximized_horizontal then
+		--c.border_color = beautiful.border_focus 
+	--end
 	local mode
 	if awful.rules.match(c, {class = "Firefox"}) then  
 		mode = "browsermode"
@@ -1459,155 +1538,63 @@ client.connect_signal("focus", function(c)
 		os.execute("/home/ivn/scripts/trackpoint/trackpointkeys.sh "..keysmode.." &")
 	end
 end)
-client.connect_signal("unfocus", function(c) 
-	c.border_color = beautiful.border_normal 
---	if awful.rules.match(c, {class = "Firefox"}) then  	end
-end)
+--client.connect_signal("unfocus", function(c) 
+	--c.border_color = beautiful.border_normal 
+----	if awful.rules.match(c, {class = "Firefox"}) then  	end
+--end)
 
 
-client.connect_signal("unfocus", function(c) 
-	if awful.rules.match(c, {class = "veromix"}) then  
-		c:kill()
-		APW.Update()
-        end
+--client.connect_signal("unfocus", function(c) 
+	--if awful.rules.match(c, {class = "veromix"}) then  
+		--c:kill()
+		--APW.Update()
+	--end
 
-end)
-client.connect_signal("unfocus", function(c) 
-	if awful.rules.match(c, {class = "Pavucontrol"}) then  
-		c:kill()
-		APW.Update()
-        end
+--end)
+--client.connect_signal("unfocus", function(c) 
+	--if awful.rules.match(c, {class = "Pavucontrol"}) then  
+		--c:kill()
+		--APW.Update()
+        --end
 
-end)
-client.connect_signal("manage", function(c) 
-	if awful.rules.match(c, {class = "veromix"}) then  
-		awful.placement.under_mouse(c)
-		c:geometry( {y = 22 } )
-        end
+--end)
+--client.connect_signal("manage", function(c) 
+	--if awful.rules.match(c, {class = "veromix"}) then  
+		--awful.placement.under_mouse(c)
+		--c:geometry( {y = 22 } )
+        --end
 
-end)
+--end)
 
-client.connect_signal("unfocus", function(c) 
-	if awful.rules.match(c, {role = "HTOP_CPU"}) then  
-		c:kill()
-        end
+--client.connect_signal("unfocus", function(c) 
+	--if awful.rules.match(c, {role = "HTOP_CPU"}) then  
+		--c:kill()
+        --end
 
-end)
-client.connect_signal("manage", function(c) 
-	if awful.rules.match(c, {role = "HTOP_CPU"}) then  
-		awful.placement.under_mouse(c)
-		c:geometry( {y = 22 } )
-        end
-end)
-client.connect_signal("unfocus", function(c) 
-	if awful.rules.match(c, {role = "HTOP_MEM"}) then  
-		c:kill()
-        end
+--end)
+--client.connect_signal("manage", function(c) 
+	--if awful.rules.match(c, {role = "HTOP_CPU"}) then  
+		--awful.placement.under_mouse(c)
+		--c:geometry( {y = 22 } )
+        --end
+--end)
+--client.connect_signal("unfocus", function(c) 
+	--if awful.rules.match(c, {role = "HTOP_MEM"}) then  
+		--c:kill()
+        --end
 
-end)
-client.connect_signal("manage", function(c) 
-	if awful.rules.match(c, {role = "HTOP_MEM"}) then  
-		awful.placement.under_mouse(c)
-		c:geometry( {y = 22 } )
-        end
-end)
+--end)
+--client.connect_signal("manage", function(c) 
+	--if awful.rules.match(c, {role = "HTOP_MEM"}) then  
+		--awful.placement.under_mouse(c)
+		--c:geometry( {y = 22 } )
+        --end
+--end)
 tag.connect_signal("property::selected", function(t)
-	if t.name == "IM" and not t.selected then
+	if t.name == tagnames[2] and not t.selected and #awful.tag.selectedlist() == 0 then
 		awful.tag.viewonly(awful.tag.gettags(1)[1])
 	end
 end)
---- Spawns cmd if no client can be found matching properties
--- If such a client can be found, pop to first tag where it is visible, and give it focus
--- @param cmd the command to execute
--- @param properties a table of properties to match against clients.  Possible entries: any properties of the client object
-function run_or_raise(cmd, properties)
-   local clients = client.get()
-   local focused = awful.client.next(0)
-   local findex = 0
-   local matched_clients = {}
-   local n = 0
-   for i, c in pairs(clients) do
-      --make an array of matched clients
-      if matchtable(properties, c) then
-         n = n + 1
-         matched_clients[n] = c
-         if c == focused then
-            findex = n
-         end
-      end
-   end
-   if n > 0 then
-      local c = matched_clients[1]
-      -- if the focused window matched switch focus to next in list
-      if 0 < findex and findex < n then
-         c = matched_clients[findex+1]
-      end
-      local ctags = c:tags()
-      if #ctags == 0 then
-         -- ctags is empty, show client on current tag
-         local curtag = awful.tag.selected()
-         awful.client.movetotag(curtag, c)
-      else
-         -- Otherwise, pop to first tag client is visible on
-         awful.tag.viewonly(ctags[1])
-      end
-      -- And then focus the client
-      client.focus = c
-      c:raise()
-      return
-   end
-   awful.util.spawn(cmd)
- 
-end
--- | run or kill | --
-
-function run_or_kill(cmd, properties)
-   local clients = client.get()
-   local focused = awful.client.next(0)
-   local findex = 0
-   local matched_clients = {}
-   local n = 0
-   for i, c in pairs(clients) do
-      --make an array of matched clients
-      if matchtable(properties, c) then
-         n = n + 1
-         matched_clients[n] = c
-         if c == focused then
-            findex = n
-         end
-      end
-   end
-   if n > 0 then
-      local c = matched_clients[1]
-      -- if the focused window matched switch focus to next in list
-      if 0 < findex and findex < n then
-         c = matched_clients[findex+1]
-      end
-      local ctags = c:tags()
-      if #ctags == 0 then
-         -- ctags is empty, show client on current tag
-         local curtag = awful.tag.selected()
-         awful.client.movetotag(curtag, c)
-      else
-         -- Otherwise, pop to first tag client is visible on
-         awful.tag.viewonly(ctags[1])
-      end
-      -- And then kill the client
-      c:kill()
-      return
-   end
-   awful.util.spawn(cmd)
-end
-
--- Returns true if all pairs in table1 are present in table2
-function matchtable(table1, table2)
-   for k, v in pairs(table1) do
-      if table2[k] ~= v and not table2[k]:find(v) then
-         return false
-      end
-   end
-   return true
-end
 
 -- | run_once | --
 

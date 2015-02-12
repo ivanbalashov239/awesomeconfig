@@ -12,6 +12,7 @@ theme.icons      = os.getenv("HOME") .. "/.config/awesome/themes/pro-dark/icons/
 theme.wallpaper  = os.getenv("HOME") .. "/.config/awesome/themes/pro-dark/wallpapers/pro-dark-shadow.png"
 theme.panel      = "png:" .. theme.icons .. "/panel/panel.png"
 theme.font       = "Terminus 9"
+theme.panel_color= "#343434" 
 
 theme.fg_normal  = "#888888"
 theme.fg_focus   = "#e4e4e4"
@@ -21,15 +22,15 @@ theme.bg_normal  = "#3F3F3F"
 theme.bg_focus   = "#5a5a5a"
 theme.bg_urgent  = "#3F3F3F"
 -- theme.bg_systray = "#343434"
-theme.bg_systray = "#000000" .. 0.01 -- transparent tray fix 
+theme.bg_systray = theme.panel_color --"#000000" .. 0.01 -- transparent tray fix 
 
 theme.clockgf    = "#d5d5c3"
 
 -- | Borders | --
 
 theme.border_width  = 0
-theme.border_normal = "#000000"
-theme.border_focus  = "#000000"
+theme.border_normal = theme.panel_color  --"#000000"
+theme.border_focus  = "#999999" --"#000000"
 theme.border_marked = "#000000"
 
 -- | Menu | --
@@ -44,6 +45,7 @@ theme.layout_tile       = theme.icons .. "/panel/layouts/tile.png"
 theme.layout_tileleft   = theme.icons .. "/panel/layouts/tileleft.png"
 theme.layout_tilebottom = theme.icons .. "/panel/layouts/tilebottom.png"
 theme.layout_tiletop    = theme.icons .. "/panel/layouts/tiletop.png"
+theme.layout_max	= theme.icons .. "/panel/layouts/max.png"
 
 -- | Taglist | --
 
@@ -52,12 +54,15 @@ theme.layout_tiletop    = theme.icons .. "/panel/layouts/tiletop.png"
 --theme.taglist_bg_urgent   = "png:" .. theme.icons .. "/panel/taglist/urgent.png"
 --theme.taglist_bg_focus    = "png:" .. theme.icons .. "/panel/taglist/focus.png"
 theme.taglist_font        = "Terminus 11"
-
+--theme.taglist_fg_focus = "#D8D7D2"
+--theme.taglist_squares_sel = theme.icons .. "panel/taglist/square_sel.png"
+--theme.taglist_squares_unsel = theme.icons .. "panel/taglist/square_unsel.png"
 
 -- | Tasklist | --
 
 theme.tasklist_font                 = "Terminus 8"
-theme.tasklist_disable_icon         = true
+theme.tasklist_disable_icon         = false
+theme.tasklist_icon_only	    = false
 theme.tasklist_bg_normal            = "png:" .. theme.icons .. "panel/tasklist/normal.png"
 theme.tasklist_bg_focus             = "png:" .. theme.icons .. "panel/tasklist/focus.png"
 theme.tasklist_bg_urgent            = "png:" .. theme.icons .. "panel/tasklist/urgent.png"
@@ -69,6 +74,11 @@ theme.tasklist_sticky               = ""
 theme.tasklist_ontop                = ""
 theme.tasklist_maximized_horizontal = ""
 theme.tasklist_maximized_vertical   = ""
+
+-- | APW | --
+
+theme.apw_fg_color			= theme.fg_normal or '#1a4b5c'--'#698f1e' -- foreground color of progessbar
+theme.apw_bg_color			= theme.panel_color or '#0F1419'--'#33450f' -- background color
 
 -- | Widget | --
 

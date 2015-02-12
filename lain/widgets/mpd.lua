@@ -99,6 +99,7 @@ local function worker(args)
             then
                 helpers.set_map("current mpd track", nil)
             end
+	    widget.state = mpd_now.state
         end)
     end
 
