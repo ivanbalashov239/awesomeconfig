@@ -28,7 +28,8 @@ local capi = {
     mouse = mouse,
     client = client,
     screen = screen
-}
+    }
+
 os.execute("/home/ivn/scripts/run_slimlock_onstart.sh")
 
 -- | Theme | --
@@ -518,10 +519,10 @@ pulsewidget = wibox.widget.background()
 pulsewidget:set_widget(pulseBox)
 pulsewidget:set_bgimage(beautiful.widget_display)
 
-pulseBar:buttons(awful.util.table.join(pulseBar.buttonsTable, awful.button({ }, 1, function () run_or_kill("veromix", { class = "veromix" }, {x = mouse.coords().x, y = 22, funcafter = APW.Update}) end),
-awful.button({ }, 3, function () run_or_kill("pavucontrol", { class = "Pavucontrol" }, {x = mouse.coords().x, y = 22, funcafter = APW.Update}) end)))
-pulseBox:buttons(awful.util.table.join(pulseBar.buttonsTable, awful.button({ }, 1, function () run_or_kill("veromix", { class = "veromix" }, {x = mouse.coords().x, y = 22, funcafter = APW.Update}) end),
-awful.button({ }, 3, function () run_or_kill("pavucontrol", { class = "Pavucontrol" }, {x = mouse.coords().x, y = 22, funcafter = APW.Update}) end)))
+pulseBar:buttons(awful.util.table.join(pulseBar.buttonsTable, awful.button({ }, 1, function () run_or_kill("veromix", { class = "veromix" }, {x = mouse.coords().x, y = mouse.coords().y, funcafter = APW.Update, screen=mouse.screen}) end),
+awful.button({ }, 3, function () run_or_kill("pavucontrol", { class = "Pavucontrol" }, {x = mouse.coords().x, y = 22, funcafter = APW.Update, screen=mouse.screen}) end)))
+pulseBox:buttons(awful.util.table.join(pulseBar.buttonsTable, awful.button({ }, 1, function () run_or_kill("veromix", { class = "veromix" }, {x = mouse.coords().x, y = 22, funcafter = APW.Update, screen=mouse.screen}) end),
+awful.button({ }, 3, function () run_or_kill("pavucontrol", { class = "Pavucontrol" }, {x = mouse.coords().x, y = 22, funcafter = APW.Update, screen=mouse.screen}) end)))
 
 
 -- Keyboard map indicator and changer
@@ -673,14 +674,26 @@ netwidgetul:set_bgimage(beautiful.widget_display)
 
 
 -- | Clock / Calendar | --
+timeid = nil
+function saytime()
+	awful.util.spawn_with_shell("/home/ivn/scripts/say_time.sh")
+	time = os.date("%H:%M")
+time ='<span font="Cantarel 50">'..time.."</span>"
+timeid = naughty.notify({
+        text = time,
+        --icon = "/home/ivn/Загрузки/KFaenzafordark/apps/48/time-admin2.png",
+        timeout = 2,
+        screen = mouse.screen or 1
+    }).id
+end
 
 mytextclockbuttons = awful.util.table.join(
 awful.button({ }, 2,
-function () awful.util.spawn_with_shell("/home/ivn/scripts/say_time.sh") end),
+function () saytime() end),
 awful.button({ }, 12,
-function () awful.util.spawn_with_shell("/home/ivn/scripts/say_time.sh") end))
+function () saytime() end))
 
-mytextclock    = awful.widget.textclock(markup(clockgf, space3 .. "%H:%M" .. markup.font("Tamsyn 3", " ")), 30)
+mytextclock    = awful.widget.textclock(markup(clockgf, space3 .. "%H:%M" .. markup.font("Tamsyn 3", " ")), 15)
 mytextcalendar = awful.widget.textclock(markup(clockgf, space3 .. "%a %d %b"))
 
 widget_clock = wibox.widget.imagebox()
@@ -1024,14 +1037,46 @@ globalkeys = awful.util.table.join(
     awful.key({ modkey,           }, "w",      function () mainmenu:show() end),
     --awful.key({ modkey,           }, "Escape", function () exec("/usr/local/sbin/zaprat --toggle") end),
     --awful.key({ modkey            }, "r",      function () mypromptbox[mouse.screen]:run() end),
+    -- Run or raise applications with dmenu
+--awful.key({ modkey }, "r", function ()
+    --local f_reader = io.popen( "dmenu_path | dmenu -b -nb '".. beautiful.bg_normal .."' -nf '".. beautiful.fg_normal .."' -sb '#955'")
+    --local command = assert(f_reader:read('*a'))
+    --f_reader:close()
+    --if command == "" then return end
+    ----run_or_raise(command
+    --findme = command
+    --firstspace = command:find(" ")
+    --if firstspace then
+	    --findme = command:sub(0, firstspace-1)
+    --end
+    --local command_class = findme:sub(1,1):upper()..findme:sub(2,-1)
+    --run_or_raise(command, { class = command_class })
+    --print(command)
+    --print(command_class)
+
+    ---- Check throught the clients if the class match the command
+    ----local lower_command=string.lower(command)
+    ----for k, c in pairs(client.get()) do
+        ----local class=string.lower(c.class)
+        ----if string.match(class, lower_command) then
+            ----for i, v in ipairs(c:tags()) do
+                ----awful.tag.viewonly(v)
+                ----c:raise()
+                ----c.minimized = false
+                ----return
+            ----end
+        ----end
+    ----end
+    ----awful.util.spawn(command)
+--end),
     awful.key({ modkey 		  }, "r",
 	function ()
 	    awful.prompt.run({ prompt = "Run: ", hooks = {
 		{{         },"Return",function(command)
 			
 		naughty.notify({ preset = naughty.config.presets.critical,
-                     title = "return",
-	     	     timeout = 2,
+		     title = "return",
+			  timeout = 2,
 	     }) 
 		    local result = awful.util.spawn(command, { new_tag= {
 						name = 1,
@@ -1047,9 +1092,9 @@ globalkeys = awful.util.table.join(
 		{{"Mod1"   },"Return",function(command)
 			
 			naughty.notify({ preset = naughty.config.presets.critical,
-                     title = "mod return",
-	     	     timeout = 2,
-	             }) 
+		     title = "mod return",
+			  timeout = 2,
+		     }) 
 		    local result = awful.util.spawn(command,{intrusive=true})
 		    mypromptbox[mouse.screen].widget:set_text(type(result) == "string" and result or "")
 		    return true
@@ -1091,8 +1136,8 @@ globalkeys = awful.util.table.join(
 
 
     -- Tag browsing
-    awful.key({ modkey }, "Left",   awful.tag.viewprev       ),
-    awful.key({ modkey }, "Right",  awful.tag.viewnext       ),
+    --awful.key({ modkey }, "Left",   awful.tag.viewprev       ),
+    --awful.key({ modkey }, "Right",  awful.tag.viewnext       ),
     awful.key({ modkey }, "Escape", awful.tag.history.restore),
 
     -- Non-empty tag browsing
@@ -1180,6 +1225,25 @@ globalkeys = awful.util.table.join(
 	    screen = {capi.mouse.screen}
     }) 
     	end),
+    awful.key({ modkey, "Control",  }, "d",    function ()
+                    awful.prompt.run({ prompt = "randr: ", text = "", },
+                    mypromptbox[mouse.screen].widget,
+                    function (s)
+			    if s == "normal" or s == "n" then
+				os.execute("/home/ivn/.screenlayout/LVDS-normal-leftof-HDMI-normal.sh")
+			    elseif s == "left" or s == "l" then
+				os.execute("/home/ivn/.screenlayout/LVDS-normal-leftof-HDMI-left.sh")
+			    elseif s == "right" or s == "r" then
+				os.execute("/home/ivn/.screenlayout/LVDS-normal-leftof-HDMI-right.sh")
+			    elseif s == "onlynormal" or s == "hn" then
+				os.execute("/home/ivn/.screenlayout/LVDS-off-HDMI-normal.sh")
+			    elseif s == "onlyleft" or s == "hl" then
+				os.execute("/home/ivn/.screenlayout/LVDS-off-HDMI-left.sh")
+			    else
+				os.execute("/home/ivn/.screenlayout/LVDS-normal-leftof-HDMI-normal.sh")
+			    end
+                    end)
+            end),
     awful.key({ modkey, "Shift",  }, "r",    function ()
                     awful.prompt.run({ prompt = "Rename tab: ", text = awful.tag.selected().name, },
                     mypromptbox[mouse.screen].widget,
@@ -1217,7 +1281,9 @@ globalkeys = awful.util.table.join(
 	   awful.util.spawn_with_shell("tmux new -d -s dropdown") 
 	   scratch.drop(dropdownterm) end), 
    --awful.key({ modkey,	          }, "u",      function () drop(terminal) end), 
-   awful.key({ modkey, "Control"  }, "x",      function () exec("/home/ivn/scripts/trackpoint/trackpointkeys.sh switch &") end)
+   awful.key({ modkey, "Control"  }, "x",      function () exec("/home/ivn/scripts/trackpoint/trackpointkeys.sh switch &") end),
+   awful.key({ modkey,  }, "Left",     function() brightnessdec() end),
+   awful.key({ modkey,  }, "Right",    function() brightnessinc() end)
 
 --{ awful.key({ modkey, }, "k", function () quake.toggle({ terminal = "termite",
 --			name = "QuakeTermite",
@@ -1367,7 +1433,9 @@ awful.rules.rules = {
 
 -- | Signals | --
 
-
+local function timemute()
+	awful.util.spawn_with_shell("rm /tmp/timemute>/dev/null || touch /tmp/timemute")
+end
     
 
 
@@ -1382,7 +1450,9 @@ local function remove_client(tabl, c)
             awful.util.spawn("xset s off")
             awful.util.spawn("xset -dpms")
               --run_once(xautolock)
-	      naughty.resume()
+	      --naughty.resume()
+
+	      timemute()
 	      if lastmpdstatus == "play" then
 		      mpd_play()
 		end
@@ -1399,9 +1469,10 @@ client.connect_signal("property::fullscreen",
             	if #fullscreened_clients == 1 then
               	  awful.util.spawn("xset s off")
               	  awful.util.spawn("xset -dpms")
-              		naughty.suspend()
+              		--naughty.suspend()
 			lastmpdstatus = mpdwidget.state
 			mpd_pause()
+			timemute()
 			--os.execute("xautolock -exit")
             	end
     	    end
@@ -1516,6 +1587,7 @@ client.connect_signal("focus", function(c)
 		x=geom.x+math.modf(geom.width/2)+1
 		y=geom.y+math.modf(geom.height/2)+1
 
+		--os.execute("sleep 0.5")
 		moveMouse(x,y)
 		--client.foucs = c
 	end
@@ -1596,6 +1668,59 @@ tag.connect_signal("property::selected", function(t)
 	end
 end)
 
+   function brightnessdec() 
+	   for i,k in pairs(screen[mouse.screen].outputs) do
+		   if i == "HDMI1" then
+			   local sh = io.popen("xrandr --verbose | grep -A 5 -i HDMI | grep -i brightness | cut -f2 -d ' '")
+			   if sh == nil then
+				   return false
+			   end
+			   local br = tonumber(sh:read("*a"))
+			   sh.close()
+			   if br < 0 then
+				   br = 0
+			   end
+			   br = br - 0.05
+			   if br < 0 then
+				   br = 0
+			   end
+			   if br > 1 then
+				   br = 1
+			   end
+			   os.execute("xrandr --output HDMI1 --brightness "..br)
+			   --naughty.notify({title = i})
+		   elseif i == "LVDS1" then
+			   --naughty.notify({title = i})
+			   exec("xbacklight -dec 10")
+		   end
+	   end
+   end
+    function brightnessinc() 
+	   for i,k in pairs(screen[mouse.screen].outputs) do
+		   if i == "HDMI1" then
+			   local sh = io.popen("xrandr --verbose | grep -A 5 -i HDMI | grep -i brightness | cut -f2 -d ' '")
+			   if sh == nil then
+				   return false
+			   end
+			   local br = tonumber(sh:read("*a"))
+			   sh.close()
+			   if br < 0 then
+				   br = 0
+			   end
+			   br = br + 0.05
+			   if br < 0 then
+				   br = 0
+			   end
+			   if br > 1 then
+				   br = 1
+			   end
+			   os.execute("xrandr --output HDMI1 --brightness "..br)
+		   elseif i == "LVDS1" then
+			   --naughty.notify({title = i})
+			   exec("xbacklight -inc 10")
+		   end
+	   end
+   end
 -- | run_once | --
 
 function run_once(cmd)
@@ -1612,8 +1737,7 @@ end
 os.execute("pkill compton")
 os.execute("pkill xcape")
 --os.execute("setxkbmap 'my(dvp),my(rus)' &")
-os.execute("xkbcomp $HOME/.config/xkb/my $DISPLAY &")
--- os.execute("xrandr --output HDMI1 --mode 1920x1080 --left-of LVDS1 --output LVDS1 --auto --pos 0x500")
+--os.execute("xkbcomp $HOME/.config/xkb/my $DISPLAY &")
 os.execute("/home/ivn/scripts/trackpoint/trackpointkeys.sh normalmode &")
 os.execute("xset s off")
 os.execute("xset -dpms")
