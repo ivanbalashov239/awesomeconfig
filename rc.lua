@@ -18,6 +18,8 @@ local rork = require("rork")
 local run_or_raise = rork.run_or_raise
 local run_or_kill = rork.run_or_kill
 
+-- freedesktop.org
+local freedesktop = require('freedesktop')
 local revelation = require("revelation")      
 local newtag	 = require("newtag")      
 local quake 	 = require("quake")
@@ -30,7 +32,7 @@ local capi = {
     screen = screen
     }
 
-os.execute("/home/ivn/scripts/run_slimlock_onstart.sh")
+os.execute("/home/ivn/scripts/run_slimlock_onstart.sh &")
 
 -- | Theme | --
 
@@ -281,7 +283,19 @@ tyrannical.settings.group_children = true --Force popups/dialogs to have the sam
   --awful.tag.setncol(3, tags[s][3]) 			   -- эта и следующая строчка нужна для Pidgin
   --awful.tag.setproperty(tags[s][3], "mwfact", 0.15)        -- здесь мы устанавливаем ширину списка контактов в 20% от ширины экрана
 --end
-
+-- {{{ Menu
+freedesktop.utils.terminal = terminal
+menu_items = freedesktop.menu.new()
+myawesomemenu = {
+{ "manual", terminal .. " -e man awesome", freedesktop.utils.lookup_icon({ icon = 'help' }) },
+{ "restart", awesome.restart, freedesktop.utils.lookup_icon({ icon = 'gtk-refresh' }) },
+{ "quit", "oblogout", freedesktop.utils.lookup_icon({ icon = 'gtk-quit' }) }
+}
+table.insert(menu_items, { "awesome", myawesomemenu, beautiful.awesome_icon })
+table.insert(menu_items, { "open terminal", terminal, freedesktop.utils.lookup_icon({icon = 'terminal'}) })
+mymainmenu = awful.menu({ items = menu_items, theme = { width = 150 } })
+mylauncher = awful.widget.launcher({ image = beautiful.awesome_icon, menu = mymainmenu })
+-- }}}
 
 -- | Menu | --
 
@@ -293,10 +307,12 @@ menu_main = {
   { "reboot",    "reboot"       },
   { "quit",      awesome.quit        }}
 
+
 mainmenu = awful.menu({ items = {
   { " awesome",       menu_main   },
   { " file manager",  filemanager },
   { " root terminal", rootterm    },
+  { " launcher", 	menu_items    },
   { " user terminal", terminal    }}})
 
 -- | Markup | --
@@ -856,7 +872,7 @@ for s = 1, screen.count() do
 
     local left_layout = wibox.layout.fixed.horizontal()
     
-    --left_layout:add(mylauncher)
+    left_layout:add(mylauncher)
     left_layout:add(spr5px)
     left_layout:add(myiconlist[s])
     left_layout:add(spr5px)
@@ -1134,6 +1150,15 @@ globalkeys = awful.util.table.join(
             if client.focus then client.focus:raise() end
         end),
 
+	awful.key({ modkey, "Mod5"           }, "d",   function ()  
+		local s = (capi.mouse.screen + 1) % 3
+		if s == 0 then
+			s = s + 1
+		end
+		local screengeom = capi.screen[s].workarea
+		moveMouse(math.floor(screengeom.x + screengeom.width / 2), math.floor(screengeom.y + screengeom.height / 2))                    
+	end),
+
 
     -- Tag browsing
     --awful.key({ modkey }, "Left",   awful.tag.viewprev       ),
@@ -1308,6 +1333,11 @@ clientkeys = awful.util.table.join(
     --awful.key({ modkey            }, "Up",     function () awful.client.moveresize(  0, -20,   0,   0) end),
     --awful.key({ modkey            }, "Left",   function () awful.client.moveresize(-20,   0,   0,   0) end),
     --awful.key({ modkey            }, "Right",  function () awful.client.moveresize( 20,   0,   0,   0) end),
+    awful.key({ modkey,           }, "d",      function (c) 
+	    awful.client.movetoscreen(c)
+	    client.focus = c
+	    c:raise()
+    end),
     awful.key({ modkey,           }, "f",      function (c) c.fullscreen = not c.fullscreen  end),
     awful.key({ modkey,           }, "q",      function (c) c:kill()                         end),
     awful.key({ modkey,           }, "n",
@@ -1574,15 +1604,12 @@ client.connect_signal("manage", function (c, startup)
     end
 end)
 
-		local function moveMouse(x_co, y_co)
+		function moveMouse(x_co, y_co)
    		 	mouse.coords({ x=x_co, y=y_co })
 		end
 client.connect_signal("focus", function(c) 
 	if mouse.coords().y > 22 then
 	if not (c == mouse.object_under_pointer()) then
-		local function moveMouse(x_co, y_co)
-			    mouse.coords({ x=x_co, y=y_co })
-		end
 		geom=c.geometry(c)
 		x=geom.x+math.modf(geom.width/2)+1
 		y=geom.y+math.modf(geom.height/2)+1
@@ -1744,7 +1771,7 @@ os.execute("xset -dpms")
 run_once("linconnect-server &")
 run_once("kbdd")
 run_once("mpd /home/ivn/.config/mpd/mpd.conf")
-run_once("dropboxd")
+run_once("dropbox")
 run_once("nm-applet")
 --run_once("pa-applet")
 run_once("qbittorrent")
