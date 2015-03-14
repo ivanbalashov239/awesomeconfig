@@ -18,6 +18,8 @@ local rork = require("rork")
 local run_or_raise = rork.run_or_raise
 local run_or_kill = rork.run_or_kill
 
+-- freedesktop.org
+local freedesktop = require('freedesktop')
 local revelation = require("revelation")      
 local newtag	 = require("newtag")      
 local quake 	 = require("quake")
@@ -28,8 +30,9 @@ local capi = {
     mouse = mouse,
     client = client,
     screen = screen
-}
-os.execute("/home/ivn/scripts/run_slimlock_onstart.sh")
+    }
+
+os.execute("/home/ivn/scripts/run_slimlock_onstart.sh &")
 
 -- | Theme | --
 
@@ -280,7 +283,19 @@ tyrannical.settings.group_children = true --Force popups/dialogs to have the sam
   --awful.tag.setncol(3, tags[s][3]) 			   -- эта и следующая строчка нужна для Pidgin
   --awful.tag.setproperty(tags[s][3], "mwfact", 0.15)        -- здесь мы устанавливаем ширину списка контактов в 20% от ширины экрана
 --end
-
+-- {{{ Menu
+freedesktop.utils.terminal = terminal
+menu_items = freedesktop.menu.new()
+myawesomemenu = {
+{ "manual", terminal .. " -e man awesome", freedesktop.utils.lookup_icon({ icon = 'help' }) },
+{ "restart", awesome.restart, freedesktop.utils.lookup_icon({ icon = 'gtk-refresh' }) },
+{ "quit", "oblogout", freedesktop.utils.lookup_icon({ icon = 'gtk-quit' }) }
+}
+table.insert(menu_items, { "awesome", myawesomemenu, beautiful.awesome_icon })
+table.insert(menu_items, { "open terminal", terminal, freedesktop.utils.lookup_icon({icon = 'terminal'}) })
+mymainmenu = awful.menu({ items = menu_items, theme = { width = 150 } })
+mylauncher = awful.widget.launcher({ image = beautiful.awesome_icon, menu = mymainmenu })
+-- }}}
 
 -- | Menu | --
 
@@ -292,10 +307,12 @@ menu_main = {
   { "reboot",    "reboot"       },
   { "quit",      awesome.quit        }}
 
+
 mainmenu = awful.menu({ items = {
   { " awesome",       menu_main   },
   { " file manager",  filemanager },
   { " root terminal", rootterm    },
+  { " launcher", 	menu_items    },
   { " user terminal", terminal    }}})
 
 -- | Markup | --
@@ -518,10 +535,10 @@ pulsewidget = wibox.widget.background()
 pulsewidget:set_widget(pulseBox)
 pulsewidget:set_bgimage(beautiful.widget_display)
 
-pulseBar:buttons(awful.util.table.join(pulseBar.buttonsTable, awful.button({ }, 1, function () run_or_kill("veromix", { class = "veromix" }, {x = mouse.coords().x, y = 22, funcafter = APW.Update}) end),
-awful.button({ }, 3, function () run_or_kill("pavucontrol", { class = "Pavucontrol" }, {x = mouse.coords().x, y = 22, funcafter = APW.Update}) end)))
-pulseBox:buttons(awful.util.table.join(pulseBar.buttonsTable, awful.button({ }, 1, function () run_or_kill("veromix", { class = "veromix" }, {x = mouse.coords().x, y = 22, funcafter = APW.Update}) end),
-awful.button({ }, 3, function () run_or_kill("pavucontrol", { class = "Pavucontrol" }, {x = mouse.coords().x, y = 22, funcafter = APW.Update}) end)))
+pulseBar:buttons(awful.util.table.join(pulseBar.buttonsTable, awful.button({ }, 1, function () run_or_kill("veromix", { class = "veromix" }, {x = mouse.coords().x, y = mouse.coords().y, funcafter = APW.Update, screen=mouse.screen}) end),
+awful.button({ }, 3, function () run_or_kill("pavucontrol", { class = "Pavucontrol" }, {x = mouse.coords().x, y = 22, funcafter = APW.Update, screen=mouse.screen}) end)))
+pulseBox:buttons(awful.util.table.join(pulseBar.buttonsTable, awful.button({ }, 1, function () run_or_kill("veromix", { class = "veromix" }, {x = mouse.coords().x, y = 22, funcafter = APW.Update, screen=mouse.screen}) end),
+awful.button({ }, 3, function () run_or_kill("pavucontrol", { class = "Pavucontrol" }, {x = mouse.coords().x, y = 22, funcafter = APW.Update, screen=mouse.screen}) end)))
 
 
 -- Keyboard map indicator and changer
@@ -673,14 +690,26 @@ netwidgetul:set_bgimage(beautiful.widget_display)
 
 
 -- | Clock / Calendar | --
+timeid = nil
+function saytime()
+	awful.util.spawn_with_shell("/home/ivn/scripts/say_time.sh")
+	time = os.date("%H:%M")
+time ='<span font="Cantarel 50">'..time.."</span>"
+timeid = naughty.notify({
+        text = time,
+        --icon = "/home/ivn/Загрузки/KFaenzafordark/apps/48/time-admin2.png",
+        timeout = 2,
+        screen = mouse.screen or 1
+    }).id
+end
 
 mytextclockbuttons = awful.util.table.join(
 awful.button({ }, 2,
-function () awful.util.spawn_with_shell("/home/ivn/scripts/say_time.sh") end),
+function () saytime() end),
 awful.button({ }, 12,
-function () awful.util.spawn_with_shell("/home/ivn/scripts/say_time.sh") end))
+function () saytime() end))
 
-mytextclock    = awful.widget.textclock(markup(clockgf, space3 .. "%H:%M" .. markup.font("Tamsyn 3", " ")), 30)
+mytextclock    = awful.widget.textclock(markup(clockgf, space3 .. "%H:%M" .. markup.font("Tamsyn 3", " ")), 15)
 mytextcalendar = awful.widget.textclock(markup(clockgf, space3 .. "%a %d %b"))
 
 widget_clock = wibox.widget.imagebox()
@@ -843,7 +872,7 @@ for s = 1, screen.count() do
 
     local left_layout = wibox.layout.fixed.horizontal()
     
-    --left_layout:add(mylauncher)
+    left_layout:add(mylauncher)
     left_layout:add(spr5px)
     left_layout:add(myiconlist[s])
     left_layout:add(spr5px)
@@ -1024,14 +1053,46 @@ globalkeys = awful.util.table.join(
     awful.key({ modkey,           }, "w",      function () mainmenu:show() end),
     --awful.key({ modkey,           }, "Escape", function () exec("/usr/local/sbin/zaprat --toggle") end),
     --awful.key({ modkey            }, "r",      function () mypromptbox[mouse.screen]:run() end),
+    -- Run or raise applications with dmenu
+--awful.key({ modkey }, "r", function ()
+    --local f_reader = io.popen( "dmenu_path | dmenu -b -nb '".. beautiful.bg_normal .."' -nf '".. beautiful.fg_normal .."' -sb '#955'")
+    --local command = assert(f_reader:read('*a'))
+    --f_reader:close()
+    --if command == "" then return end
+    ----run_or_raise(command
+    --findme = command
+    --firstspace = command:find(" ")
+    --if firstspace then
+	    --findme = command:sub(0, firstspace-1)
+    --end
+    --local command_class = findme:sub(1,1):upper()..findme:sub(2,-1)
+    --run_or_raise(command, { class = command_class })
+    --print(command)
+    --print(command_class)
+
+    ---- Check throught the clients if the class match the command
+    ----local lower_command=string.lower(command)
+    ----for k, c in pairs(client.get()) do
+        ----local class=string.lower(c.class)
+        ----if string.match(class, lower_command) then
+            ----for i, v in ipairs(c:tags()) do
+                ----awful.tag.viewonly(v)
+                ----c:raise()
+                ----c.minimized = false
+                ----return
+            ----end
+        ----end
+    ----end
+    ----awful.util.spawn(command)
+--end),
     awful.key({ modkey 		  }, "r",
 	function ()
 	    awful.prompt.run({ prompt = "Run: ", hooks = {
 		{{         },"Return",function(command)
 			
 		naughty.notify({ preset = naughty.config.presets.critical,
-                     title = "return",
-	     	     timeout = 2,
+		     title = "return",
+			  timeout = 2,
 	     }) 
 		    local result = awful.util.spawn(command, { new_tag= {
 						name = 1,
@@ -1047,9 +1108,9 @@ globalkeys = awful.util.table.join(
 		{{"Mod1"   },"Return",function(command)
 			
 			naughty.notify({ preset = naughty.config.presets.critical,
-                     title = "mod return",
-	     	     timeout = 2,
-	             }) 
+		     title = "mod return",
+			  timeout = 2,
+		     }) 
 		    local result = awful.util.spawn(command,{intrusive=true})
 		    mypromptbox[mouse.screen].widget:set_text(type(result) == "string" and result or "")
 		    return true
@@ -1089,10 +1150,19 @@ globalkeys = awful.util.table.join(
             if client.focus then client.focus:raise() end
         end),
 
+	awful.key({ modkey, "Mod5"           }, "d",   function ()  
+		local s = (capi.mouse.screen + 1) % 3
+		if s == 0 then
+			s = s + 1
+		end
+		local screengeom = capi.screen[s].workarea
+		moveMouse(math.floor(screengeom.x + screengeom.width / 2), math.floor(screengeom.y + screengeom.height / 2))                    
+	end),
+
 
     -- Tag browsing
-    awful.key({ modkey }, "Left",   awful.tag.viewprev       ),
-    awful.key({ modkey }, "Right",  awful.tag.viewnext       ),
+    --awful.key({ modkey }, "Left",   awful.tag.viewprev       ),
+    --awful.key({ modkey }, "Right",  awful.tag.viewnext       ),
     awful.key({ modkey }, "Escape", awful.tag.history.restore),
 
     -- Non-empty tag browsing
@@ -1180,6 +1250,25 @@ globalkeys = awful.util.table.join(
 	    screen = {capi.mouse.screen}
     }) 
     	end),
+    awful.key({ modkey, "Control",  }, "d",    function ()
+                    awful.prompt.run({ prompt = "randr: ", text = "", },
+                    mypromptbox[mouse.screen].widget,
+                    function (s)
+			    if s == "normal" or s == "n" then
+				os.execute("/home/ivn/.screenlayout/LVDS-normal-leftof-HDMI-normal.sh")
+			    elseif s == "left" or s == "l" then
+				os.execute("/home/ivn/.screenlayout/LVDS-normal-leftof-HDMI-left.sh")
+			    elseif s == "right" or s == "r" then
+				os.execute("/home/ivn/.screenlayout/LVDS-normal-leftof-HDMI-right.sh")
+			    elseif s == "onlynormal" or s == "hn" then
+				os.execute("/home/ivn/.screenlayout/LVDS-off-HDMI-normal.sh")
+			    elseif s == "onlyleft" or s == "hl" then
+				os.execute("/home/ivn/.screenlayout/LVDS-off-HDMI-left.sh")
+			    else
+				os.execute("/home/ivn/.screenlayout/LVDS-normal-leftof-HDMI-normal.sh")
+			    end
+                    end)
+            end),
     awful.key({ modkey, "Shift",  }, "r",    function ()
                     awful.prompt.run({ prompt = "Rename tab: ", text = awful.tag.selected().name, },
                     mypromptbox[mouse.screen].widget,
@@ -1217,7 +1306,9 @@ globalkeys = awful.util.table.join(
 	   awful.util.spawn_with_shell("tmux new -d -s dropdown") 
 	   scratch.drop(dropdownterm) end), 
    --awful.key({ modkey,	          }, "u",      function () drop(terminal) end), 
-   awful.key({ modkey, "Control"  }, "x",      function () exec("/home/ivn/scripts/trackpoint/trackpointkeys.sh switch &") end)
+   awful.key({ modkey, "Control"  }, "x",      function () exec("/home/ivn/scripts/trackpoint/trackpointkeys.sh switch &") end),
+   awful.key({ modkey,  }, "Left",     function() brightnessdec() end),
+   awful.key({ modkey,  }, "Right",    function() brightnessinc() end)
 
 --{ awful.key({ modkey, }, "k", function () quake.toggle({ terminal = "termite",
 --			name = "QuakeTermite",
@@ -1242,6 +1333,11 @@ clientkeys = awful.util.table.join(
     --awful.key({ modkey            }, "Up",     function () awful.client.moveresize(  0, -20,   0,   0) end),
     --awful.key({ modkey            }, "Left",   function () awful.client.moveresize(-20,   0,   0,   0) end),
     --awful.key({ modkey            }, "Right",  function () awful.client.moveresize( 20,   0,   0,   0) end),
+    awful.key({ modkey,           }, "d",      function (c) 
+	    awful.client.movetoscreen(c)
+	    client.focus = c
+	    c:raise()
+    end),
     awful.key({ modkey,           }, "f",      function (c) c.fullscreen = not c.fullscreen  end),
     awful.key({ modkey,           }, "q",      function (c) c:kill()                         end),
     awful.key({ modkey,           }, "n",
@@ -1367,7 +1463,9 @@ awful.rules.rules = {
 
 -- | Signals | --
 
-
+local function timemute()
+	awful.util.spawn_with_shell("rm /tmp/timemute>/dev/null || touch /tmp/timemute")
+end
     
 
 
@@ -1382,7 +1480,9 @@ local function remove_client(tabl, c)
             awful.util.spawn("xset s off")
             awful.util.spawn("xset -dpms")
               --run_once(xautolock)
-	      naughty.resume()
+	      --naughty.resume()
+
+	      timemute()
 	      if lastmpdstatus == "play" then
 		      mpd_play()
 		end
@@ -1399,9 +1499,10 @@ client.connect_signal("property::fullscreen",
             	if #fullscreened_clients == 1 then
               	  awful.util.spawn("xset s off")
               	  awful.util.spawn("xset -dpms")
-              		naughty.suspend()
+              		--naughty.suspend()
 			lastmpdstatus = mpdwidget.state
 			mpd_pause()
+			timemute()
 			--os.execute("xautolock -exit")
             	end
     	    end
@@ -1503,19 +1604,17 @@ client.connect_signal("manage", function (c, startup)
     end
 end)
 
-		local function moveMouse(x_co, y_co)
+		function moveMouse(x_co, y_co)
    		 	mouse.coords({ x=x_co, y=y_co })
 		end
 client.connect_signal("focus", function(c) 
 	if mouse.coords().y > 22 then
 	if not (c == mouse.object_under_pointer()) then
-		local function moveMouse(x_co, y_co)
-			    mouse.coords({ x=x_co, y=y_co })
-		end
 		geom=c.geometry(c)
 		x=geom.x+math.modf(geom.width/2)+1
 		y=geom.y+math.modf(geom.height/2)+1
 
+		--os.execute("sleep 0.5")
 		moveMouse(x,y)
 		--client.foucs = c
 	end
@@ -1596,6 +1695,59 @@ tag.connect_signal("property::selected", function(t)
 	end
 end)
 
+   function brightnessdec() 
+	   for i,k in pairs(screen[mouse.screen].outputs) do
+		   if i == "HDMI1" then
+			   local sh = io.popen("xrandr --verbose | grep -A 5 -i HDMI | grep -i brightness | cut -f2 -d ' '")
+			   if sh == nil then
+				   return false
+			   end
+			   local br = tonumber(sh:read("*a"))
+			   sh.close()
+			   if br < 0 then
+				   br = 0
+			   end
+			   br = br - 0.05
+			   if br < 0 then
+				   br = 0
+			   end
+			   if br > 1 then
+				   br = 1
+			   end
+			   os.execute("xrandr --output HDMI1 --brightness "..br)
+			   --naughty.notify({title = i})
+		   elseif i == "LVDS1" then
+			   --naughty.notify({title = i})
+			   exec("xbacklight -dec 10")
+		   end
+	   end
+   end
+    function brightnessinc() 
+	   for i,k in pairs(screen[mouse.screen].outputs) do
+		   if i == "HDMI1" then
+			   local sh = io.popen("xrandr --verbose | grep -A 5 -i HDMI | grep -i brightness | cut -f2 -d ' '")
+			   if sh == nil then
+				   return false
+			   end
+			   local br = tonumber(sh:read("*a"))
+			   sh.close()
+			   if br < 0 then
+				   br = 0
+			   end
+			   br = br + 0.05
+			   if br < 0 then
+				   br = 0
+			   end
+			   if br > 1 then
+				   br = 1
+			   end
+			   os.execute("xrandr --output HDMI1 --brightness "..br)
+		   elseif i == "LVDS1" then
+			   --naughty.notify({title = i})
+			   exec("xbacklight -inc 10")
+		   end
+	   end
+   end
 -- | run_once | --
 
 function run_once(cmd)
@@ -1612,15 +1764,14 @@ end
 os.execute("pkill compton")
 os.execute("pkill xcape")
 --os.execute("setxkbmap 'my(dvp),my(rus)' &")
-os.execute("xkbcomp $HOME/.config/xkb/my $DISPLAY &")
--- os.execute("xrandr --output HDMI1 --mode 1920x1080 --left-of LVDS1 --output LVDS1 --auto --pos 0x500")
+--os.execute("xkbcomp $HOME/.config/xkb/my $DISPLAY &")
 os.execute("/home/ivn/scripts/trackpoint/trackpointkeys.sh normalmode &")
 os.execute("xset s off")
 os.execute("xset -dpms")
 run_once("linconnect-server &")
 run_once("kbdd")
 run_once("mpd /home/ivn/.config/mpd/mpd.conf")
-run_once("dropboxd")
+run_once("dropbox")
 run_once("nm-applet")
 --run_once("pa-applet")
 run_once("qbittorrent")
