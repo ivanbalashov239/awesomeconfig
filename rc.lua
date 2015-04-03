@@ -218,7 +218,7 @@ tyrannical.tags = {
 tyrannical.properties.intrusive = {
     "ksnapshot"     , "pinentry"       , "gtksu"     , "kcalc"        , "xcalc"               ,
     "feh"           , "Gradient editor", "About KDE" , "Paste Special", "Background color"    ,
-    "kcolorchooser" , "plasmoidviewer" , "Xephyr"    , "kruler"       , "plasmaengineexplorer", "veromix", "termite"
+    "kcolorchooser" , "plasmoidviewer" , "Xephyr"    , "kruler"       , "plasmaengineexplorer", "veromix"
 }
 
 -- Ignore the tiled layout for the matching clients
@@ -574,10 +574,10 @@ return str.." remaining"
 end
 local battery_notify = nil
 function batwidget:hide()
-if battery_notify ~= nil then
-naughty.destroy(battery_notify)
-battery_notify = nil
-end
+	if battery_notify ~= nil then
+		naughty.destroy(battery_notify)
+		battery_notify = nil
+	end
 end
 function batwidget:show(t_out)
 	batwidget:hide()
@@ -760,17 +760,18 @@ netwidgetul:set_bgimage(beautiful.widget_display)
 
 
 -- | Clock / Calendar | --
-timeid = nil
+timenotify = nil
 function saytime()
 	awful.util.spawn_with_shell("/home/ivn/scripts/say_time.sh")
 	time = os.date("%H:%M")
-time ='<span font="Cantarel 50">'..time.."</span>"
-timeid = naughty.notify({
-        text = time,
-        --icon = "/home/ivn/Загрузки/KFaenzafordark/apps/48/time-admin2.png",
-        timeout = 2,
-        screen = mouse.screen or 1
-    }).id
+	time ='<span font="Cantarel 50">'..time.."</span>"
+	naughty.destroy(timenotify)
+	timenotify = naughty.notify({
+		text = time,
+		--icon = "/home/ivn/Загрузки/KFaenzafordark/apps/48/time-admin2.png",
+		timeout = 2,
+		screen = mouse.screen or 1
+	})
 
 end
 
@@ -1849,6 +1850,7 @@ end
 end)
 
 keysmode = "normalmode"
+trackpointnotify = nil
 client.connect_signal("focus", function(c) 
 	--if  not c.maximized_horizontal then
 		--c.border_color = beautiful.border_focus 
@@ -1862,8 +1864,31 @@ client.connect_signal("focus", function(c)
 	if not (mode == keysmode) then
 		keysmode = mode
 		os.execute("/home/ivn/scripts/trackpoint/trackpointkeys.sh "..keysmode.." &")
+	naughty.destroy(trackpointnotify)
+	trackpointnotify = naughty.notify({
+		title = "TrackPoint Keys",
+		text = keysmode,
+		icon = "/home/ivn/scripts/trackpoint/"..keysmode..".png",
+		timeout = 2,
+		screen = mouse.screen or 1
+	})
 	end
 end)
+
+--client.connect_signal("manage", function(c) 
+	--taglist = awful.tag.gettags(c.screen)
+	--tag = taglist[1]
+	--for i,t in pairs(c.tags(c)) do
+		--if t.hide == true then
+			--return true
+		--end
+		--if t == tag then
+			--return true
+		--end
+	--end
+	--awful.client.toggletag(tag,c)
+	--return true
+--end)
 --client.connect_signal("unfocus", function(c) 
 	--c.border_color = beautiful.border_normal 
 ----	if awful.rules.match(c, {class = "Firefox"}) then  	end
