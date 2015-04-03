@@ -86,6 +86,13 @@ theme.widget_display   = theme.icons .. "/panel/widgets/display/widget_display.p
 theme.widget_display_r = theme.icons .. "/panel/widgets/display/widget_display_r.png"
 theme.widget_display_c = theme.icons .. "/panel/widgets/display/widget_display_c.png"
 theme.widget_display_l = theme.icons .. "/panel/widgets/display/widget_display_l.png"
+-- | Battery | --
+
+
+theme.widget_ac 		= theme.icons .. "/panel/widgets/battery/ac.png"
+theme.widget_battery 		= theme.icons .. "/panel/widgets/battery/battery.png"
+theme.widget_battery_low 	= theme.icons .. "/panel/widgets/battery/battery_low.png"
+theme.widget_battery_empty 	= theme.icons .. "/panel/widgets/battery/battery_empty.png"
 
 -- | MPD | --
 

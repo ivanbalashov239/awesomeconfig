@@ -26,6 +26,7 @@ local quake 	 = require("quake")
 local scratch	 = require("scratch")
 local utf8 	 = require("utf8_simple")
 lain.helpers     = require("lain.helpers")
+local cheeky 	 = require("cheeky")
 local capi = {
     mouse = mouse,
     client = client,
@@ -189,16 +190,16 @@ tyrannical.tags = {
             ----"Thunar", "Konqueror", "Dolphin", "ark", "Nautilus","emelfm"
         ----}
     ----} ,
-    {
-	name = tagnames[3],
-	init        = false,
-	exclusive   = true,
-	screen      = {1,2},
-	layout      = awful.layout.suit.tile                          ,
-	class ={ 
-	    "Firefox", "gvim", "Gvim"
-	    }
-    },
+    --{
+	--name = tagnames[3],
+	--init        = false,
+	--exclusive   = true,
+	--screen      = {1,2},
+	--layout      = awful.layout.suit.tile                          ,
+	--class ={ 
+	    --"Firefox", "gvim", "Gvim"
+	    --}
+    --},
     --{
         --name        = "Doc",
         --init        = false, -- This tag wont be created at startup, but will be when one of the
@@ -540,6 +541,75 @@ awful.button({ }, 3, function () run_or_kill("pavucontrol", { class = "Pavucontr
 pulseBox:buttons(awful.util.table.join(pulseBar.buttonsTable, awful.button({ }, 1, function () run_or_kill("veromix", { class = "veromix" }, {x = mouse.coords().x, y = 22, funcafter = APW.Update, screen=mouse.screen}) end),
 awful.button({ }, 3, function () run_or_kill("pavucontrol", { class = "Pavucontrol" }, {x = mouse.coords().x, y = 22, funcafter = APW.Update, screen=mouse.screen}) end)))
 
+-- Battery widget
+
+batterywidget = wibox.widget.background()
+batterywidget:set_bgimage(beautiful.widget_display)
+baticon = wibox.widget.imagebox(beautiful.widget_battery)
+batwidget = lain.widgets.bat({
+battery = "BAT1",
+settings = function()
+	if bat_now.status == "Charging" then
+		baticon:set_image(beautiful.widget_ac)
+		elseif bat_now.perc == "N/A" then
+			widget:set_markup("AC")
+			baticon:set_image(beautiful.widget_ac)
+			return
+			elseif tonumber(bat_now.perc) <= 5 then
+				baticon:set_image(beautiful.widget_battery_empty)
+				elseif tonumber(bat_now.perc) <= 15 then
+					baticon:set_image(beautiful.widget_battery_low)
+				else
+					baticon:set_image(beautiful.widget_battery)
+				end
+				widget:set_markup(" " .. bat_now.perc .. "% ")
+			end
+		})
+batterywidget:set_widget(batwidget)
+local function battery_time_grabber()
+f = io.popen("acpi -b | awk '{print $5}' | awk -F \":\" '{print $1\":\"$2 }'")
+str = f:read()
+f.close()
+return str.." remaining"
+end
+local battery_notify = nil
+function batwidget:hide()
+if battery_notify ~= nil then
+naughty.destroy(battery_notify)
+battery_notify = nil
+end
+end
+function batwidget:show(t_out)
+	batwidget:hide()
+	battery_notify = naughty.notify({
+		preset = fs_notification_preset,
+		text = battery_time_grabber(),
+		timeout = t_out,
+	})
+end
+bat_layout = wibox.layout.fixed.horizontal()
+bat_layout:connect_signal('mouse::enter', function () batwidget:show(0) end)
+bat_layout:connect_signal('mouse::leave', function () batwidget:hide()  end)
+
+--battery_timer = timer({ timeout = 5 })
+--battery_timer:connect_signal("timeout", function ()
+
+local f = io.popen("acpi -b | grep Discharging")
+local str = f:read()
+f.close()
+if not (str == nil) then
+
+	--end)
+	--battery_timer:start()
+	bat_layout:add(spr)
+	bat_layout:add(baticon)
+	bat_layout:add(widget_display_l)
+	bat_layout:add(batterywidget)
+	bat_layout:add(widget_display_r)
+	bat_layout:add(spr5px)
+end
+
+
 
 -- Keyboard map indicator and changer
 	kbdtext = wibox.widget.textbox("en")
@@ -701,13 +771,18 @@ timeid = naughty.notify({
         timeout = 2,
         screen = mouse.screen or 1
     }).id
+
 end
 
+--local function sleep() os.execute("sleep 5") end
+--sleep.sleep()=sleep 
 mytextclockbuttons = awful.util.table.join(
 awful.button({ }, 2,
 function () saytime() end),
 awful.button({ }, 12,
-function () saytime() end))
+function () 
+	--sleep:sleep()
+	saytime() end))
 
 mytextclock    = awful.widget.textclock(markup(clockgf, space3 .. "%H:%M" .. markup.font("Tamsyn 3", " ")), 15)
 mytextcalendar = awful.widget.textclock(markup(clockgf, space3 .. "%a %d %b"))
@@ -746,6 +821,94 @@ calendarwidget:buttons(mytextclockbuttons)
 
 -- | Taglist | --
 
+local function taglist_update(w, buttons, label, data, objects)
+	local function matchrules(tag)
+		return function(c, screen)
+			if c.sticky then return true end
+			local ctags = c:tags()
+			for _, v in ipairs(ctags) do
+				if v == tag then
+					return true
+				end
+			end
+			return false
+		end
+	end
+	-- update the widgets, creating them if needed
+	w:reset()
+	local number = -1
+	for i, o in ipairs(objects) do
+		number = number + 1
+		local cache = data[o]
+		local ib, tb, bgb, m, l
+		if cache then
+			ib = cache.ib
+			tb = cache.tb
+			bgb = cache.bgb
+			m   = cache.m
+		else
+			ib = wibox.widget.imagebox()
+			tb = wibox.widget.textbox()
+			textwidget = wibox.widget.background()
+			textwidget:set_bgimage(beautiful.widget_display)
+			textwidget:set_widget(tb)
+			bgb = wibox.widget.background()
+			m = wibox.layout.margin(tb, 4, 4)
+			l = wibox.layout.fixed.horizontal()
+
+			-- All of this is added in a fixed widget
+			l:fill_space(true)
+			--l:add(m)
+			l:add(spr)
+			l:add(spr)
+			if number > 0 then
+				l:add(widget_display_l)
+				l:add(textwidget)
+				l:add(widget_display_r)
+			end
+			l:add(awful.widget.tasklist(s, matchrules(o) ,  myiconlist.buttons, {tasklist_only_icon=true}, tasklist_update, fixed.horizontal()))
+			--awful.widget.taglist.filter.all
+			l:add(spr)
+			l:add(spr)
+			-- And all of this gets a background
+			--title = wibox({fg=beautiful.fg_normal, bg=beautiful.bg_focus, border_color=beautiful.border_focus, border_width=beautiful.border_width})
+			--title:set_widget(tb)
+			bgb:set_widget(l)
+			--w:connect_signal("mouse::enter", function ()
+			--title.visible = true
+			--title.x = mouse.coords().x 
+			--title.y = mouse.coords().y 
+			--title.screen = capi.mouse.screen
+			--end)
+			--w:connect_signal("mouse::leave", function () title.visible = false end)
+			bgb:buttons(common.create_buttons(buttons, o))
+
+			data[o] = {
+				ib = ib,
+				tb = tb,
+				bgb = bgb,
+				m   = m
+			}
+		end
+		--tb:set_markup("<i>&lt;"..number..":&gt;</i>")
+
+		local text, bg, bg_image, icon = label(o)
+		-- The text might be invalid, so use pcall
+		text = number..":"
+		if not pcall(tb.set_markup, tb, text) then
+			tb:set_markup("<i>&lt;Invalid text&gt;</i>")
+		end
+		bgb:set_bg(bg)
+		if type(bg_image) == "function" then
+			bg_image = bg_image(tb,o,m,objects,i)
+		end
+		bgb:set_bgimage(bg_image)
+		ib:set_image(icon)
+		w:add(bgb)
+	end
+end
+
+
 mytaglist         = {}
 mytaglist.buttons = awful.util.table.join(
                     awful.button({ }, 1, awful.tag.viewonly),
@@ -761,16 +924,19 @@ mytaglist.buttons = awful.util.table.join(
 myiconlist         = {}
 myiconlist.buttons = awful.util.table.join(
                      awful.button({ }, 1, function (c)
-                                              if c == client.focus then
-                                                  c.minimized = true
-                                              else
+                                              --if c == client.focus then
+                                                  --c.minimized = true
+                                              --else
                                                   c.minimized = false
                                                   if not c:isvisible() then
                                                       awful.tag.viewonly(c:tags()[1])
                                                   end
                                                   client.focus = c
                                                   c:raise()
-                                              end
+                                              --end
+                                          end),
+                     awful.button({ }, 12, function (c)
+			     			c:kill()
                                           end),
                      awful.button({ }, 2, function (c)
 			     			c:kill()
@@ -807,6 +973,59 @@ local function matchrules(rules, exclude)
 	if awful.rules.match(c, rules) then return not exclude end
     	return exclude
     end
+end
+ function tasklist_update(w, buttons, label, data, objects)
+    -- update the widgets, creating them if needed
+    w:reset()
+    for i, o in ipairs(objects) do
+        local cache = data[o]
+        local ib, tb, bgb, m, l
+        if cache then
+            ib = cache.ib
+            tb = cache.tb
+            bgb = cache.bgb
+            m   = cache.m
+        else
+            ib = wibox.widget.imagebox()
+            tb = wibox.widget.textbox()
+            bgb = wibox.widget.background()
+            m = wibox.layout.margin(tb, 4, 4)
+            l = wibox.layout.fixed.horizontal()
+
+            -- All of this is added in a fixed widget
+            l:fill_space(true)
+	    l:add(ib)
+            l:add(tb)
+
+            -- And all of this gets a background
+            bgb:set_widget(l)
+
+            bgb:buttons(common.create_buttons(buttons, o))
+
+            data[o] = {
+                ib = ib,
+                tb = tb,
+                bgb = bgb,
+                m   = m
+            }
+        end
+
+        local text, bg, bg_image, icon = label(o)
+        -- The text might be invalid, so use pcall
+	if icon == nil then
+		icon = "/home/ivn/Загрузки/KFaenzafordark/apps/48/konsole.png"
+	end
+        if not pcall(tb.set_markup, tb, text) then
+            tb:set_markup("<i>&lt;Invalid text&gt;</i>")
+        end
+        bgb:set_bg(bg)
+        if type(bg_image) == "function" then
+            bg_image = bg_image(tb,o,m,objects,i)
+        end
+        bgb:set_bgimage(bg_image)
+        ib:set_image(icon)
+        w:add(bgb)
+   end
 end
 
 mytasklist         = {}
@@ -859,25 +1078,27 @@ for s = 1, screen.count() do
                            awful.button({ }, 4, function () awful.layout.inc(layouts, 1) end),
                            awful.button({ }, 5, function () awful.layout.inc(layouts, -1) end)))
     
-    mytaglist[s] = awful.widget.taglist(s, awful.widget.taglist.filter.all, mytaglist.buttons)
+    --mytaglist[s] = awful.widget.taglist(s, awful.widget.taglist.filter.all, mytaglist.buttons)
+
+    mytaglist[s] = awful.widget.taglist(s, awful.widget.taglist.filter.all, mytaglist.buttons, {}, taglist_update)
 
    -- mytaglist[s] = sharedtags.taglist(s, awful.widget.taglist.filter.all, mytaglist.buttons)
 
     mytasklist[s] = awful.widget.tasklist(s, matchrules({class = "Pidgin"}, false), mytasklist.buttons)
 
-    myiconlist[s] = awful.widget.tasklist(s, matchrules({class = "Pidgin"}, true),  myiconlist.buttons, {tasklist_only_icon=true}, common.list_update, fixed.horizontal())
+    --myiconlist[s] = awful.widget.tasklist(s, matchrules({class = "Pidgin"}, true),  myiconlist.buttons, {tasklist_only_icon=true}, tasklist_update, fixed.horizontal())
 
 --tasklist.new(screen, filter, buttons, style, update_function, base_widget)
     mywibox[s] = awful.wibox({ position = "top", screen = s, height = "22" })
 
     local left_layout = wibox.layout.fixed.horizontal()
     
-    left_layout:add(mylauncher)
-    left_layout:add(spr5px)
-    left_layout:add(myiconlist[s])
+    --left_layout:add(mylauncher)
+    --left_layout:add(spr5px)
+    --left_layout:add(myiconlist[s])
     left_layout:add(spr5px)
     left_layout:add(mytaglist[s])
-    left_layout:add(spr5px)
+    --left_layout:add(spr5px)
 
     local centr_layout = wibox.layout.fixed.horizontal()
     centr_layout:add(mytasklist[s])
@@ -962,6 +1183,9 @@ for s = 1, screen.count() do
     right_layout:add(fswidget)
     right_layout:add(widget_display_r)
     right_layout:add(spr5px)
+
+
+    right_layout:add(bat_layout)
 
     --right_layout:add(spr)
 
@@ -1197,29 +1421,29 @@ globalkeys = awful.util.table.join(
             if client.focus then client.focus:raise() end
         end),
 
-    -- awful.key({ modkey,           }, "Tab",
-    --     function ()
-    --         awful.client.focus.history.previous()
-    --         if client.focus then
-    --             client.focus:raise()
-    --         end
-    --     end),
+     awful.key({ modkey,           }, "Tab",
+	 function ()
+	     awful.client.focus.history.previous()
+	     if client.focus then
+		 client.focus:raise()
+	     end
+	 end),
     --awful.key({ modkey,         }, "Tab", function(c)
             --cyclefocus.cycle(1, {modifier="Super_L"})
     --end),
     --awful.key({ modkey, "Shift" }, "Tab", function(c)
             --cyclefocus.cycle(-1, {modifier="Super_L"})
     --end),
-    awful.key({ modkey,         }, "Tab", 
-        function ()
-            awful.client.focus.byidx( 1)
-            if client.focus then client.focus:raise() end
-        end),
-    awful.key({ modkey, "Shift" }, "Tab", 
-        function ()
-            awful.client.focus.byidx( -1)
-            if client.focus then client.focus:raise() end
-        end),
+    --awful.key({ modkey,         }, "Tab", 
+        --function ()
+            --awful.client.focus.byidx( 1)
+            --if client.focus then client.focus:raise() end
+        --end),
+    --awful.key({ modkey, "Shift" }, "Tab", 
+        --function ()
+            --awful.client.focus.byidx( -1)
+            --if client.focus then client.focus:raise() end
+        --end),
     awful.key({ modkey, "Control" }, "Delete",      awesome.restart),
     awful.key({ modkey, "Shift"   }, "q",      awesome.quit),
     awful.key({ modkey,           }, "Return", function () exec(terminal) end),
@@ -1228,7 +1452,10 @@ globalkeys = awful.util.table.join(
     awful.key({ modkey,           }, "space",  function () awful.layout.inc(layouts,  1) end),
     awful.key({ modkey, "Shift"   }, "space",  function () awful.layout.inc(layouts, -1) end),
     --awful.key({ modkey            }, "a",      function () shexec(configuration) end),
-    awful.key({ modkey }, ":", function () hints.focus() end),
+    awful.key({ modkey }, ":", function () 
+	    cheeky.util.switcher()
+	    --hints.focus() 
+    end),
     awful.key({ modkey,    }, "i",  
     	function ()
 		tag = awful.tag.gettags(1)[2]
@@ -1419,9 +1646,9 @@ awful.rules.rules = {
                      keys = clientkeys,
                      buttons = clientbuttons } },
 
-    --{ rule = { class = "Exe"}, properties = {floating = true} },
-    --{ rule = { class = "Plugin-container" },
-		    --properties = { floating = true} },
+    { rule = { class = "Exe"}, properties = {floating = true} },
+    { rule = { class = "Plugin-container" },
+		    properties = { floating = true, focus = true} },
     --{ rule = { class = "gcolor2" },
       --properties = { floating = true } },
     --{ rule = { class = "xmag" },
@@ -1451,11 +1678,12 @@ awful.rules.rules = {
     --{ rule = { class = "Pidgin", role = "buddy_list"},
 	 --properties = { tag = tags[1][3] } },
     { rule = { class = "Pidgin", role = "conversation"},
+	 properties = { tag = awful.tag.gettags(1)[2], switchtotag = false, no_autofocus = true },
 	  callback = awful.client.setslave },
 	{rule = {role = "DROPDOWN"}, 
  	properties = {opacity = 0.8} },
-	{rule = {class = "Bomi"}, 
- 	properties = {opacity = 0.8, floating = true} }
+	--{rule = {class = "bomi"}, 
+         --properties = {opacity = 1, floating = true, ontop = true} }
 
 
    
@@ -1614,7 +1842,6 @@ client.connect_signal("focus", function(c)
 		x=geom.x+math.modf(geom.width/2)+1
 		y=geom.y+math.modf(geom.height/2)+1
 
-		--os.execute("sleep 0.5")
 		moveMouse(x,y)
 		--client.foucs = c
 	end
@@ -1763,7 +1990,7 @@ end
 
 os.execute("pkill compton")
 os.execute("pkill xcape")
---os.execute("setxkbmap 'my(dvp),my(rus)' &")
+os.execute("setxkbmap 'my(dvp),my(rus)' &")
 --os.execute("xkbcomp $HOME/.config/xkb/my $DISPLAY &")
 os.execute("/home/ivn/scripts/trackpoint/trackpointkeys.sh normalmode &")
 os.execute("xset s off")
