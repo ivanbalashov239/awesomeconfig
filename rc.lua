@@ -88,7 +88,7 @@ end
 
 -- Java GUI's fix:
 
-awful.util.spawn_with_shell("wmname LG3D")
+awful.util.spawn_with_shell("wmname Sawfish") --LG3D")
 
 -- | Variable definitions | --
 
@@ -137,7 +137,7 @@ if beautiful.wallpaper then
 end
 
 -- | Tags | --
-tagnames = { "Others", "IM", "Dev"}
+tagnames = { "Others", "IM", "IDEA"}
 tyrannical.tags = {
     {
 	name        = tagnames[1], --"Others",                 -- Call the tag "Term"
@@ -179,17 +179,17 @@ tyrannical.tags = {
             ----"Opera"         , "Firefox"        , "Rekonq"    , "Dillo"        , "Arora",
             ----"Chromium"      , "nightly"        , "minefield"     }
     ----} ,
-    ----{
-        ----name = "Files",
-        ----init        = true,
-        ----exclusive   = true,
-        ----screen      = 1,
-        ----layout      = awful.layout.suit.tile,
-        ----exec_once   = {"dolphin"}, --When the tag is accessed for the first time, execute this command
-        ----class  = {
-            ----"Thunar", "Konqueror", "Dolphin", "ark", "Nautilus","emelfm"
-        ----}
-    ----} ,
+    {
+	name = tagnames[3],
+	init        = false,
+	exclusive   = true,
+	screen      = 1,
+	layout      = awful.layout.suit.floating,
+	exec_once   = {"dolphin"}, --When the tag is accessed for the first time, execute this command
+	class  = {
+	    "Idea", "jetbrains-idea-ce", "sun-awt-X11-XFramePeer"
+	}
+    } ,
     --{
 	--name = tagnames[3],
 	--init        = false,
