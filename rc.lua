@@ -996,7 +996,7 @@ end
             -- All of this is added in a fixed widget
             l:fill_space(true)
 	    l:add(ib)
-            l:add(tb)
+            --l:add(tb)
 
             -- And all of this gets a background
             bgb:set_widget(l)
