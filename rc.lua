@@ -1112,18 +1112,15 @@ for s = 1, screen.count() do
     
 
     local right_layout = wibox.layout.fixed.horizontal()
+    local tray = nil
     if s == 1 then
-right_layout:add(widgetcreator(
-{
-	widgets = {spr5px,mypromptbox[s],wibox.widget.systray()}
-}))
+	    tray = wibox.widget.systray()
     end
-
-    
-    
-
+    right_layout:add(widgetcreator(
+    {
+	    widgets = {spr5px,mypromptbox[s], tray}
+    }))
     right_layout:add(kbdwidget)
-
     right_layout:add(musicwidget)
     right_layout:add(pulsewidget) 
     right_layout:add(cpuwidget)
@@ -1152,6 +1149,37 @@ root.buttons(awful.util.table.join(
     awful.button({modkey, }, 5, awful.tag.viewprev)
 ))
 
+function myglobal_bydirection(dir, c)
+    local screen = awful.screen
+    local sel = c or capi.client.focus
+    local scr = capi.mouse.screen
+    if sel then
+        scr = sel.screen
+    end
+    -- change focus inside the screen
+    awful.client.focus.bydirection(dir, sel)
+    if sel == capi.client.focus then
+	local number = nil
+	if dir == "left" then
+		number = 1
+	elseif dir == "right" then
+		number = -1
+	end
+	if number == nil or awful.client.visible()[number] == sel then
+		screen.focus_bydirection(dir, scr)
+	else
+		for i,k in pairs(awful.client.visible()) do
+			if k == sel then
+				local target = awful.client.visible()[i-number]
+				if target then
+					capi.client.focus = target
+				end
+				return true
+			end
+		end
+	end
+    end
+end
 -- | Key bindings | --
 
 globalkeys = awful.util.table.join(
@@ -1320,22 +1348,31 @@ globalkeys = awful.util.table.join(
 -- By direction client focus
     awful.key({ modkey }, "t",
         function()
-            awful.client.focus.bydirection("down")
+		--local tag = awful.tag.gettags(capi.mouse.screen)[1]
+		--if awful.tag.selected(capi.mouse.screen) == tag then
+			--awful.client.focus.
+		--else
+			--awful.client.focus.
+			myglobal_bydirection("down")
+		--end
             if client.focus then client.focus:raise() end
         end),
     awful.key({ modkey }, "n",
         function()
-            awful.client.focus.bydirection("up")
+            --awful.client.focus.
+	    myglobal_bydirection("up")
             if client.focus then client.focus:raise() end
         end),
     awful.key({ modkey }, "h",
         function()
-            awful.client.focus.bydirection("left")
+            --awful.client.focus.
+	    myglobal_bydirection("left")
             if client.focus then client.focus:raise() end
         end),
     awful.key({ modkey }, "s",
         function()
-            awful.client.focus.bydirection("right")
+            --awful.client.focus.
+	    myglobal_bydirection("right")
             if client.focus then client.focus:raise() end
         end),
 
