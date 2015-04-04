@@ -179,17 +179,17 @@ tyrannical.tags = {
             ----"Opera"         , "Firefox"        , "Rekonq"    , "Dillo"        , "Arora",
             ----"Chromium"      , "nightly"        , "minefield"     }
     ----} ,
-    {
-	name = tagnames[3],
-	init        = false,
-	exclusive   = true,
-	screen      = 1,
-	layout      = awful.layout.suit.floating,
-	exec_once   = {"dolphin"}, --When the tag is accessed for the first time, execute this command
-	class  = {
-	    "Idea", "jetbrains-idea-ce", "sun-awt-X11-XFramePeer"
-	}
-    } ,
+    --{
+	--name = tagnames[3],
+	--init        = false,
+	--exclusive   = true,
+	--screen      = 1,
+	--layout      = awful.layout.suit.floating,
+	--exec_once   = {"dolphin"}, --When the tag is accessed for the first time, execute this command
+	--class  = {
+	    --"Idea", "jetbrains-idea-ce", "sun-awt-X11-XFramePeer"
+	--}
+    --} ,
     --{
 	--name = tagnames[3],
 	--init        = false,
@@ -309,71 +309,110 @@ menu_main = {
   { "quit",      awesome.quit        }}
 
 
-mainmenu = awful.menu({ items = {
-  { " awesome",       menu_main   },
-  { " file manager",  filemanager },
-  { " root terminal", rootterm    },
-  { " launcher", 	menu_items    },
-  { " user terminal", terminal    }}})
+  mainmenu = awful.menu({ items = {
+	  { " awesome",       menu_main   },
+	  { " file manager",  filemanager },
+	  { " root terminal", rootterm    },
+	  { " launcher", 	menu_items    },
+	  { " user terminal", terminal    }}})
 
--- | Markup | --
+	  -- | Markup | --
 
-markup = lain.util.markup
+	  markup = lain.util.markup
 
-space3 = markup.font("Terminus 3", " ")
-space2 = markup.font("Terminus 2", " ")
-vspace1 = '<span font="Terminus 3"> </span>'
-vspace2 = '<span font="Terminus 3">  </span>'
-clockgf = beautiful.clockgf
+	  space3 = markup.font("Terminus 3", " ")
+	  space2 = markup.font("Terminus 2", " ")
+	  vspace1 = '<span font="Terminus 3"> </span>'
+	  vspace2 = '<span font="Terminus 3">  </span>'
+	  clockgf = beautiful.clockgf
 
--- | Widgets | --
+	  -- | Widgets | --
 
-spr = wibox.widget.imagebox()
-spr:set_image(beautiful.spr)
-spr4px = wibox.widget.imagebox()
-spr4px:set_image(beautiful.spr4px)
-spr5px = wibox.widget.imagebox()
-spr5px:set_image(beautiful.spr5px)
+	  spr = wibox.widget.imagebox()
+	  spr:set_image(beautiful.spr)
+	  spr4px = wibox.widget.imagebox()
+	  spr4px:set_image(beautiful.spr4px)
+	  spr5px = wibox.widget.imagebox()
+	  spr5px:set_image(beautiful.spr5px)
 
-widget_display = wibox.widget.imagebox()
-widget_display:set_image(beautiful.widget_display)
-widget_display_r = wibox.widget.imagebox()
-widget_display_r:set_image(beautiful.widget_display_r)
-widget_display_l = wibox.widget.imagebox()
-widget_display_l:set_image(beautiful.widget_display_l)
-widget_display_c = wibox.widget.imagebox()
-widget_display_c:set_image(beautiful.widget_display_c)
+	  widget_display = wibox.widget.imagebox()
+	  widget_display:set_image(beautiful.widget_display)
+	  widget_display_r = wibox.widget.imagebox()
+	  widget_display_r:set_image(beautiful.widget_display_r)
+	  widget_display_l = wibox.widget.imagebox()
+	  widget_display_l:set_image(beautiful.widget_display_l)
+	  widget_display_c = wibox.widget.imagebox()
+	  widget_display_c:set_image(beautiful.widget_display_c)
 
--- | MPD | --
+	  local function widgetcreator(args)
+		  local layout = args.layout or wibox.layout.fixed.horizontal()
+		  local spr = args.spr or spr
+		  local widgets = args.widgetns or nil
+		  layout:add(spr)
+		  if args.image then
+			  local widget_image = wibox.widget.imagebox()
+			  widget_image:set_image(args.image)
+			  layout:add(widget_image)
+		  end
+		  if args.text then
+			  local widget_text = wibox.widget.textbox()
+			  widget_text:set_markup(markup.font("Terminus 4", " ")..'<span font="Terminus 10" weight="bold">'..args.text..'</span>'..markup.font("Terminus 4", " "))
+			  layout:add(widget_text)
+		  end
+		  if args.widgets then
+			  for i,k in pairs(args.widgets) do
+				  layout:add(k)
+			  end
+		  end
 
---prev_icon = wibox.widget.imagebox()
---prev_icon:set_image(beautiful.mpd_prev)
---next_icon = wibox.widget.imagebox()
---next_icon:set_image(beautiful.mpd_nex)
---stop_icon = wibox.widget.imagebox()
---stop_icon:set_image(beautiful.mpd_stop)
---pause_icon = wibox.widget.imagebox()
---pause_icon:set_image(beautiful.mpd_pause)
---play_pause_icon = wibox.widget.imagebox()
---play_pause_icon:set_image(beautiful.mpd_play)
-mpd_sepl = wibox.widget.imagebox()
-mpd_sepl:set_image(beautiful.mpd_sepl)
-mpd_sepr = wibox.widget.imagebox()
-mpd_sepr:set_image(beautiful.mpd_sepr)
+		  if args.textboxes then
 
-mpdwidget = lain.widgets.mpd({
-    settings = function ()
-        if mpd_now.state == "play" then
-	    widget:set_markup(" Title loading ")
-	    mpd_now.artist = string.gsub(mpd_now.artist,"&amp;","and")
-	    mpd_now.title = string.gsub(mpd_now.title,"&amp;","and")
-	    mpd_now.artist = string.gsub(mpd_now.artist,"&apos;","'")
-	    mpd_now.title = string.gsub(mpd_now.title,"&apos;","'")
-            mpd_now.artist = mpd_now.artist:upper():gsub("&.-;", string.lower)
-            mpd_now.title = mpd_now.title:upper():gsub("&.-;", string.lower)
-            artistsub = utf8.sub(mpd_now.artist:upper():gsub("&.-;", string.lower), 0, 7)
-            titlesub = utf8.sub(mpd_now.title:upper():gsub("&.-;", string.lower), 0, 12)
-	    nowplayingtext = mpd_now.artist .. "-" .. mpd_now.title .. " "
+			  layout:add(widget_display_l)
+			  for i,k in pairs(args.textboxes) do
+				  if i > 1 then 
+					  layout:add(widget_display_c)
+				  end
+				  local background = wibox.widget.background()
+				  background:set_widget(k)
+				  background:set_bgimage(beautiful.widget_display)
+				  layout:add(background)
+			  end
+			  layout:add(widget_display_r)
+		  end
+		  layout:add(spr5px)
+		  return layout
+	  end
+
+	  -- | MPD | --
+
+	  --prev_icon = wibox.widget.imagebox()
+	  --prev_icon:set_image(beautiful.mpd_prev)
+	  --next_icon = wibox.widget.imagebox()
+	  --next_icon:set_image(beautiful.mpd_nex)
+	  --stop_icon = wibox.widget.imagebox()
+	  --stop_icon:set_image(beautiful.mpd_stop)
+	  --pause_icon = wibox.widget.imagebox()
+	  --pause_icon:set_image(beautiful.mpd_pause)
+	  --play_pause_icon = wibox.widget.imagebox()
+	  --play_pause_icon:set_image(beautiful.mpd_play)
+	  mpd_sepl = wibox.widget.imagebox()
+	  mpd_sepl:set_image(beautiful.mpd_sepl)
+	  mpd_sepr = wibox.widget.imagebox()
+	  mpd_sepr:set_image(beautiful.mpd_sepr)
+
+	  mpdwidget = lain.widgets.mpd({
+		  settings = function ()
+			  if mpd_now.state == "play" then
+				  widget:set_markup(" Title loading ")
+				  mpd_now.artist = string.gsub(mpd_now.artist,"&amp;","and")
+				  mpd_now.title = string.gsub(mpd_now.title,"&amp;","and")
+				  mpd_now.artist = string.gsub(mpd_now.artist,"&apos;","'")
+				  mpd_now.title = string.gsub(mpd_now.title,"&apos;","'")
+				  mpd_now.artist = mpd_now.artist:upper():gsub("&.-;", string.lower)
+				  mpd_now.title = mpd_now.title:upper():gsub("&.-;", string.lower)
+				  artistsub = utf8.sub(mpd_now.artist:upper():gsub("&.-;", string.lower), 0, 7)
+				  titlesub = utf8.sub(mpd_now.title:upper():gsub("&.-;", string.lower), 0, 12)
+				  nowplayingtext = mpd_now.artist .. "-" .. mpd_now.title .. " "
 	    mpdwidget.nowplaying = nowplayingtext
 	    nowtext = markup.font("Tamsyn 3", " ")
                               .. markup.font("tamsyn 7",
@@ -473,9 +512,10 @@ function mpd_seek_backward()
 end
 
 
-musicwidget = wibox.widget.background()
-musicwidget:set_widget(mpdwidget)
-musicwidget:set_bgimage(beautiful.widget_display)
+musicwidget = widgetcreator(
+{
+	textboxes = {mpdwidget}
+})
 musicwidget:buttons(awful.util.table.join(
 awful.button({ }, 12, function () run_once("cantata --style gtk+") end),
 awful.button({ }, 2, function () run_once("cantata --style gtk+") end),
@@ -532,9 +572,11 @@ end)
 
 pulseBar = APW
 pulseBox = pulseBar.getTextBox()
-pulsewidget = wibox.widget.background()
-pulsewidget:set_widget(pulseBox)
-pulsewidget:set_bgimage(beautiful.widget_display)
+pulsewidget = widgetcreator(
+{
+	widgets = {pulseBar},
+	textboxes = {pulseBox}
+})
 
 pulseBar:buttons(awful.util.table.join(pulseBar.buttonsTable, awful.button({ }, 1, function () run_or_kill("veromix", { class = "veromix" }, {x = mouse.coords().x, y = mouse.coords().y, funcafter = APW.Update, screen=mouse.screen}) end),
 awful.button({ }, 3, function () run_or_kill("pavucontrol", { class = "Pavucontrol" }, {x = mouse.coords().x, y = 22, funcafter = APW.Update, screen=mouse.screen}) end)))
@@ -543,8 +585,6 @@ awful.button({ }, 3, function () run_or_kill("pavucontrol", { class = "Pavucontr
 
 -- Battery widget
 
-batterywidget = wibox.widget.background()
-batterywidget:set_bgimage(beautiful.widget_display)
 baticon = wibox.widget.imagebox(beautiful.widget_battery)
 batwidget = lain.widgets.bat({
 battery = "BAT1",
@@ -565,7 +605,11 @@ settings = function()
 				widget:set_markup(" " .. bat_now.perc .. "% ")
 			end
 		})
-batterywidget:set_widget(batwidget)
+batterywidget = widgetcreator(
+{
+	widgets = {baticon},
+	textboxes = {batwidget}
+})
 local function battery_time_grabber()
 f = io.popen("acpi -b | awk '{print $5}' | awk -F \":\" '{print $1\":\"$2 }'")
 str = f:read()
@@ -601,31 +645,30 @@ if not (str == nil) then
 
 	--end)
 	--battery_timer:start()
-	bat_layout:add(spr)
-	bat_layout:add(baticon)
-	bat_layout:add(widget_display_l)
 	bat_layout:add(batterywidget)
-	bat_layout:add(widget_display_r)
-	bat_layout:add(spr5px)
 end
 
 
 
 -- Keyboard map indicator and changer
-	kbdtext = wibox.widget.textbox("en")
-	kbdwidget = wibox.widget.background(kbdtext, "#0E1318")
-	kbdstrings = {[0] = "en",
-		      [1] = "ru" 
-	      	      }
-	dbus.request_name("session", "ru.gentoo.kbdd")
+kbdtext = wibox.widget.textbox("en")
+kbdstrings = 
+{
+	[0] = "en",
+	[1] = "ru" 
+}
+dbus.request_name("session", "ru.gentoo.kbdd")
 dbus.add_match("session", "interface='ru.gentoo.kbdd',member='layoutChanged'")
 dbus.connect_signal("ru.gentoo.kbdd", function(...)
-local data = {...}
-local layout = data[2]
-kbdtext:set_markup(kbdstrings[layout])
+	local data = {...}
+	local layout = data[2]
+	kbdtext:set_markup(kbdstrings[layout])
 end
 )
-kbdwidget:set_bgimage(beautiful.widget_display)
+kbdwidget = widgetcreator(
+{
+	textboxes = {kbdtext}
+})
 
 -- -- {{{ Menu
 -- freedesktop.utils.terminal = terminal
@@ -644,45 +687,37 @@ kbdwidget:set_bgimage(beautiful.widget_display)
 
 -- | Mail | --
 
-mail_widget = wibox.widget.textbox()
-vicious.register(mail_widget, vicious.widgets.gmail, vspace1 .. "${count}" .. vspace1, 1200)
+--mail_widget = wibox.widget.textbox()
+--vicious.register(mail_widget, vicious.widgets.gmail, vspace1 .. "${count}" .. vspace1, 1200)
 
-widget_mail = wibox.widget.imagebox()
-widget_mail:set_image(beautiful.widget_mail)
-mailwidget = wibox.widget.background()
-mailwidget:set_widget(mail_widget)
-mailwidget:set_bgimage(beautiful.widget_display)
+--widget_mail = wibox.widget.imagebox()
+--widget_mail:set_image(beautiful.widget_mail)
+--mailwidget = wibox.widget.background()
+--mailwidget:set_widget(mail_widget)
+--mailwidget:set_bgimage(beautiful.widget_display)
 
 -- | CPU / TMP | --
 
 cpu_widget = lain.widgets.cpu({
-    settings = function()
-        widget:set_markup(space3 .. cpu_now.usage .. "%" .. markup.font("Tamsyn 4", " "))
-    end
+	settings = function()
+		widget:set_markup(space3 .. cpu_now.usage .. "%" .. markup.font("Tamsyn 4", " "))
+	end
 })
 
 cpubuttons = awful.util.table.join(awful.button({ }, 1,
 function () run_or_kill(htop_cpu, { role = "HTOP_CPU" }, {x = mouse.coords().x, y = 22}) end))
 
-widget_cpu = wibox.widget.imagebox()
-widget_cpu:set_image(beautiful.widget_cpu)
-cpuwidget = wibox.widget.background()
-cpuwidget:set_widget(cpu_widget)
-cpuwidget:set_bgimage(beautiful.widget_display)
+tmp_widget = wibox.widget.textbox()
+vicious.register(tmp_widget, vicious.widgets.thermal, vspace1 .. "$1°C" .. vspace1, 9, "thermal_zone0")
 
+cpuwidget = widgetcreator(
+{
+	--image = beautiful.widget_mem,
+	text = "CPU",
+	textboxes = {cpu_widget, tmp_widget}
+})
 
- tmp_widget = wibox.widget.textbox()
- vicious.register(tmp_widget, vicious.widgets.thermal, vspace1 .. "$1°C" .. vspace1, 9, "thermal_zone0")
-
- widget_tmp = wibox.widget.imagebox()
- widget_tmp:set_image(beautiful.widget_tmp)
- tmpwidget = wibox.widget.background()
- tmpwidget:set_widget(tmp_widget)
- tmpwidget:set_bgimage(beautiful.widget_display)
-
- tmpwidget:buttons(cpubuttons)
- widget_cpu:buttons(cpubuttons)
- cpuwidget:buttons(cpubuttons)
+cpuwidget:buttons(cpubuttons)
 
 -- | MEM | --
 
@@ -700,60 +735,49 @@ mem_widget = lain.widgets.mem({
         widget:set_markup(space3 .. mem_now.used .. "MB" .. markup.font("Tamsyn 4", " "))
     end
 })
-
-widget_mem = wibox.widget.imagebox()
-widget_mem:set_image(beautiful.widget_mem)
 memwidget = wibox.widget.background()
 memwidget:set_widget(mem_widget)
 memwidget:set_bgimage(beautiful.widget_display)
-
---memp_widget = lain.widgets.mem({
-	--timeout = 15,
-    --settings = function()
-        --widget:set_markup(space3 .. mem_now.perc .. "%" .. markup.font("Tamsyn 4", " "))
-    --end
---})
-
-mempwidget = wibox.widget.background()
-mempwidget:set_widget(memp_widget)
-mempwidget:set_bgimage(beautiful.widget_display)
-
- memp_widget:buttons(membuttons)
- widget_mem:buttons(membuttons)
+memwidget = widgetcreator(
+{
+	--image = beautiful.widget_mem,
+	text = "RAM",
+	textboxes = {mem_widget, memp_widget}
+})
  memwidget:buttons(membuttons)
 
 -- | FS | --
 
 fs_widget = wibox.widget.textbox()
 vicious.register(fs_widget, vicious.widgets.fs, vspace1 .. "${/ avail_gb}GB" .. vspace1, 2)
-
-widget_fs = wibox.widget.imagebox()
-widget_fs:set_image(beautiful.widget_fs)
-fswidget = wibox.widget.background()
-fswidget:set_widget(fs_widget)
-fswidget:set_bgimage(beautiful.widget_display)
+fswidget = widgetcreator(
+{
+	--image = beautiful.widget_fs,
+	text = "SSD",
+	textboxes = {fs_widget}
+})
 
 -- | NET | --
 
-net_widgetdl = wibox.widget.textbox()
-net_widgetul = lain.widgets.net({
-    settings = function()
-        widget:set_markup(markup.font("Tamsyn 1", "  ") .. net_now.sent)
-        net_widgetdl:set_markup(markup.font("Tamsyn 1", " ") .. net_now.received .. markup.font("Tamsyn 1", " "))
-    end
-})
+--net_widgetdl = wibox.widget.textbox()
+--net_widgetul = lain.widgets.net({
+    --settings = function()
+        --widget:set_markup(markup.font("Tamsyn 1", "  ") .. net_now.sent)
+        --net_widgetdl:set_markup(markup.font("Tamsyn 1", " ") .. net_now.received .. markup.font("Tamsyn 1", " "))
+    --end
+--})
 
-widget_netdl = wibox.widget.imagebox()
-widget_netdl:set_image(beautiful.widget_netdl)
-netwidgetdl = wibox.widget.background()
-netwidgetdl:set_widget(net_widgetdl)
-netwidgetdl:set_bgimage(beautiful.widget_display)
+--widget_netdl = wibox.widget.imagebox()
+--widget_netdl:set_image(beautiful.widget_netdl)
+--netwidgetdl = wibox.widget.background()
+--netwidgetdl:set_widget(net_widgetdl)
+--netwidgetdl:set_bgimage(beautiful.widget_display)
 
-widget_netul = wibox.widget.imagebox()
-widget_netul:set_image(beautiful.widget_netul)
-netwidgetul = wibox.widget.background()
-netwidgetul:set_widget(net_widgetul)
-netwidgetul:set_bgimage(beautiful.widget_display)
+--widget_netul = wibox.widget.imagebox()
+--widget_netul:set_image(beautiful.widget_netul)
+--netwidgetul = wibox.widget.background()
+--netwidgetul:set_widget(net_widgetul)
+--netwidgetul:set_bgimage(beautiful.widget_display)
 
 
 -- | Weather | --
@@ -775,50 +799,32 @@ function saytime()
 
 end
 
---local function sleep() os.execute("sleep 5") end
---sleep.sleep()=sleep 
 mytextclockbuttons = awful.util.table.join(
 awful.button({ }, 2,
 function () saytime() end),
 awful.button({ }, 12,
 function () 
-	--sleep:sleep()
 	saytime() end))
 
 mytextclock    = awful.widget.textclock(markup(clockgf, space3 .. "%H:%M" .. markup.font("Tamsyn 3", " ")), 15)
 mytextcalendar = awful.widget.textclock(markup(clockgf, space3 .. "%a %d %b"))
 
-widget_clock = wibox.widget.imagebox()
-widget_clock:set_image(beautiful.widget_clock)
+clockwidget = widgetcreator(
+{
+	image = beautiful.widget_clock,
+	textboxes = {mytextclock}
+})
 
-clockwidget = wibox.widget.background()
-clockwidget:set_widget(mytextclock)
-clockwidget:set_bgimage(beautiful.widget_display)
+lain.widgets.calendar:attach(clockwidget, { font_size = 10 })
 
-lain.widgets.calendar:attach(mytextclock, { font_size = 10 })
-
-
-
-
-widget_calendar = wibox.widget.imagebox()
-widget_calendar:set_image(beautiful.widget_cal)
-
-calendarwidget = wibox.widget.background()
-calendarwidget:set_widget(mytextcalendar)
-calendarwidget:set_bgimage(beautiful.widget_display)
+calendarwidget = widgetcreator(
+{ 
+	image = beautiful.widget_cal,
+	textboxes = {mytextcalendar}
+})
 
 clockwidget:buttons(mytextclockbuttons)
 calendarwidget:buttons(mytextclockbuttons)
---local index = 1
---local loop_widgets = { mytextclock, mytextcalendar }
---local loop_widgets_icons = { beautiful.widget_clock, beautiful.widget_cal }
-
---clockwidget:buttons(awful.util.table.join(awful.button({}, 1,
---    function ()
---        index = index % #loop_widgets + 1
---        clockwidget:set_widget(loop_widgets[index])
---        widget_clock:set_image(loop_widgets_icons[index])
---    end)))
 
 -- | Taglist | --
 
@@ -1107,116 +1113,27 @@ for s = 1, screen.count() do
 
     local right_layout = wibox.layout.fixed.horizontal()
     if s == 1 then
-        right_layout:add(spr)
-        right_layout:add(spr5px)
-        right_layout:add(mypromptbox[s])
-        right_layout:add(wibox.widget.systray())
-        right_layout:add(spr5px)
+right_layout:add(widgetcreator(
+{
+	widgets = {spr5px,mypromptbox[s],wibox.widget.systray()}
+}))
     end
 
     
     
-    right_layout:add(spr)
-
-    right_layout:add(widget_display_l)
 
     right_layout:add(kbdwidget)
 
-    right_layout:add(widget_display_r)
-
-
---    right_layout:add(spr)
-
-    --right_layout:add(spr)
-
-    right_layout:add(mpd_sepl)
     right_layout:add(musicwidget)
-    right_layout:add(mpd_sepr)
-    --right_layout:add(prev_icon)
-    --right_layout:add(spr)
-    --right_layout:add(stop_icon)
-    --right_layout:add(spr)
-    --right_layout:add(play_pause_icon)
-    --right_layout:add(spr)
-    --right_layout:add(next_icon)
-
-    --right_layout:add(spr)
-
-    -- right_layout:add(widget_mail)
-    --right_layout:add(widget_display_l)
-    --right_layout:add(mailwidget)
-    --right_layout:add(widget_display_r)
-    --right_layout:add(spr5px)
-
-
-
-    right_layout:add(spr)
-    right_layout:add(pulseBar) 
-    right_layout:add(widget_display_l)
     right_layout:add(pulsewidget) 
-    right_layout:add(widget_display_r)
-    right_layout:add(spr)
-
-    right_layout:add(widget_cpu)
-    right_layout:add(widget_display_l)
     right_layout:add(cpuwidget)
-    --right_layout:add(widget_display_r)
-    right_layout:add(widget_display_c)
-    right_layout:add(tmpwidget)
-    right_layout:add(widget_tmp)
-    right_layout:add(widget_display_r)
-    right_layout:add(spr5px)
-
-    right_layout:add(spr)
-
-    right_layout:add(widget_mem)
-    right_layout:add(widget_display_l)
     right_layout:add(memwidget)
-    right_layout:add(widget_display_c)
-    right_layout:add(mempwidget)
-    right_layout:add(widget_display_r)
-    right_layout:add(spr5px)
-
-    right_layout:add(spr)
-
-    right_layout:add(widget_fs)
-    right_layout:add(widget_display_l)
     right_layout:add(fswidget)
-    right_layout:add(widget_display_r)
-    right_layout:add(spr5px)
-
-
     right_layout:add(bat_layout)
-
-    --right_layout:add(spr)
-
-    --right_layout:add(widget_netdl)
-    --right_layout:add(widget_display_l)
-    --right_layout:add(netwidgetdl)
-    --right_layout:add(widget_display_c)
-    --right_layout:add(netwidgetul)
-    --right_layout:add(widget_display_r)
-    --right_layout:add(widget_netul)
-
-    right_layout:add(spr)
-
-    right_layout:add(widget_calendar)
-    right_layout:add(widget_display_l)
     right_layout:add(calendarwidget)
-    right_layout:add(widget_display_r)
-    right_layout:add(spr5px)
-
-    right_layout:add(spr)
-    right_layout:add(widget_clock)
-    right_layout:add(widget_display_l)
     right_layout:add(clockwidget)
-    right_layout:add(widget_display_r)
-    right_layout:add(spr5px)
-
     right_layout:add(spr)
-
     right_layout:add(mylayoutbox[s])
-
     local layout = wibox.layout.align.horizontal()
     layout:set_left(left_layout)
     layout:set_middle(centr_layout)
@@ -1336,7 +1253,7 @@ globalkeys = awful.util.table.join(
 		     title = "mod return",
 			  timeout = 2,
 		     }) 
-		    local result = awful.util.spawn(command,{intrusive=true})
+		    local result = awful.util.spawn(command,{intrusive=false})
 		    mypromptbox[mouse.screen].widget:set_text(type(result) == "string" and result or "")
 		    return true
 		end},
@@ -1875,20 +1792,21 @@ client.connect_signal("focus", function(c)
 	end
 end)
 
---client.connect_signal("manage", function(c) 
-	--taglist = awful.tag.gettags(c.screen)
-	--tag = taglist[1]
-	--for i,t in pairs(c.tags(c)) do
-		--if t.hide == true then
-			--return true
-		--end
-		--if t == tag then
-			--return true
-		--end
-	--end
-	--awful.client.toggletag(tag,c)
-	--return true
---end)
+client.connect_signal("manage", function(c) 
+	taglist = awful.tag.gettags(c.screen)
+	tag = taglist[1]
+	for i,t in pairs(c.tags(c)) do
+		if t == taglist[2] then
+			print(t.name)
+			return true
+		end
+		if t == tag then
+			return true
+		end
+	end
+	awful.client.toggletag(tag,c)
+	return true
+end)
 --client.connect_signal("unfocus", function(c) 
 	--c.border_color = beautiful.border_normal 
 ----	if awful.rules.match(c, {class = "Firefox"}) then  	end
