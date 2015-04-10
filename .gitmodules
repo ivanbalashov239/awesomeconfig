@@ -10,12 +10,6 @@
 [submodule "apw"]
 	path = apw
 	url = git@github.com:seniorivn/apw.git
-[submodule "alttab"]
-	path = alttab
-	url = git@github.com:jorenheit/awesome_alttab.git
-[submodule "awesompd"]
-	path = awesompd
-	url = git@github.com:alexander-yakushev/awesompd.git
 [submodule "cheeky"]
 	path = cheeky
 	url = git@github.com:svexican/cheeky.git
