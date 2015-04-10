@@ -33,6 +33,14 @@ local capi = {
     screen = screen
     }
 
+local function print(s)
+naughty.notify({ preset = naughty.config.presets.critical,
+                     title = s,
+		     bg = beautiful.bg_normal,
+                     text = awesome.startup_errors,
+		     position = "top_left"
+	     }) 
+     end
 os.execute("/home/ivn/scripts/run_slimlock_onstart.sh &")
 
 -- | Theme | --
@@ -831,14 +839,70 @@ calendarwidget:buttons(mytextclockbuttons)
 local function taglist_update(w, buttons, label, data, objects)
 	local function matchrules(tag)
 		return function(c, screen)
-			if c.sticky then return true end
-			local ctags = c:tags()
-			for _, v in ipairs(ctags) do
-				if v == tag then
-					return true
-				end
-			end
+			--if c.sticky then return true end
+			--local ctags = c:tags()
+			--for _, v in ipairs(ctags) do
+				--if v == tag then
+					--return true
+				--end
+			--end
 			return false
+		end
+	end
+	local function get_tasklist_update(tag)
+		return function (w, buttons, label, data, objects)
+			-- update the widgets, creating them if needed
+			w:reset()
+			for i, o in ipairs(tag:clients()) do
+				local cache = data[o]
+				local ib, tb, bgb, m, l, munf, mfoc
+				if cache then
+					ib = cache.ib
+					bgb = cache.bgb
+					m =  cache.m
+					munf = cache.munf
+					mfoc = cache.mfoc
+				else
+					ib = wibox.widget.imagebox()
+					bgb = wibox.widget.background()
+					m = wibox.layout.margin(ib, 0, 0)
+					munf = wibox.layout.margin(ib, 0, 0, 0, 5)
+					mfoc = wibox.layout.margin(ib, 0, 0, 0, 0)
+					bgb:set_widget(munf)
+
+					bgb:buttons(common.create_buttons(buttons, o))
+
+					data[o] = {
+						ib = ib,
+						bgb = bgb,
+						m = m,
+						munf   = munf,
+						mfoc = mfoc,
+					}
+				end
+				if tag.selected then
+					if (o == capi.client.focus) then
+						bgb:set_widget(mfoc)
+					else
+						bgb:set_widget(munf)
+					end
+				else
+					bgb:set_widget(munf)
+				end
+
+				local text, bg, bg_image, icon = label(o)
+				-- The text might be invalid, so use pcall
+				if icon == nil then
+					icon = "/home/ivn/Загрузки/KFaenzafordark/apps/48/konsole.png"
+				end
+				--bgb:set_bg(bg)
+				if type(bg_image) == "function" then
+					bg_image = bg_image(tb,o,m,objects,i)
+				end
+				bgb:set_bgimage(bg_image)
+				ib:set_image(icon)
+				w:add(bgb)
+			end
 		end
 	end
 	-- update the widgets, creating them if needed
@@ -873,7 +937,7 @@ local function taglist_update(w, buttons, label, data, objects)
 				l:add(textwidget)
 				l:add(widget_display_r)
 			end
-			l:add(awful.widget.tasklist(s, matchrules(o) ,  myiconlist.buttons, {tasklist_only_icon=true}, tasklist_update, fixed.horizontal()))
+			l:add(awful.widget.tasklist(s, matchrules(o) ,  myiconlist.buttons, {tasklist_only_icon=true}, get_tasklist_update(o), fixed.horizontal()))
 			--awful.widget.taglist.filter.all
 			l:add(spr)
 			l:add(spr)
@@ -920,8 +984,8 @@ mytaglist         = {}
 mytaglist.buttons = awful.util.table.join(
                     awful.button({ }, 1, awful.tag.viewonly),
                     awful.button({ modkey }, 1, awful.client.movetotag),
-                    awful.button({ }, 3, awful.tag.viewtoggle),
-                    awful.button({ modkey }, 3, awful.client.toggletag),
+                    --awful.button({ }, 3, awful.tag.viewtoggle),
+                    --awful.button({ modkey }, 3, awful.client.toggletag),
                     awful.button({ }, 4, function(t) awful.tag.viewnext() end),
                     awful.button({ }, 5, function(t) awful.tag.viewprev() end)
                     )
@@ -980,59 +1044,6 @@ local function matchrules(rules, exclude)
 	if awful.rules.match(c, rules) then return not exclude end
     	return exclude
     end
-end
- function tasklist_update(w, buttons, label, data, objects)
-    -- update the widgets, creating them if needed
-    w:reset()
-    for i, o in ipairs(objects) do
-        local cache = data[o]
-        local ib, tb, bgb, m, l
-        if cache then
-            ib = cache.ib
-            tb = cache.tb
-            bgb = cache.bgb
-            m   = cache.m
-        else
-            ib = wibox.widget.imagebox()
-            tb = wibox.widget.textbox()
-            bgb = wibox.widget.background()
-            m = wibox.layout.margin(tb, 4, 4)
-            l = wibox.layout.fixed.horizontal()
-
-            -- All of this is added in a fixed widget
-            l:fill_space(true)
-	    l:add(ib)
-            --l:add(tb)
-
-            -- And all of this gets a background
-            bgb:set_widget(l)
-
-            bgb:buttons(common.create_buttons(buttons, o))
-
-            data[o] = {
-                ib = ib,
-                tb = tb,
-                bgb = bgb,
-                m   = m
-            }
-        end
-
-        local text, bg, bg_image, icon = label(o)
-        -- The text might be invalid, so use pcall
-	if icon == nil then
-		icon = "/home/ivn/Загрузки/KFaenzafordark/apps/48/konsole.png"
-	end
-        if not pcall(tb.set_markup, tb, text) then
-            tb:set_markup("<i>&lt;Invalid text&gt;</i>")
-        end
-        bgb:set_bg(bg)
-        if type(bg_image) == "function" then
-            bg_image = bg_image(tb,o,m,objects,i)
-        end
-        bgb:set_bgimage(bg_image)
-        ib:set_image(icon)
-        w:add(bgb)
-   end
 end
 
 mytasklist         = {}
@@ -1149,36 +1160,112 @@ root.buttons(awful.util.table.join(
     awful.button({modkey, }, 5, awful.tag.viewprev)
 ))
 
-function myglobal_bydirection(dir, c)
-    local screen = awful.screen
-    local sel = c or capi.client.focus
-    local scr = capi.mouse.screen
-    if sel then
-        scr = sel.screen
-    end
-    -- change focus inside the screen
-    awful.client.focus.bydirection(dir, sel)
-    if sel == capi.client.focus then
-	local number = nil
-	if dir == "left" then
-		number = 1
-	elseif dir == "right" then
-		number = -1
-	end
-	if number == nil or awful.client.visible()[number] == sel then
-		screen.focus_bydirection(dir, scr)
-	else
-		for i,k in pairs(awful.client.visible()) do
-			if k == sel then
-				local target = awful.client.visible()[i-number]
-				if target then
-					capi.client.focus = target
+function mybydirection(dir, c)
+	local sel = c or capi.client.focus
+	if sel then
+		local tag = awful.tag.selected(sel.screen)
+		local id = awful.tag.getidx(tag)
+		if id  == 1 then
+			local clientlist = tag:clients()
+			local clid = nil
+			for i,cl in pairs(clientlist) do
+				if cl == sel then
+					clid = i
+					break
 				end
-				return true
+			end
+			local number = nil
+			if dir == "left" then
+				number = -1
+			elseif dir == "right" then
+				number = 1
+			end
+			if number then
+				clid = clid + number
+				if (clid > 0) and (clid <= #clientlist) then
+					local target = clientlist[clid]
+					-- If we found a client to focus, then do it.
+					if target then
+						capi.client.focus = target
+					end
+				end
+			end
+				
+		else
+			local cltbl = awful.client.visible(sel.screen)
+			local geomtbl = {}
+			for i,cl in ipairs(cltbl) do
+				geomtbl[i] = cl:geometry()
+			end
+
+			local target = awful.util.get_rectangle_in_direction(dir, geomtbl, sel:geometry())
+
+			-- If we found a client to focus, then do it.
+			if target then
+				capi.client.focus = cltbl[target]
 			end
 		end
 	end
-    end
+end
+local function myglobal_bydirection(dir, c)
+	local screen = awful.screen
+	local sel = c or capi.client.focus
+	local scr = capi.mouse.screen
+	if sel then
+		scr = sel.screen
+	end
+	-- change focus inside the screen
+	mybydirection(dir, sel)
+
+	-- if focus not changed, we must change screen
+	if sel == capi.client.focus then
+		screen.focus_bydirection(dir, scr)
+		if scr ~= capi.mouse.screen then
+			local tag = awful.tag.selected(capi.mouse.screen)
+			local id = awful.tag.getidx(tag)
+			if id  ~= 1 then
+
+				local cltbl = awful.client.visible(capi.mouse.screen)
+				local geomtbl = {}
+				for i,cl in ipairs(cltbl) do
+					geomtbl[i] = cl:geometry()
+				end
+				local target = awful.util.get_rectangle_in_direction(dir, geomtbl, capi.screen[scr].geometry)
+
+				if target then
+					capi.client.focus = cltbl[target]
+				end
+			end
+		end
+	end
+	--print("this")
+	--if sel == capi.client.focus then
+		----print("freenge")
+		--local visibleclients = awful.client.visible(scr)
+		----{}
+		----for i,t in pairs(awful.tag.selectedlist(scr)) do
+		----visibleclients = awful.util.table.join(visibleclients,t:clients())
+		----end
+		--for i,t in pairs(visibleclients) do
+			----print(i.."—"..t.window)
+		--end
+		----print(visibleclients[k].name.."="..sel.name)
+		--if number == nil or visibleclients[k] == sel then
+			----print("number="..tostring(number))
+			--screen.focus_bydirection(dir, scr)
+		--else
+			--for i,k in pairs(visibleclients) do
+				--if k == sel then
+					----print(i.."->"..(i-number))
+					--local target = visibleclients[i-number]
+					--if target then
+						--capi.client.focus = target
+					--end
+					--return true
+				--end
+			--end
+		--end
+	--end
 end
 -- | Key bindings | --
 
@@ -1194,7 +1281,13 @@ globalkeys = awful.util.table.join(
 		end),
     awful.key({ modkey, "Control" }, "r", 
 		function ()
-			mpd_play_pause()
+			--local bomi = os.execute("pgrep bomi")
+			if capi.client.focus.class == "bomi" then
+				os.execute("dbus-send --type=method_call --dest=org.mpris.MediaPlayer2.bomi /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.PlayPause")
+			else
+				mpd_play_pause()
+			end
+			--print(bomi)
 		end),
     awful.key({ modkey, "Control" }, "s", 
 		function ()
@@ -1794,8 +1887,8 @@ client.connect_signal("focus", function(c)
 	if mouse.coords().y > 22 then
 	if not (c == mouse.object_under_pointer()) then
 		geom=c.geometry(c)
-		x=geom.x+math.modf(geom.width/2)+1
-		y=geom.y+math.modf(geom.height/2)+1
+		x=geom.x+math.modf(geom.width/2)--+1
+		y=geom.y+math.modf(geom.height/2)--+1
 
 		moveMouse(x,y)
 		--client.foucs = c
@@ -1834,7 +1927,7 @@ client.connect_signal("manage", function(c)
 	tag = taglist[1]
 	for i,t in pairs(c.tags(c)) do
 		if t == taglist[2] then
-			print(t.name)
+			--print(t.name)
 			return true
 		end
 		if t == tag then
@@ -1969,6 +2062,7 @@ end
 -- | Autostart | --
 
 os.execute("pkill compton")
+os.execute("pkill pidgin; pidgin &")
 os.execute("pkill xcape")
 os.execute("setxkbmap 'my(dvp),my(rus)' &")
 --os.execute("xkbcomp $HOME/.config/xkb/my $DISPLAY &")
@@ -1986,12 +2080,11 @@ run_once("redshiftgui")
 run_once("thunderbird")
 os.execute('xcape -t 1000 -e "Control_L=Tab;ISO_Level3_Shift=Multi_key"' )
 -- run_once("parcellite")
-run_once("pidgin")
+--run_once("pidgin")
 run_once("compton --config /home/ivn/.config/compton.conf -b &")
 --run_once(xautolock)
 run_once("firefox")
 run_once("goldendict")
-
 
 
 naughty.notify({ preset = naughty.config.presets.critical,
