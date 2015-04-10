@@ -1,6 +1,0 @@
-[submodule "revelation"]
-	path = awesome-revelation
-	url = git@github.com:seniorivn/awesome-revelation.git
-[submodule "newtag"]
-	path = awesome-newtag
-	url = git@github.com:seniorivn/awesome-newtag.git
