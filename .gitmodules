@@ -22,3 +22,6 @@
 [submodule "tyrannical"]
 	path = tyrannical
 	url = git@github.com:Elv13/tyrannical.git 
+[submodule "scratch"]
+	path = scratch
+	url = git@github.com:seniorivn/awesome-scratch.git
