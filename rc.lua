@@ -11,7 +11,7 @@ local APW 	 = require("apw/widget")
 local wibox      = require("wibox")
 local beautiful  = require("beautiful")
 local vicious    = require("vicious")
-local naughty    = require("naughty")
+local naughty    = require("notifybar")
 local lain       = require("lain")
 --local cyclefocus = require('cyclefocus')
 local rork = require("rork")      
@@ -162,9 +162,9 @@ tyrannical.tags = {
     } ,
     {
 	name        = tagnames[2],
-	init        = true, -- This tag wont be created at startup, but will be when one of the
-	exclusive   = true,                     -- client in the "class" section will start. It will be created on
-	screen	    = 1,                     -- the client startup screen
+	init        = true, 	
+	exclusive   = true,               
+	screen	    = 1,                    
 	hide	    = true,
 	ncol	    = 3,
 	mwfact      = 0.15,
@@ -969,7 +969,7 @@ local function taglist_update(w, buttons, label, data, objects)
 		if not pcall(tb.set_markup, tb, text) then
 			tb:set_markup("<i>&lt;Invalid text&gt;</i>")
 		end
-		bgb:set_bg(bg)
+		--bgb:set_bg(bg)
 		if type(bg_image) == "function" then
 			bg_image = bg_image(tb,o,m,objects,i)
 		end
@@ -1266,7 +1266,82 @@ local function myglobal_bydirection(dir, c)
 			--end
 		--end
 	--end
-end
+end    	
+imclient = nil
+local function im()
+		local tag = awful.tag.gettags(1)[2]
+		local function getcl(c)
+			if imclient then
+				--moveback(imclient)
+				client.emit_signal("unfocus")
+				imclient = c
+				capi.client.focus = c
+			end
+			local prop = {}
+			prop.screen = c.screen
+			--prop.tags = c:tags()
+			prop.opacity = c.opacity
+			prop.ontop = c.ontop
+			prop.sticky = false
+			prop.urgent = false
+			prop.floating = c.floating
+			awful.client.floating.set(c,true)
+			c.ontop = true
+			prop.opacity = c.opacity
+			c.opacity = 0.7
+			local oldgeom = c:geometry()
+			local screen = capi.mouse.screen
+			awful.client.movetoscreen(c,screen)
+			c:tags(awful.tag.selectedlist(screen))
+			local screengeom = capi.screen[screen].workarea
+			local clgeom = {}
+			clgeom.width = screengeom.width/4
+			clgeom.x =  screengeom.x+screengeom.width-clgeom.width
+			clgeom.y =  screengeom.y --+20
+			clgeom.height = screengeom.height
+			c:geometry(clgeom)
+			clgeom.x =  screengeom.x+screengeom.width-clgeom.width
+			c:geometry(clgeom)
+			capi.client.focus = c
+			local function moveback(cl)
+				if cl == c then
+					cl.hidden = false
+					--print(c.name)
+					cl:tags({})
+					cl.opacity = prop.opacity
+					cl.ontop = prop.ontop
+					cl.sticky = prop.sticky
+					cl.urgent = prop.urgent
+					awful.client.floating.set(cl,prop.floating)
+					--for i,k in ipairs(prop) do
+						--cl[i] = k
+					--end
+					--cl.opacity = 1
+					--awful.client.movetoscreen(cl,prop.screen)
+
+					--cl:tags({tag})
+					awful.client.movetotag(tag,cl)
+					awful.client.floating.set(cl,prop.floating)
+					cl:geometry(oldgeom)
+					client.disconnect_signal("unfocus", moveback)
+					imclient = nil
+				end
+			end
+			client.connect_signal("unfocus", moveback)
+
+
+		end
+		for i,cl in pairs(tag:clients()) do
+			if cl.urgent then
+				getcl(cl)
+				return true
+			end
+		end
+		--print("no urgent")
+		awful.tag.viewonly(tag)
+		hints.focus(1)
+		return false
+    	end
 -- | Key bindings | --
 
 globalkeys = awful.util.table.join(
@@ -1282,7 +1357,7 @@ globalkeys = awful.util.table.join(
     awful.key({ modkey, "Control" }, "r", 
 		function ()
 			--local bomi = os.execute("pgrep bomi")
-			if capi.client.focus.class == "bomi" then
+			if mouse.object_under_pointer().class == "bomi" then
 				os.execute("dbus-send --type=method_call --dest=org.mpris.MediaPlayer2.bomi /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.PlayPause")
 			else
 				mpd_play_pause()
@@ -1504,12 +1579,7 @@ globalkeys = awful.util.table.join(
 	    cheeky.util.switcher()
 	    --hints.focus() 
     end),
-    awful.key({ modkey,    }, "i",  
-    	function ()
-		tag = awful.tag.gettags(1)[2]
-		awful.tag.viewonly(tag)
-		hints.focus(1)
-    	end),
+    awful.key({ modkey,    }, "i", im),
     awful.key({ modkey,    }, "a",  
     	function () 
 	    revelation({
@@ -1723,8 +1793,8 @@ awful.rules.rules = {
 	 --properties = { tag = tags[1][2], switchtotag = true}},
     --{ rule = { class = "Firefox"},
 	 --properties = { tag = tags[1][5], switchtotag = true}},
-    --{ rule = { class = "Pidgin", role = "buddy_list"},
-	 --properties = { tag = tags[1][3] } },
+    { rule = { class = "Pidgin", role = "buddy_list"},
+	 properties = { tag = awful.tag.gettags(1)[2], switchtotag = false, no_autofocus = true }},
     { rule = { class = "Pidgin", role = "conversation"},
 	 properties = { tag = awful.tag.gettags(1)[2], switchtotag = false, no_autofocus = true },
 	  callback = awful.client.setslave },
@@ -2062,7 +2132,7 @@ end
 -- | Autostart | --
 
 os.execute("pkill compton")
-os.execute("pkill pidgin; pidgin &")
+--os.execute("pkill pidgin; pidgin &")
 os.execute("pkill xcape")
 os.execute("setxkbmap 'my(dvp),my(rus)' &")
 --os.execute("xkbcomp $HOME/.config/xkb/my $DISPLAY &")
@@ -2080,17 +2150,20 @@ run_once("redshiftgui")
 run_once("thunderbird")
 os.execute('xcape -t 1000 -e "Control_L=Tab;ISO_Level3_Shift=Multi_key"' )
 -- run_once("parcellite")
---run_once("pidgin")
+run_once("pidgin")
 run_once("compton --config /home/ivn/.config/compton.conf -b &")
 --run_once(xautolock)
 run_once("firefox")
 run_once("goldendict")
 
 
-naughty.notify({ preset = naughty.config.presets.critical,
-                     title = "Awesme start correct, though...",
-		     bg = beautiful.bg_normal,
-                     text = awesome.startup_errors,
-	     	     timeout = 2,
-		     position = "top_left"
-	     }) 
+local notif = naughty.notify({ preset = naughty.config.presets.critical,
+title = "Awesme start correct, though...",
+bg = beautiful.bg_normal,
+text = awesome.startup_errors,
+timeout = 2,
+position = "top_left"})
+
+
+
+--print(notif.box)
