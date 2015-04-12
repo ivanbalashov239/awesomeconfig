@@ -1084,6 +1084,7 @@ mytasklist.buttons = awful.util.table.join(
 mywibox           = {}
 mypromptbox       = {}
 mylayoutbox       = {}
+mynotifybar = {}
 
 for s = 1, screen.count() do
    
@@ -1108,7 +1109,10 @@ for s = 1, screen.count() do
 
 --tasklist.new(screen, filter, buttons, style, update_function, base_widget)
     mywibox[s] = awful.wibox({ position = "top", screen = s, height = "22" })
-
+    if s == 1 then
+	    mynotifybar = awful.wibox({position = "right", screen = s, width = "250"})
+    end
+    mynotifybar:set_widget(naughty.bar)
     local left_layout = wibox.layout.fixed.horizontal()
     
     --left_layout:add(mylauncher)
