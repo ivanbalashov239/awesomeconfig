@@ -22,15 +22,18 @@ local bt = require("beautiful")
 local wibox = require("wibox")
 local surface = require("gears.surface")
 local cairo = require("lgi").cairo
+local stacklayout = require("notifybar.stacklayout")
 
 local schar = string.char
 local sbyte = string.byte
 local tcat = table.concat
 local tins = table.insert
 
+
 --- Notification library
 local naughty = {}
 
+naughty.stack = stacklayout.vertical()
 --- Naughty configuration - a table containing common popup settings.
 naughty.config = {}
 --- Space between popups and edge of the workarea. Default: 4
@@ -212,7 +215,10 @@ end
 --- Destroy notification by notification object
 -- @param notification Notification object to be destroyed
 -- @return True if the popup was successfully destroyed, nil otherwise
-function naughty.destroy(notification)
+function naughty.destroy(notification, bar)
+    if notification and naughty.stack and bar then
+	    naughty.stack:remove(notification.idx)
+    end
     if notification and notification.box.visible then
         if suspended then
             for k, v in pairs(naughty.notifications.suspended) do
@@ -491,6 +497,12 @@ function naughty.notify(args)
         layout:add(iconmargin)
     end
     layout:add(marginbox)
+
+    if naughty.stack then
+	    layout.id = notification.idx
+	    naughty.stack:add(layout)
+    end
+
     notification.box:set_widget(layout)
 
     -- Setup the mouse events
@@ -505,7 +517,6 @@ function naughty.notify(args)
     end
 
     -- return the notification
-    notification.layout = layout
     return notification
 end
 
@@ -598,6 +609,7 @@ if capi.dbus then
             if expire and expire > -1 then
                 args.timeout = expire / 1000
             end
+	    naughty.notify({title = "dbus-send"})
             local id = naughty.notify(args).id
             return "u", id
         end

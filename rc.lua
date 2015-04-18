@@ -11,7 +11,7 @@ local APW 	 = require("apw/widget")
 local wibox      = require("wibox")
 local beautiful  = require("beautiful")
 local vicious    = require("vicious")
-local naughty    = require("notifybar")
+local naughty    = require("naughty") --"notifybar")
 local lain       = require("lain")
 --local cyclefocus = require('cyclefocus')
 local rork = require("rork")      
@@ -105,6 +105,7 @@ local exec   = function (s) oldspawn(s, false) end
 local shexec = awful.util.spawn_with_shell
 
 modkey        = "Mod4"
+altgr        = "Mod5"
 altkey        = "Mod1"
 
 -- table of apps and they classes
@@ -646,15 +647,15 @@ bat_layout:connect_signal('mouse::leave', function () batwidget:hide()  end)
 --battery_timer = timer({ timeout = 5 })
 --battery_timer:connect_signal("timeout", function ()
 
-local f = io.popen("acpi -b | grep Discharging")
-local str = f:read()
-f.close()
-if not (str == nil) then
+--local f = io.popen("acpi -b | grep Discharging")
+--local str = f:read()
+--f.close()
+--if not (str == nil) then
 
-	--end)
-	--battery_timer:start()
+	----end)
+	----battery_timer:start()
 	bat_layout:add(batterywidget)
-end
+--end
 
 
 
@@ -695,7 +696,13 @@ kbdwidget = widgetcreator(
 
 -- | Mail | --
 
---mail_widget = wibox.widget.textbox()
+--mail_widget = lain.widgets.maildir({
+	--mailpath = "/home/ivn/.thunderbird/dx9e29o5.default/ImapMail/imap.yandex-1.com/INBOX",
+--}) 
+--mailwidget = widgetcreator({
+	--textboxes = {mail_widget},
+--})
+--wibox.widget.textbox()
 --vicious.register(mail_widget, vicious.widgets.gmail, vspace1 .. "${count}" .. vspace1, 1200)
 
 --widget_mail = wibox.widget.imagebox()
@@ -756,14 +763,14 @@ memwidget = widgetcreator(
 
 -- | FS | --
 
-fs_widget = wibox.widget.textbox()
-vicious.register(fs_widget, vicious.widgets.fs, vspace1 .. "${/ avail_gb}GB" .. vspace1, 2)
-fswidget = widgetcreator(
-{
-	--image = beautiful.widget_fs,
-	text = "SSD",
-	textboxes = {fs_widget}
-})
+--fs_widget = wibox.widget.textbox()
+--vicious.register(fs_widget, vicious.widgets.fs, vspace1 .. "${/ avail_gb}GB" .. vspace1, 2)
+--fswidget = widgetcreator(
+--{
+	----image = beautiful.widget_fs,
+	--text = "SSD",
+	--textboxes = {fs_widget}
+--})
 
 -- | NET | --
 
@@ -1109,10 +1116,13 @@ for s = 1, screen.count() do
 
 --tasklist.new(screen, filter, buttons, style, update_function, base_widget)
     mywibox[s] = awful.wibox({ position = "top", screen = s, height = "22" })
-    if s == 1 then
-	    mynotifybar = awful.wibox({position = "right", screen = s, width = "250"})
-    end
-    mynotifybar:set_widget(naughty.bar)
+    --if s == 2 then
+	    --local sidebar = wibox.layout.align.vertical()
+	    --mynotifybar = awful.wibox({position = "right", screen = s, width = "250"})
+	    --if naughty.stack then
+		    --mynotifybar:set_widget(naughty.stack)
+	    --end
+    --end
     local left_layout = wibox.layout.fixed.horizontal()
     
     --left_layout:add(mylauncher)
@@ -1139,8 +1149,9 @@ for s = 1, screen.count() do
     right_layout:add(musicwidget)
     right_layout:add(pulsewidget) 
     right_layout:add(cpuwidget)
+    --right_layout:add(mailwidget)
     right_layout:add(memwidget)
-    right_layout:add(fswidget)
+    --right_layout:add(fswidget)
     right_layout:add(bat_layout)
     right_layout:add(calendarwidget)
     right_layout:add(clockwidget)
@@ -1271,17 +1282,33 @@ local function myglobal_bydirection(dir, c)
 		--end
 	--end
 end    	
-imclient = nil
+--imclient = nil
 local function im()
 		local tag = awful.tag.gettags(1)[2]
 		local function getcl(c)
-			if imclient then
-				--moveback(imclient)
-				client.emit_signal("unfocus")
-				imclient = c
-				capi.client.focus = c
-			end
+			--if imclient then
+				----moveback(imclient)
+				--imclient:emit_signal("unfocus")
+				--imclient = c
+				----capi.client.focus = c
+			--end
+			local keys = awful.util.table.join(
+			awful.key({modkey,           }, "i",      function (c) 
+				c:emit_signal("unfocus")
+				imclient = nil
+				im()
+			end),
+			awful.key({altgr,           }, "u",      function (c) 
+				c:emit_signal("unfocus")
+			end)
+			--,
+			--awful.key({ }, "Escape",      function (c) 
+				--c:emit_signal("unfocus")
+			--end)
+			)
 			local prop = {}
+			prop.keys = c:keys()
+			c:keys(keys)
 			prop.screen = c.screen
 			--prop.tags = c:tags()
 			prop.opacity = c.opacity
@@ -1308,7 +1335,6 @@ local function im()
 			c:geometry(clgeom)
 			capi.client.focus = c
 			local function moveback(cl)
-				if cl == c then
 					cl.hidden = false
 					--print(c.name)
 					cl:tags({})
@@ -1316,6 +1342,7 @@ local function im()
 					cl.ontop = prop.ontop
 					cl.sticky = prop.sticky
 					cl.urgent = prop.urgent
+					cl:keys(prop.keys)
 					awful.client.floating.set(cl,prop.floating)
 					--for i,k in ipairs(prop) do
 						--cl[i] = k
@@ -1327,18 +1354,21 @@ local function im()
 					awful.client.movetotag(tag,cl)
 					awful.client.floating.set(cl,prop.floating)
 					cl:geometry(oldgeom)
-					client.disconnect_signal("unfocus", moveback)
-					imclient = nil
-				end
+					cl:disconnect_signal("unfocus", moveback)
+					--imclient = nil
 			end
-			client.connect_signal("unfocus", moveback)
+			c:connect_signal("unfocus", moveback)
 
 
 		end
 		for i,cl in pairs(tag:clients()) do
 			if cl.urgent then
-				getcl(cl)
-				return true
+				if awful.tag.selected() == tag then
+					capi.client.focus = cl
+				else
+					getcl(cl)
+				end
+					return true
 			end
 		end
 		--print("no urgent")
@@ -1361,7 +1391,7 @@ globalkeys = awful.util.table.join(
     awful.key({ modkey, "Control" }, "r", 
 		function ()
 			--local bomi = os.execute("pgrep bomi")
-			if mouse.object_under_pointer().class == "bomi" then
+			if mouse.object_under_pointer() and mouse.object_under_pointer().class == "bomi" then
 				os.execute("dbus-send --type=method_call --dest=org.mpris.MediaPlayer2.bomi /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.PlayPause")
 			else
 				mpd_play_pause()
@@ -1492,7 +1522,7 @@ globalkeys = awful.util.table.join(
             if client.focus then client.focus:raise() end
         end),
 
-	awful.key({ modkey, "Mod5"           }, "d",   function ()  
+	awful.key({ modkey, altgr           }, "d",   function ()  
 		local s = (capi.mouse.screen + 1) % 3
 		if s == 0 then
 			s = s + 1
@@ -1657,7 +1687,9 @@ globalkeys = awful.util.table.join(
    --awful.key({ modkey,	          }, "u",      function () drop(terminal) end), 
    awful.key({ modkey, "Control"  }, "x",      function () exec("/home/ivn/scripts/trackpoint/trackpointkeys.sh switch &") end),
    awful.key({ modkey,  }, "Left",     function() brightnessdec() end),
-   awful.key({ modkey,  }, "Right",    function() brightnessinc() end)
+   awful.key({ modkey,  }, "Right",    function() brightnessinc() end),
+   awful.key({ modkey,altgr  }, "h",     function() brightnessdec() end),
+   awful.key({ modkey,altgr  }, "s",    function() brightnessinc() end)
 
 --{ awful.key({ modkey, }, "k", function () quake.toggle({ terminal = "termite",
 --			name = "QuakeTermite",
@@ -1985,14 +2017,14 @@ client.connect_signal("focus", function(c)
 	if not (mode == keysmode) then
 		keysmode = mode
 		os.execute("/home/ivn/scripts/trackpoint/trackpointkeys.sh "..keysmode.." &")
-	naughty.destroy(trackpointnotify)
-	trackpointnotify = naughty.notify({
-		title = "TrackPoint Keys",
-		text = keysmode,
-		icon = "/home/ivn/scripts/trackpoint/"..keysmode..".png",
-		timeout = 2,
-		screen = mouse.screen or 1
-	})
+		naughty.destroy(trackpointnotify, true)
+		trackpointnotify = naughty.notify({
+			title = "TrackPoint Keys",
+			text = keysmode,
+			icon = "/home/ivn/scripts/trackpoint/"..keysmode..".png",
+			timeout = 2,
+			screen = mouse.screen or 1
+		})
 	end
 end)
 
@@ -2071,7 +2103,7 @@ end)
 
    function brightnessdec() 
 	   for i,k in pairs(screen[mouse.screen].outputs) do
-		   if i == "HDMI1" then
+		   if (i == "HDMI1") or (i == "HDMI-0")  then
 			   local sh = io.popen("xrandr --verbose | grep -A 5 -i HDMI | grep -i brightness | cut -f2 -d ' '")
 			   if sh == nil then
 				   return false
@@ -2088,9 +2120,9 @@ end)
 			   if br > 1 then
 				   br = 1
 			   end
-			   os.execute("xrandr --output HDMI1 --brightness "..br)
+			   os.execute("xrandr --output "..i.." --brightness "..br)
 			   --naughty.notify({title = i})
-		   elseif i == "LVDS1" then
+		   elseif (i == "LVDS1") or (i == "LVDS") then
 			   --naughty.notify({title = i})
 			   exec("xbacklight -dec 10")
 		   end
@@ -2098,7 +2130,7 @@ end)
    end
     function brightnessinc() 
 	   for i,k in pairs(screen[mouse.screen].outputs) do
-		   if i == "HDMI1" then
+		   if (i == "HDMI1") or (i == "HDMI-0")  then
 			   local sh = io.popen("xrandr --verbose | grep -A 5 -i HDMI | grep -i brightness | cut -f2 -d ' '")
 			   if sh == nil then
 				   return false
@@ -2115,8 +2147,8 @@ end)
 			   if br > 1 then
 				   br = 1
 			   end
-			   os.execute("xrandr --output HDMI1 --brightness "..br)
-		   elseif i == "LVDS1" then
+			   os.execute("xrandr --output "..i.." --brightness "..br)
+		   elseif (i == "LVDS1") or (i == "LVDS") then
 			   --naughty.notify({title = i})
 			   exec("xbacklight -inc 10")
 		   end
@@ -2135,7 +2167,7 @@ end
 
 -- | Autostart | --
 
-os.execute("pkill compton")
+--os.execute("pkill compton")
 --os.execute("pkill pidgin; pidgin &")
 os.execute("pkill xcape")
 os.execute("setxkbmap 'my(dvp),my(rus)' &")
@@ -2143,22 +2175,22 @@ os.execute("setxkbmap 'my(dvp),my(rus)' &")
 os.execute("/home/ivn/scripts/trackpoint/trackpointkeys.sh normalmode &")
 os.execute("xset s off")
 os.execute("xset -dpms")
-run_once("linconnect-server &")
+--run_once("linconnect-server &")
 run_once("kbdd")
 run_once("mpd /home/ivn/.config/mpd/mpd.conf")
 run_once("dropbox")
 run_once("nm-applet")
 --run_once("pa-applet")
-run_once("qbittorrent")
-run_once("redshiftgui")
-run_once("thunderbird")
+--run_once("qbittorrent")
+--run_once("redshiftgui")
+--run_once("thunderbird")
 os.execute('xcape -t 1000 -e "Control_L=Tab;ISO_Level3_Shift=Multi_key"' )
 -- run_once("parcellite")
 run_once("pidgin")
-run_once("compton --config /home/ivn/.config/compton.conf -b &")
+--run_once("compton --config /home/ivn/.config/compton.conf -b &")
 --run_once(xautolock)
-run_once("firefox")
-run_once("goldendict")
+--run_once("firefox")
+--run_once("goldendict")
 
 
 local notif = naughty.notify({ preset = naughty.config.presets.critical,

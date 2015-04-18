@@ -25,3 +25,6 @@
 [submodule "scratch"]
 	path = scratch
 	url = git@github.com:seniorivn/awesome-scratch.git
+[submodule "net_widgets"]
+	path = net_widgets
+	url = git@github.com:plotnikovanton/netwidgets.git
