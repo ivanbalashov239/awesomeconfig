@@ -7,12 +7,15 @@ local fixed 	 = require("wibox.layout.fixed")
 --                   require("sharetags")
 local hints 	 = require("hints")
 local tyrannical = require("tyrannical")
-local APW 	 = require("apw/widget")
+local apw 	 = require("apw/widget")
 local wibox      = require("wibox")
 local beautiful  = require("beautiful")
 local vicious    = require("vicious")
 local naughty    = require("naughty") --"notifybar")
+local hidetray	 = require("hidetray")
+local systray	 = require("systray")
 local lain       = require("lain")
+local net_widgets = require("net_widgets")
 --local cyclefocus = require('cyclefocus')
 local rork = require("rork")      
 local run_or_raise = rork.run_or_raise
@@ -76,9 +79,9 @@ end
 
 -- | Fix's | --
 
-   --APWTimer = timer({ timeout = 1 }) -- set update interval in s
-   --APWTimer:connect_signal("timeout", APW.Update)
-  -- APWTimer:start()
+   --apwTimer = timer({ timeout = 1 }) -- set update interval in s
+   --apwTimer:connect_signal("timeout", apw.Update)
+  -- apwTimer:start()
 
 -- Disable cursor animation:
 
@@ -117,6 +120,8 @@ tmux          = "termite -e tmux"
 termax        = "termite --geometry 1680x1034+0+22"
 htop_cpu      = "termite -e 'htop -s PERCENT_CPU' -r HTOP_CPU"
 htop_mem      = "termite -e 'htop -s PERCENT_MEM' -r HTOP_MEM"
+mutt	      = "uxterm -fs 12 -e 'mutt -F" -- -class MAIL 
+--wifi_menu     = "termite -e 'sudo wifi-menu' -r WIFI_MENU"
 rootterm      = "sudo -i termite"
 ncmpcpp       = "urxvt -geometry 254x60+80+60 -e ncmpcpp"
 newsbeuter    = "urxvt -g 210x50+50+50 -e newsbeuter"
@@ -356,7 +361,6 @@ menu_main = {
 	  local function widgetcreator(args)
 		  local layout = args.layout or wibox.layout.fixed.horizontal()
 		  local spr = args.spr or spr
-		  local widgets = args.widgetns or nil
 		  layout:add(spr)
 		  if args.image then
 			  local widget_image = wibox.widget.imagebox()
@@ -579,70 +583,82 @@ end)
 
 -- Pusleaudio controll --
 
-pulseBar = APW
-pulseBox = pulseBar.getTextBox()
+pulse_widgets = apw({
+	container = false,
+	mixer1 = function () 
+		run_or_kill("veromix", { class = "veromix" }, {x = mouse.coords().x, y = mouse.coords().y, funcafter = apw.update, screen=mouse.screen}) 
+	end,
+	mixer2 =  function () 
+		run_or_kill("pavucontrol", { class = "Pavucontrol" }, {x = mouse.coords().x, y = mouse.coords().y, funcafter = apw.update, screen=mouse.screen}) 
+	end
+})
 pulsewidget = widgetcreator(
 {
-	widgets = {pulseBar},
-	textboxes = {pulseBox}
+	widgets = {pulse_widgets["progressbar"]},
+	textboxes = {pulse_widgets["textbox"]}
 })
 
-pulseBar:buttons(awful.util.table.join(pulseBar.buttonsTable, awful.button({ }, 1, function () run_or_kill("veromix", { class = "veromix" }, {x = mouse.coords().x, y = mouse.coords().y, funcafter = APW.Update, screen=mouse.screen}) end),
-awful.button({ }, 3, function () run_or_kill("pavucontrol", { class = "Pavucontrol" }, {x = mouse.coords().x, y = 22, funcafter = APW.Update, screen=mouse.screen}) end)))
-pulseBox:buttons(awful.util.table.join(pulseBar.buttonsTable, awful.button({ }, 1, function () run_or_kill("veromix", { class = "veromix" }, {x = mouse.coords().x, y = 22, funcafter = APW.Update, screen=mouse.screen}) end),
-awful.button({ }, 3, function () run_or_kill("pavucontrol", { class = "Pavucontrol" }, {x = mouse.coords().x, y = 22, funcafter = APW.Update, screen=mouse.screen}) end)))
+--pulseBar:buttons(awful.util.table.join(pulseBar.buttonsTable, awful.button({ }, 1, function () run_or_kill("veromix", { class = "veromix" }, {x = mouse.coords().x, y = mouse.coords().y, funcafter = apw.Update, screen=mouse.screen}) end),
+--awful.button({ }, 3, function () run_or_kill("pavucontrol", { class = "Pavucontrol" }, {x = mouse.coords().x, y = mouse.coords().y, funcafter = apw.Update, screen=mouse.screen}) end)))
+apw:setbuttons(pulsewidget)
+apw:attach(pulsewidget)
 
 -- Battery widget
 
-baticon = wibox.widget.imagebox(beautiful.widget_battery)
-batwidget = lain.widgets.bat({
-battery = "BAT1",
-settings = function()
-	if bat_now.status == "Charging" then
-		baticon:set_image(beautiful.widget_ac)
-		elseif bat_now.perc == "N/A" then
-			widget:set_markup("AC")
-			baticon:set_image(beautiful.widget_ac)
-			return
-			elseif tonumber(bat_now.perc) <= 5 then
-				baticon:set_image(beautiful.widget_battery_empty)
-				elseif tonumber(bat_now.perc) <= 15 then
-					baticon:set_image(beautiful.widget_battery_low)
-				else
-					baticon:set_image(beautiful.widget_battery)
-				end
-				widget:set_markup(" " .. bat_now.perc .. "% ")
-			end
-		})
-batterywidget = widgetcreator(
-{
-	widgets = {baticon},
-	textboxes = {batwidget}
-})
-local function battery_time_grabber()
-f = io.popen("acpi -b | awk '{print $5}' | awk -F \":\" '{print $1\":\"$2 }'")
-str = f:read()
-f.close()
-return str.." remaining"
-end
-local battery_notify = nil
-function batwidget:hide()
-	if battery_notify ~= nil then
-		naughty.destroy(battery_notify)
-		battery_notify = nil
-	end
-end
-function batwidget:show(t_out)
-	batwidget:hide()
-	battery_notify = naughty.notify({
-		preset = fs_notification_preset,
-		text = battery_time_grabber(),
-		timeout = t_out,
-	})
-end
-bat_layout = wibox.layout.fixed.horizontal()
-bat_layout:connect_signal('mouse::enter', function () batwidget:show(0) end)
-bat_layout:connect_signal('mouse::leave', function () batwidget:hide()  end)
+--baticon = wibox.widget.imagebox(beautiful.widget_battery)
+--batwidget = lain.widgets.bat({
+--battery = "BAT1",
+--settings = function()
+	--if bat_now.status == "Charging" then
+		--baticon:set_image(beautiful.widget_ac)
+		--elseif bat_now.perc == "N/A" then
+			--widget:set_markup("AC")
+			--baticon:set_image(beautiful.widget_ac)
+			--return
+			--elseif tonumber(bat_now.perc) <= 5 then
+				--baticon:set_image(beautiful.widget_battery_empty)
+				--elseif tonumber(bat_now.perc) <= 15 then
+					--baticon:set_image(beautiful.widget_battery_low)
+				--else
+					--baticon:set_image(beautiful.widget_battery)
+				--end
+				--widget:set_markup(" " .. bat_now.perc .. "% ")
+			--end
+		--})
+--batterywidget = widgetcreator(
+--{
+	--widgets = {baticon},
+	--textboxes = {batwidget}
+--})
+--local function battery_time_grabber()
+	--f = io.popen("acpi -b | awk '{print $5}' | awk -F \":\" '{print $1\":\"$2 }'")
+	--str = f:read()
+	--f.close()
+	--if str then
+		--return str.." remaining"
+	--else
+		--return "no battery"
+	--end
+--end
+--local battery_notify = nil
+--function batwidget:hide()
+	--if battery_notify ~= nil then
+		--naughty.destroy(battery_notify)
+		--battery_notify = nil
+	--end
+--end
+--function batwidget:show(t_out)
+	--batwidget:hide()
+	--battery_notify = naughty.notify({
+		--preset = fs_notification_preset,
+		--text = battery_time_grabber(),
+		--timeout = t_out,
+		--screen = mouse.screen
+	--})
+--end
+--bat_layout = wibox.layout.fixed.horizontal()
+--bat_layout:connect_signal('mouse::enter', function () batwidget:show(0) end)
+--bat_layout:connect_signal('mouse::leave', function () batwidget:hide()  end)
 
 --battery_timer = timer({ timeout = 5 })
 --battery_timer:connect_signal("timeout", function ()
@@ -654,7 +670,7 @@ bat_layout:connect_signal('mouse::leave', function () batwidget:hide()  end)
 
 	----end)
 	----battery_timer:start()
-	bat_layout:add(batterywidget)
+	--bat_layout:add(batterywidget)
 --end
 
 
@@ -696,12 +712,119 @@ kbdwidget = widgetcreator(
 
 -- | Mail | --
 
---mail_widget = lain.widgets.maildir({
-	--mailpath = "/home/ivn/.thunderbird/dx9e29o5.default/ImapMail/imap.yandex-1.com/INBOX",
---}) 
---mailwidget = widgetcreator({
-	--textboxes = {mail_widget},
---})
+local ignoremail = {
+	"[Gmail].Trash",
+	"[Gmail].Spam",
+	"[Gmail].All Mail",
+	"[Gmail].Drafts",
+	"[Gmail].Important",
+	"[Gmail].Sent Mail",
+	"[Gmail].Starred",
+	"[Gmail].Junk",
+	"[Gmail].Starred",
+	"Drafts",
+	"Junk",
+	"Notes",
+	"Trash",
+	"Личные",
+	"Путешествие",
+	"Работа",
+	"Счета",
+	"Спам",
+	"[Mailbox]",
+	"[Mailbox].Later",
+	"[Mailbox].To buy",
+	"[Mailbox].To Read",
+	"[Mailbox].To Watch",
+}
+local function mailnotif(args)
+			return naughty.notify({
+				title = args.title,
+				text = args.text,
+				icon = args.icon or "/home/ivn/Загрузки/KFaenzafordark/status/32/mail-queued.png",
+				timeout = args.timeout,
+				screen = mouse.screen or 1,
+				run = args.run,
+			})
+end
+
+local function getmailwidget(args)
+	local args = args or {}
+	args.total = 0
+	args.newmail = ""
+	args.mailbox = args.mailbox or ""
+	local function run() 
+		local cm = mutt.." /home/ivn/.mutt/"..args.mailbox.."'"
+		run_or_raise(cm, { class = "UXTerm" }) 
+	end
+	args.textbox = lain.widgets.maildir({
+		mailpath = "/home/ivn/Mail/"..args.mailbox,
+		settings = function()
+			args.textbox:set_text(total) --newmail)
+			args.total = total
+			args.newmail = newmail
+			if total > 0 then
+				args.textbox:show(args.notiftimeout or 10)
+				--mailnotif({
+					--title = args.mailbox,
+					--text = newmail,
+					--timeout = args.notiftimeout or 10,
+				--})
+			end
+		end,
+		ignore_boxes = ignoremail,
+		timeout = args.timertimeout or 60,
+	})
+	local mail_notify = nil
+	function args.textbox:hide()
+		if mail_notify ~= nil then
+			naughty.destroy(mail_notify)
+			mail_notify = nil
+		end
+	end
+	function args.textbox:show(t_out)
+		args.textbox:hide()
+		mail_notify = mailnotif({
+			title = args.mailbox,
+			text = args.newmail ~= "" and args.newmail or args.total,
+			icon = "/home/ivn/Mail/"..args.mailbox..".png",
+			timeout = t_out,
+			run = run,
+		})
+	end
+	function args.textbox:attach(widget)
+		widget:connect_signal('mouse::enter', function () args.textbox:show(0) end)
+		widget:connect_signal('mouse::leave', function () args.textbox:hide()  end)
+	end
+	local mailbuttons = awful.util.table.join(awful.button({ }, 1,
+	run
+	))
+	args.textbox:buttons(mailbuttons)
+	args.textbox:set_text("0")
+	lain.helpers.timer_table["/home/ivn/Mail/"..args.mailbox]:emit_signal("timeout")
+	return args.textbox
+end
+
+mail_widget3 = getmailwidget({mailbox = "FateGmail", textbox = mail_widget3})
+mail_widget2 = getmailwidget({mailbox = "FateYandex", textbox = mail_widget2 }) 
+mail_widget1 = getmailwidget({mailbox = "Personal", textbox = mail_widget1})
+mailwidget = widgetcreator({
+	text = "MAIL",
+	textboxes = {mail_widget1, mail_widget2, mail_widget3},
+})
+mail_widget3:attach(mailwidget)
+mail_widget2:attach(mailwidget)
+mail_widget1:attach(mailwidget)
+mailwidget:buttons(awful.util.table.join(awful.button({ }, 1,
+function ()
+	local timer = timer({ timeout = 1 })
+	timer:connect_signal("timeout", function ()
+		local cm = mutt.." /home/ivn/.mutt/Personal'"
+		run_or_raise(cm, { class = "UXTerm" }) 
+		timer:stop()
+	end)
+	timer:start()
+end)))
 --wibox.widget.textbox()
 --vicious.register(mail_widget, vicious.widgets.gmail, vspace1 .. "${count}" .. vspace1, 1200)
 
@@ -720,10 +843,15 @@ cpu_widget = lain.widgets.cpu({
 })
 
 cpubuttons = awful.util.table.join(awful.button({ }, 1,
-function () run_or_kill(htop_cpu, { role = "HTOP_CPU" }, {x = mouse.coords().x, y = 22}) end))
+function () run_or_kill(htop_cpu, { role = "HTOP_CPU" }, {x = mouse.coords().x, y = mouse.coords().y+2}) end))
 
 tmp_widget = wibox.widget.textbox()
 vicious.register(tmp_widget, vicious.widgets.thermal, vspace1 .. "$1°C" .. vspace1, 9, "thermal_zone0")
+tmp_widget = lain.widgets.temp({
+	settings = function()
+		widget:set_markup(space3 .. cpu_now.usage .. "%" .. markup.font("Tamsyn 4", " "))
+	end
+})
 
 cpuwidget = widgetcreator(
 {
@@ -738,7 +866,7 @@ cpuwidget:buttons(cpubuttons)
 
 
 membuttons = awful.util.table.join(awful.button({ }, 1,
-function () run_or_kill(htop_mem, { role = "HTOP_MEM" }, {x = mouse.coords().x, y = 22}) end))
+function () run_or_kill(htop_mem, { role = "HTOP_MEM" }, {x = mouse.coords().x, y = mouse.coords().y+2}) end))
 
 
 memp_widget = wibox.widget.textbox()
@@ -763,17 +891,52 @@ memwidget = widgetcreator(
 
 -- | FS | --
 
---fs_widget = wibox.widget.textbox()
---vicious.register(fs_widget, vicious.widgets.fs, vspace1 .. "${/ avail_gb}GB" .. vspace1, 2)
---fswidget = widgetcreator(
---{
-	----image = beautiful.widget_fs,
-	--text = "SSD",
-	--textboxes = {fs_widget}
---})
+fs_widget = wibox.widget.textbox()
+vicious.register(fs_widget, vicious.widgets.fs, vspace1 .. "${/ avail_gb}GB" .. vspace1, 2)
+fswidget = widgetcreator(
+{
+	--image = beautiful.widget_fs,
+	text = "SSD",
+	textboxes = {fs_widget}
+})
 
 -- | NET | --
+--
+--
+wifitextlayout = wibox.layout.fixed.horizontal()
+backtext = wibox.layout.constraint()
+net_wireless = net_widgets.wireless({
+	interface="wlp3s0", 
+	widget = false, 
+	indent = 0, 
+	timeout = 10,
+	settings = function(args)
+		if args.connected then
+			backtext:set_widget(wifitextlayout)
+		else
+			backtext:reset()
+		end
+	end
+}) --, widget=wibox.layout.fixed.horizontal()})
+net_wired = net_widgets.indicator({
+	interfaces  = {"enp5s0"},
+    timeout     = 25,
+})
+wifitextlayout:add(widget_display_l)
+local background = wibox.widget.background()
+background:set_widget(net_wireless.textbox)
+background:set_bgimage(beautiful.widget_display)
+wifitextlayout:add(background)
+wifitextlayout:add(widget_display_r)
 
+netwidget = widgetcreator(
+{
+	widgets = {net_wired,net_wireless.imagebox,backtext},
+	--text = "RAM",
+	--textboxes = {net_wireless.textbox}
+})
+net_widgets.wireless:attach(netwidget)  --,{
+--onclick = run_or_kill(wifi_menu, { role = "WIFI_MENU" }, {x = mouse.coords().x, y = mouse.coords().y+2})})
 --net_widgetdl = wibox.widget.textbox()
 --net_widgetul = lain.widgets.net({
     --settings = function()
@@ -830,16 +993,18 @@ clockwidget = widgetcreator(
 	textboxes = {mytextclock}
 })
 
-lain.widgets.calendar:attach(clockwidget, { font_size = 10 })
 
 calendarwidget = widgetcreator(
 { 
 	image = beautiful.widget_cal,
 	textboxes = {mytextcalendar}
 })
-
 clockwidget:buttons(mytextclockbuttons)
 calendarwidget:buttons(mytextclockbuttons)
+
+lain.widgets.calendar:attach(clockwidget, { font_size = 10 })
+lain.widgets.calendar:attach(calendarwidget, { font_size = 13 })
+
 
 -- | Taglist | --
 
@@ -1092,8 +1257,14 @@ mywibox           = {}
 mypromptbox       = {}
 mylayoutbox       = {}
 mynotifybar = {}
+tray = hidetray({revers = true})
+text = wibox.widget.textbox("0")
+systray:attachtext(text)
+--hidetray:show(1)
+--hidetray.hidetimer:start()
 
 for s = 1, screen.count() do
+	awful.tag.viewonly(awful.tag.gettags(s)[1])
    
     mypromptbox[s] = awful.widget.prompt()
     
@@ -1137,22 +1308,21 @@ for s = 1, screen.count() do
     
 
     local right_layout = wibox.layout.fixed.horizontal()
-    local tray = nil
-    if s == 1 then
-	    tray = wibox.widget.systray()
-    end
-    right_layout:add(widgetcreator(
+    hidetray:attach({ wibox = mywibox[s], screen = s})
+    local cont = widgetcreator(
     {
-	    widgets = {spr5px,mypromptbox[s], tray}
-    }))
+	    widgets = {spr5px,mypromptbox[s], text, tray[s]}
+    })
+    right_layout:add(cont)
     right_layout:add(kbdwidget)
     right_layout:add(musicwidget)
+    right_layout:add(netwidget)
     right_layout:add(pulsewidget) 
     right_layout:add(cpuwidget)
-    --right_layout:add(mailwidget)
+    right_layout:add(mailwidget)
     right_layout:add(memwidget)
-    --right_layout:add(fswidget)
-    right_layout:add(bat_layout)
+    right_layout:add(fswidget)
+    --right_layout:add(bat_layout)
     right_layout:add(calendarwidget)
     right_layout:add(clockwidget)
     right_layout:add(spr)
@@ -1377,33 +1547,60 @@ local function im()
 		return false
     	end
 -- | Key bindings | --
+local function bomicontrol(str)
+	local command = "dbus-send --print-reply --session --dest=org.mpris.MediaPlayer2.bomi /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player."
+	if str == "play" then
+		command = command.."Play"
+	elseif str == "pause" then
+		command = command.."Pause"
+	elseif str == "next" then
+		command = command.."Next"
+	elseif str == "prev" then
+		command = command.."Prev"
+	elseif str == "play_pause" then
+		command = command.."PlayPause"
+	end
+	command = command.." &"
+	awful.util.spawn_with_shell(command)
+end
 
 globalkeys = awful.util.table.join(
 
     awful.key({ modkey, "Control"  }, "h", 
 		function ()
-			mpd_prev()
+			if mpdwidget.state == "play" then
+				mpd_prev()
+			else
+				bomicontrol("prev")
+			end
 		end),
     awful.key({ modkey, "Control" }, "c", 
 		function ()
-			mpd_stop()
-		end),
-    awful.key({ modkey, "Control" }, "r", 
-		function ()
-			--local bomi = os.execute("pgrep bomi")
-			if mouse.object_under_pointer() and mouse.object_under_pointer().class == "bomi" then
-				os.execute("dbus-send --type=method_call --dest=org.mpris.MediaPlayer2.bomi /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player.PlayPause")
+			if mpdwidget.state == "play" then
+				mpd_stop()
 			else
-				mpd_play_pause()
+				bomicontrol("stop")
 			end
-			--print(bomi)
 		end),
+    awful.key({ modkey, "Control" }, "space", 
+    function ()
+	    bomicontrol("play_pause")
+    end),
+    awful.key({ modkey, "Control" }, "r", 
+    function ()
+	    mpd_play_pause()
+    end),
     awful.key({ modkey, "Control" }, "s", 
 		function ()
-			mpd_next()
+			if mpdwidget.state == "play" then
+				mpd_next()
+			else
+				bomicontrol("next")
+			end
 		end),
-    awful.key({ modkey, "Control" }, "n",  APW.Up),
-    awful.key({ modkey, "Control" }, "t",  APW.Down),
+    awful.key({ modkey, "Control" }, "n",  apw.up),
+    awful.key({ modkey, "Control" }, "t",  apw.down),
+    awful.key({ modkey, "Control" }, "m",  apw.togglemute),
     awful.key({ modkey,   }, "Home", 
 		function ()
 			mpd_prev()
@@ -1423,6 +1620,10 @@ globalkeys = awful.util.table.join(
 
 
     awful.key({ modkey,           }, "w",      function () mainmenu:show() end),
+    awful.key({ modkey,           }, "/",      function () 
+	    hidetray:show(mouse.screen) 
+	    hidetray.hidetimer:start()
+    end),
     --awful.key({ modkey,           }, "Escape", function () exec("/usr/local/sbin/zaprat --toggle") end),
     --awful.key({ modkey            }, "r",      function () mypromptbox[mouse.screen]:run() end),
     -- Run or raise applications with dmenu
@@ -1671,9 +1872,9 @@ globalkeys = awful.util.table.join(
     --awful.key({ modkey            }, "\\",     function () exec("sublime_text") end),
     awful.key({ modkey            }, "$",      function () exec("gcolor2") end),
     awful.key({ modkey            }, "`",      function () exec("xwinmosaic") end),
-    awful.key({ }, "XF86AudioRaiseVolume",  APW.Up),
-    awful.key({ }, "XF86AudioLowerVolume",  APW.Down),
-    awful.key({ }, "XF86AudioMute",         APW.ToggleMute),
+    awful.key({ }, "XF86AudioRaiseVolume",  apw.up),
+    awful.key({ }, "XF86AudioLowerVolume",  apw.down),
+    awful.key({ }, "XF86AudioMute",         apw.togglemute),
     awful.key({ }, "XF86Sleep",         function () exec("systemctl suspend") end),
     awful.key({ }, "XF86Explorer",      function () exec("systemctl suspend") end),
     awful.key({modkey		  }, "F12",      function () exec("systemctl suspend") end),
@@ -1774,8 +1975,8 @@ clientbuttons = awful.util.table.join(
     awful.button({ }, 1, function (c) client.focus = c; c:raise() end),
     awful.button({ modkey }, 1, awful.mouse.client.move),
     awful.button({ modkey }, 3, awful.mouse.client.resize),
-    awful.button({ modkey, "Control" }, 4, APW.UP),
-    awful.button({ modkey, "Control" }, 5, APW.DOWN))
+    awful.button({ modkey, "Control" }, 4, apw.up),
+    awful.button({ modkey, "Control" }, 5, apw.down))
 
 awful.menu.menu_keys = {
     up    = { "n", "Up" },
@@ -1791,55 +1992,64 @@ root.keys(globalkeys)
 -- | Rules | --
 
 awful.rules.rules = {
-    { rule = { },
-      properties = { border_width = beautiful.border_width,
-                     border_color = beautiful.border_normal,
-                     focus = awful.client.focus.filter,
-                     -- size_hints_honor = false,
-                     raise = true,
-                     keys = clientkeys,
-                     buttons = clientbuttons } },
+	{ rule = { },
+	properties = { border_width = beautiful.border_width,
+	border_color = beautiful.border_normal,
+	focus = awful.client.focus.filter,
+	-- size_hints_honor = false,
+	raise = true,
+	keys = clientkeys,
+	buttons = clientbuttons } },
 
-    { rule = { class = "Exe"}, properties = {floating = true} },
-    { rule = { class = "Plugin-container" },
-		    properties = { floating = true, focus = true} },
-    --{ rule = { class = "gcolor2" },
-      --properties = { floating = true } },
-    --{ rule = { class = "xmag" },
-      --properties = { floating = true } },
+	{ rule = { class = "Exe"}, properties = {floating = true} },
+	{ rule = { class = "Plugin-container" },
+	properties = { floating = true, focus = true} },
+	--{ rule = { class = "gcolor2" },
+	--properties = { floating = true } },
+	--{ rule = { class = "xmag" },
+	--properties = { floating = true } },
 
-    { rule = { class = "veromix" },
-      properties = { floating = true, intrusive = true } },
+	{ rule = { class = "Pavucontrol" },
+	properties = { floating = true, intrusive = true } },
 
-    { rule = { name = "Громкость" },
-      properties = { floating = true, intrusive = true } },
+	{ rule = { class = "veromix" },
+	properties = { floating = true, intrusive = true } },
 
-    { rule = { class = "Vlc" },
-      properties = { floating = true } },
-    { rule = { role = "HTOP_CPU" },
-      properties = { floating = true, intrusive = true} },
-    { rule = { role = "HTOP_MEM" },
-      properties = { floating = true, intrusive = true } },
+	{ rule = { name = "Громкость" },
+	properties = { floating = true, intrusive = true } },
 
-    --{ rule = { class = "gvim" },
-      --properties = { tag = tags[1][2], switchtotag = true}},
-    --{ rule = { class = "Thunderbird" },
-      --properties = { tag = tags[4] } }, 
-    --{ rule = { class = "Gvim"},
-	 --properties = { tag = tags[1][2], switchtotag = true}},
-    --{ rule = { class = "Firefox"},
-	 --properties = { tag = tags[1][5], switchtotag = true}},
-    { rule = { class = "Pidgin", role = "buddy_list"},
-	 properties = { tag = awful.tag.gettags(1)[2], switchtotag = false, no_autofocus = true }},
-    { rule = { class = "Pidgin", role = "conversation"},
-	 properties = { tag = awful.tag.gettags(1)[2], switchtotag = false, no_autofocus = true },
-	  callback = awful.client.setslave },
+	{ rule = { class = "Vlc" },
+	properties = { floating = true } },
+	{ rule = { role = "HTOP_CPU" },
+	properties = { floating = true, intrusive = true} },
+	{ rule = { role = "HTOP_MEM" },
+	properties = { floating = true, intrusive = true } },
+
+	--{ rule = { class = "gvim" },
+	--properties = { tag = tags[1][2], switchtotag = true}},
+	--{ rule = { class = "Thunderbird" },
+	--properties = { tag = tags[4] } }, 
+	--{ rule = { class = "Gvim"},
+	--properties = { tag = tags[1][2], switchtotag = true}},
+	--{ rule = { class = "Firefox"},
+	--properties = { tag = tags[1][5], switchtotag = true}},
+	{ rule = { class = "Pidgin", role = "buddy_list"},
+	properties = { tag = awful.tag.gettags(1)[2], switchtotag = false, no_autofocus = true }},
+	{ rule = { class = "Pidgin", role = "conversation"},
+	properties = { tag = awful.tag.gettags(1)[2], switchtotag = false, no_autofocus = true },
+	callback = awful.client.setslave },
 	{rule = {role = "DROPDOWN"}, 
- 	properties = {opacity = 0.8} },
+	properties = {opacity = 0.8}},
 	--{rule = {class = "bomi"}, 
-         --properties = {opacity = 1, floating = true, ontop = true} }
-
-
+	--properties = {opacity = 1, floating = true, ontop = true} }
+	{ rule = { class = "Skype", role = "CallWindow"},
+	properties = { opacity = 0.8, switchtotag = false, no_autofocus = true, floating = true, ontop = true, sticky = true  },
+	callback = function(c)
+		local scrgeom = capi.screen[capi.mouse.screen].geometry
+		local clgeom  = c:geometry({width = scrgeom.width/10, height = scrgeom.width/10})
+		local clgeom  = c:geometry({x = scrgeom.x + scrgeom.width - clgeom.width, y = scrgeom.y + scrgeom.height - clgeom.height}) 
+	end
+	},
    
 }
 
@@ -1850,69 +2060,103 @@ local function timemute()
 end
     
 
+lastmpdstatus = "N/A"
+local function playif()
+	if lastmpdstatus and lastmpdstatus == "play" then
+		mpd_play()
+	end
+end
+local function pauseif()
+		lastmpdstatus = mpdwidget.state
+		mpd_pause()
+end
+
+client.connect_signal("unmanage",
+function(c)
+	if c.class and c.class == "bomi" then
+		playif()
+	end
+end
+)
+dbus.request_name("session", "org.mpris.MediaPlayer2")
+dbus.add_match("session", "interface='org.freedesktop.DBus.Properties',member='PropertiesChanged'")
+dbus.connect_signal("org.freedesktop.DBus.Properties", function(...)
+	local data = {...}
+	local status = data[3].PlaybackStatus
+	if status == "Playing" then
+		pauseif()
+	elseif status == "Paused" then
+		playif()
+	end
+		--for i,str in pairs(data) do
+		--print(i.." "..tostring(str))
+		--if type(str) == "table" then
+		--for k,n in pairs(str) do
+		--print(k.." "..tostring(n))
+		--end
+		--end
+		--end
+	end
+	)
 
 local fullscreened_clients = {}
-local lastmpdstatus = "N/A"
 
 local function remove_client(tabl, c)
-    local index = awful.util.table.hasitem(tabl, c)
-    if index then
-        table.remove(tabl, index)
-        if #tabl == 0 then
-            awful.util.spawn("xset s off")
-            awful.util.spawn("xset -dpms")
-              --run_once(xautolock)
-	      --naughty.resume()
+	local index = awful.util.table.hasitem(tabl, c)
+	if index then
+		table.remove(tabl, index)
+		if #tabl == 0 then
+			awful.util.spawn("xset s off")
+			awful.util.spawn("xset -dpms")
+			--run_once(xautolock)
+			--naughty.resume()
 
-	      timemute()
-	      if lastmpdstatus == "play" then
-		      mpd_play()
-		end
-        end             
-    end
+			timemute()
+			playif()
+		end             
+	end
 end
 
 client.connect_signal("property::fullscreen",
-    function(c)
-        if c.fullscreen then
-            table.insert(fullscreened_clients, c)
-	    if (c.class == "VirtualBox") then
-	    else
-            	if #fullscreened_clients == 1 then
-              	  awful.util.spawn("xset s off")
-              	  awful.util.spawn("xset -dpms")
-              		--naughty.suspend()
-			lastmpdstatus = mpdwidget.state
-			mpd_pause()
-			timemute()
-			--os.execute("xautolock -exit")
-            	end
-    	    end
-        else
-            remove_client(fullscreened_clients, c)
-        end
-    end)
-    
-client.connect_signal("untagged",
-    function(c,t)
-	--for i,t in pairs(c.tags(c)) do
-		local del = true
-		for _,n in pairs(tagnames) do
-			if t.name == n then
-				del = false
+function(c)
+	if c.fullscreen then
+		table.insert(fullscreened_clients, c)
+		if (c.class == "VirtualBox") then
+		else
+			if #fullscreened_clients == 1 then
+				awful.util.spawn("xset s off")
+				awful.util.spawn("xset -dpms")
+				--naughty.suspend()
+				pauseif()
+				timemute()
+				--os.execute("xautolock -exit")
 			end
 		end
-		if del and #(t:clients()) < 2 then
-			awful.tag.delete(t)
+	else
+		remove_client(fullscreened_clients, c)
+	end
+end)
+
+client.connect_signal("untagged",
+function(c,t)
+	--for i,t in pairs(c.tags(c)) do
+	local del = true
+	for _,n in pairs(tagnames) do
+		if t.name == n then
+			del = false
 		end
+	end
+	if del and #(t:clients()) < 2 then
+		awful.tag.delete(t)
+	end
 	--end
 
-    end)
+end)
 client.connect_signal("unmanage",
-    function(c)
-        if c.fullscreen then
-            remove_client(fullscreened_clients, c)
-        end
+function(c)
+	if c.fullscreen then
+		remove_client(fullscreened_clients, c)
+	end
 	--print("check tags")
 	for i,t in pairs(c.tags(c)) do
 		--print(i.." "..t.name)
@@ -1928,7 +2172,7 @@ client.connect_signal("unmanage",
 		end
 	end
 
-    end)
+end)
 
 client.connect_signal("manage", function (c, startup)
     c:connect_signal("mouse::enter", function(c)
@@ -1990,7 +2234,8 @@ end)
    		 	mouse.coords({ x=x_co, y=y_co })
 		end
 client.connect_signal("focus", function(c) 
-	if mouse.coords().y > 22 then
+	local screengeom = capi.screen[mouse.screen].workarea
+	if mouse.coords().y > screengeom.y then
 	if not (c == mouse.object_under_pointer()) then
 		geom=c.geometry(c)
 		x=geom.x+math.modf(geom.width/2)--+1
@@ -2004,28 +2249,43 @@ end)
 
 keysmode = "normalmode"
 trackpointnotify = nil
-client.connect_signal("focus", function(c) 
+browserclients = {"Firefox", "Thunderbird"}
+normalclients = {}
+commandclients = {}
+client.connect_signal("manage", function(c) 
 	--if  not c.maximized_horizontal then
 		--c.border_color = beautiful.border_focus 
 	--end
-	local mode
-	if awful.rules.match(c, {class = "Firefox"}) then  
-		mode = "browsermode"
-	else
-		mode = "normalmode"
+	local mode = "normalmode"
+	for _,s in pairs(browserclients) do
+		if c.class == s then
+			mode = "browsermode"
+		end
 	end
-	if not (mode == keysmode) then
-		keysmode = mode
-		os.execute("/home/ivn/scripts/trackpoint/trackpointkeys.sh "..keysmode.." &")
-		naughty.destroy(trackpointnotify, true)
-		trackpointnotify = naughty.notify({
-			title = "TrackPoint Keys",
-			text = keysmode,
-			icon = "/home/ivn/scripts/trackpoint/"..keysmode..".png",
-			timeout = 2,
-			screen = mouse.screen or 1
-		})
+	for _,s in pairs(normalclients) do
+		if c.class == s then
+			mode = "normalmode"
+		end
 	end
+	for _,s in pairs(commandclients) do
+		if c.class == s then
+			mode = "commandmode"
+		end
+	end
+	c:connect_signal("focus", function(cl)
+		if mode ~= keysmode then
+			keysmode = mode
+			os.execute("/home/ivn/scripts/trackpoint/trackpointkeys.sh "..keysmode.." &")
+			naughty.destroy(trackpointnotify, true)
+			trackpointnotify = naughty.notify({
+				title = "TrackPoint Keys",
+				text = keysmode,
+				icon = "/home/ivn/scripts/trackpoint/"..keysmode..".png",
+				timeout = 2,
+				screen = mouse.screen or 1
+			})
+		end
+	end)
 end)
 
 client.connect_signal("manage", function(c) 
@@ -2052,14 +2312,14 @@ end)
 --client.connect_signal("unfocus", function(c) 
 	--if awful.rules.match(c, {class = "veromix"}) then  
 		--c:kill()
-		--APW.Update()
+		--apw.Update()
 	--end
 
 --end)
 --client.connect_signal("unfocus", function(c) 
 	--if awful.rules.match(c, {class = "Pavucontrol"}) then  
 		--c:kill()
-		--APW.Update()
+		--apw.Update()
         --end
 
 --end)
@@ -2175,11 +2435,16 @@ os.execute("setxkbmap 'my(dvp),my(rus)' &")
 os.execute("/home/ivn/scripts/trackpoint/trackpointkeys.sh normalmode &")
 os.execute("xset s off")
 os.execute("xset -dpms")
+os.execute("xset m 1/2 4")
+os.execute("xinput disable 'SynPS/2 Synaptics TouchPad'")
+os.execute("dropbox &")
+os.execute("xrdb -merge ~/.Xresources &")
 --run_once("linconnect-server &")
 run_once("kbdd")
 run_once("mpd /home/ivn/.config/mpd/mpd.conf")
-run_once("dropbox")
-run_once("nm-applet")
+run_once("mpdscribble")
+run_once("udiskie --tray &")
+--run_once("nm-applet")
 --run_once("pa-applet")
 --run_once("qbittorrent")
 --run_once("redshiftgui")
@@ -2187,7 +2452,7 @@ run_once("nm-applet")
 os.execute('xcape -t 1000 -e "Control_L=Tab;ISO_Level3_Shift=Multi_key"' )
 -- run_once("parcellite")
 run_once("pidgin")
---run_once("compton --config /home/ivn/.config/compton.conf -b &")
+run_once("compton --config /home/ivn/.config/compton.conf -b &")
 --run_once(xautolock)
 --run_once("firefox")
 --run_once("goldendict")
