@@ -938,8 +938,13 @@ net_wireless = net_widgets.wireless({
 		end
 	end
 }) --, widget=wibox.layout.fixed.horizontal()})
+if hostname == "jarvis" then
+	interface = "enp5s0"
+else -- hostname == "Thinkpad" then
+	interface = "enp2s0"
+end
 net_wired = net_widgets.indicator({
-	interfaces  = {"enp5s0"},
+	interfaces  = {interface},
     timeout     = 25,
 })
 wifitextlayout:add(widget_display_l)
@@ -2561,6 +2566,10 @@ end
 -- | Autostart | --
 --autostarttimer = timer({ timeout = 2 })
 --autostarttimer:connect_signal("timeout", function ()
+local start_on_thinkpad = {
+	"xset s on",
+	"xset +dpms",
+}
 
 local ex = {
 --"pkill compton",
@@ -2606,6 +2615,9 @@ browser,
 	end
 	for i,k in pairs(run) do
 		run_once(k)
+	end
+	for i,k in pairs(start_on_thinkpad) do
+		os.execute(k)
 	end
 --autostarttimer:stop()
 local notif = naughty.notify({ preset = naughty.config.presets.critical,
