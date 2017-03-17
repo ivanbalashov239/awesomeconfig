@@ -1,0 +1,550 @@
+hst = io.popen("uname -n")
+hostname = hst:read()
+hst:close()
+--local config = require(hostname)
+local gears      = require("gears")
+local awful      = require("awful")
+awful.rules      = require("awful.rules")
+local common 	 = require("awful.widget.common")
+local fixed 	 = require("wibox.layout.fixed")
+require("awful.autofocus")
+-- | Theme | --
+
+local theme = "pro-dark"
+local beautiful  = require("beautiful")
+beautiful.init(os.getenv("HOME") .. "/.config/awesome/themes/" .. theme .. "/theme.lua")
+--                   require("sharetags")
+local hintsetter  = require("hintsetter")
+hintsetter.init()
+local hints 	 = require("hints")
+hints.init()
+local tyrannical = require("tyrannical")
+local apw 	 = require("apw/widget")
+local wibox      = require("wibox")
+local vicious    = require("vicious")
+local naughty    = require("naughty") --"notifybar")
+local hidetray	 = require("hidetray")
+local systray	 = require("systray")
+local lain       = require("lain")
+local read_pipe    = require("lain.helpers").read_pipe
+local net_widgets = require("net_widgets")
+--local cyclefocus = require('cyclefocus')
+local rork = require("rork")      
+local run_or_raise = rork.run_or_raise
+local run_or_kill = rork.run_or_kill
+local modal_sc = require("modal_sc")      
+
+local widgets = require("widgets")
+local json = require('cjson')
+
+--local timew = require("client_timew")
+--timew()
+
+-- freedesktop.org
+local freedesktop = {}
+freedesktop.menu = require('freedesktop.menu')
+freedesktop.utils = require('freedesktop.utils')
+local revelation = require("revelation")      
+revelation.init()
+local newtag	 = require("newtag")      
+newtag.init()
+--local quake 	 = require("quake")
+local scratch	 = require("scratch")
+local utf8 	 = require("utf8_simple")
+lain.helpers     = require("lain.helpers")
+local menubar = require("menubar")
+menubar.terminal = "termite"
+menubar.menu_gen.all_menu_dirs = { "/usr/share/applications/", "/usr/local/share/applications", "~/.local/share/applications" }
+local cheeky 	 = require("cheeky")
+local appsuspender = require("appsuspender")
+local im = require("im")
+local task = require("task")
+local capi = {
+	mouse = mouse,
+	client = client,
+	screen = screen
+}
+
+
+
+
+local config = {}
+--config.musicwidget = widgets.mpd()
+--config.pulsewidget = widgets.pulse()
+--config.kbdwidget = widgets.kbdd()
+--config.mailwidget = widgets.mail()
+--config.cpuwidget = widgets.cpu_tmp()
+--config.memwidget = widgets.mem()
+--config.fswidget = widgets.fs()
+--config.taskwidget = widgets.taskwidget()
+--config.netwidget = widgets.net()
+--config.weatherwidget = widgets.weather()
+--config.clockwidget = widgets.time()
+--config.calendarwidget = widgets.calendar()
+
+config.panel = {}
+config.panel.left = {
+	widgets.spr5px,
+	--widgets.taglist(),
+}
+config.panel.middle = {
+	--widgets.tasklist()
+}
+config.panel.right = {
+	widgets.kbdd(),
+	widgets.mpd(),
+	widgets.taskwidget(),
+	widgets.weather(),
+	widgets.net(),
+	widgets.pulse(),
+	widgets.cpu_tmp(),
+	widgets.mem(),
+	widgets.mail(),
+	widgets.fs(),
+	widgets.calendar(),
+	widgets.time(),
+	widgets.spr
+}
+function run_once(cmd)
+	findme = cmd
+	firstspace = cmd:find(" ")
+	if firstspace then
+		findme = cmd:sub(0, firstspace-1)
+	end
+	awful.util.spawn_with_shell("pgrep -u $USER -x " .. findme .. " > /dev/null || (" .. cmd .. ")")
+end
+config.autostart = {}
+config.autostart.execute = {
+	--"pkill compton",
+	--"pkill pidgin; pidgin &",
+	"pkill kbdd; kbdd &",
+	"pkill xcape",
+	"setxkbmap 'my(dvp),my(rus)' &",
+	--"setxkbmap 'my(dvp),my(rus)' setxkbmap -option grp:caps_toggle,grp_led:caps -print | xkbcomp - $DISPLAY; xkbcomp $DISPLAY - | egrep -v 'group . = AltGr;' | xkbcomp - $DISPLAY &",
+	--"xkbcomp $HOME/.config/xkb/my $DISPLAY &",
+	"/home/ivn/scripts/trackpoint/trackpointkeys.sh normalmode &",
+	"xset s off",
+	"xset -dpms",
+	"xset m 1/2 4",
+	"pkill dropbox",
+	--"dropbox &",
+	"xinput disable 'SynPS/2 Synaptics TouchPad'",
+	"xrdb -merge ~/.Xresources &",
+	'xcape -t 1000 -e "Control_L=Tab;ISO_Level3_Shift=Multi_key"',
+	"xkbcomp $DISPLAY - | egrep -v 'group . = AltGr;' | xkbcomp - $DISPLAY"
+}
+local xkbtimer = timer({ timeout = 2000 })
+xkbtimer:connect_signal("timeout", function ()
+	awful.util.spawn_with_shell("xkbcomp $DISPLAY - | egrep -v 'group . = AltGr;' | xkbcomp - $DISPLAY")
+end)
+config.autostart.run_once = {
+	"linconnect-server &",
+	--"kbdd",
+	"mpd /home/ivn/.config/mpd/mpd.conf",
+	--"mpdscribble",
+	"udiskie --tray &",
+	--"nm-applet",
+	--"pa-applet",
+	"qbittorrent --style=gtk+",
+	"redshiftgui",
+	--"indicator-kdeconnect",
+	"dropbox",
+	--"thunderbird",
+	--"parcellite",
+	"pidgin",
+	"env QT_IM_MODULE=xim telegram-desktop",
+	--"telegram-desktop",
+	"compton --config /home/ivn/.config/compton.conf -b &",
+	--"pactl load-module module-loopback source=2 sink=0",
+	xautolock,
+	browser,
+	"perl /usr/share/cantata/scripts/cantata-dynamic start",
+	xkbtimer
+	--"evolution",
+	--"goldendict --style gtk+",
+}
+
+
+config.mpdwidget = widgets.mpd.mpdwidget
+
+
+
+modkey        = "Mod4"
+altgr        = "Mod5"
+altkey        = "Mod1"
+
+config.globalkeys = awful.util.table.join(
+	    awful.key({ modkey }, "l",
+	    function ()
+		    awful.prompt.run({ prompt = "Run Lua code: " },
+		    mypromptbox[mouse.screen].widget,
+		    awful.util.eval, nil,
+		    awful.util.getdir("cache") .. "/history_eval")
+	    end),
+	    awful.key({ modkey,       }, "q",   function (c) if client.focus then client.focus:kill() end end),
+	    awful.key({ modkey,	          }, "u",      function () 
+		    awful.util.spawn_with_shell("tmux new -d -s dropdown") 
+		    scratch.drop(dropdownterm)
+	    end), 
+	    awful.key({ modkey, "Control"  }, "x",      function () exec("/home/ivn/scripts/trackpoint/trackpointkeys.sh switch &") end),
+	    awful.key({ modkey            }, "g",      function () run_or_raise("gvim", { class = "Gvim" }) end),
+	    awful.key({ modkey            }, "Print",  function () exec("screengrab") end),
+	    awful.key({ modkey, "Control" }, "p",      function () exec("screengrab --region") end),
+	    awful.key({ modkey, "Shift"   }, "Print",  function () exec("screengrab --active") end),
+	    awful.key({ modkey            }, "f",      function () run_or_raise(browser, { class = "Firefox" }) end),
+	    awful.key({ modkey, "Shift"   }, "f",      function () run_or_raise(browser.." -new-window", { class = "fox" }) end),
+	    awful.key({ modkey, "Control" }, "f",      function () awful.util.spawn_with_shell('firefox --new-tab "$(xclip -out)"') end),
+	    --awful.key({ modkey            }, "c",      function () run_or_raise(browser, { class = "Vivaldi-snapshot" }) end),
+	    awful.key({ modkey            }, "8",      function () exec("chromium") end),
+	    awful.key({ modkey            }, "9",      function () exec("dwb") end),
+	    awful.key({ modkey            }, "0",      function () exec("thunderbird") end),
+	    --awful.key({ modkey            }, "'",      function () exec("leafpad") end),
+	    --awful.key({ modkey            }, "\\",     function () exec("sublime_text") end),
+	    awful.key({ modkey            }, "$",      function () exec("gcolor2") end),
+	    awful.key({ modkey            }, "`",      function () exec("xwinmosaic") end),
+	    awful.key({ }, "XF86AudioRaiseVolume",  apw.up),
+	    awful.key({ }, "XF86AudioLowerVolume",  apw.down),
+	    awful.key({ }, "XF86AudioMute",         apw.togglemute),
+	    awful.key({ }, "XF86Sleep",         function () exec("systemctl suspend") end),
+	    awful.key({ }, "XF86Explorer",      function () exec("systemctl suspend") end),
+	    awful.key({ }, "XF86PowerOff",      
+	    function ()
+		    exec("systemctl suspend")
+		    --exec(locknow)
+		    --bomicontrol("pause")
+	    end),
+	    awful.key({modkey		  }, "F12",      function () exec("systemctl suspend") end),
+	    awful.key({ modkey, "Control"   }, "b",  
+	    function () 
+		    local cl = client.focus
+		    local actions = {}
+		    if cl.class == "Firefox" then
+			    local title = cl.name:split(" ")
+			    --print(cl.name:gmatch("http%S+"))
+			    local url
+			    for i,k in pairs(title) do
+				    if k:find("http") then
+					    url = k
+				    end
+			    end
+			    if url then
+				    table.insert(actions,{
+					    hint = "b",
+					    desc = "Open in player",
+					    func = function()
+						    os.execute('/usr/bin/bomi --wake --open "'..url..'" &')
+					    end,
+				    })
+			    end
+		    end
+		    modal_sc({
+			    actions = actions,
+			    name = "Options with "..cl.class
+		    })()
+	    end),
+	    awful.key({ modkey, "Control",  }, "d",    function ()
+		    scripts="/home/ivn/.screenlayout/"
+		    modal_sc({
+			    actions = {
+				    {
+					    modal = true,
+					    hint = "o",
+					    desc = "DVI OFF",
+					    actions={
+						    {
+							    hint = "f",
+							    func = function()
+								    os.execute("xrandr --output DVI-D-0 --off")
+							    end,
+							    desc = "DVI-off"
+						    },
+						    {
+							    hint = "o",
+							    func = function()
+								    os.execute(scripts.."HDMI-normal-DVI-off.sh")
+							    end,
+							    desc = "HDMI-normal-DVI-off"
+						    },
+						    {
+							    hint = "l",
+							    func = function()
+								    os.execute(scripts.."HDMI-left-DVI-off.sh")
+							    end,
+							    desc = "HDMI-left-DVI-off"
+						    },
+						    {
+							    hint = "Enter",
+							    func = function()
+								    os.execute("xrandr --output DVI-D-0 --off")
+							    end,
+							    desc = ""
+						    },
+					    },
+				    },
+				    {
+					    modal = true,
+					    hint = "a",
+					    desc = "DVI ON",
+					    actions={
+						    {
+							    hint = "r",
+							    func = function()
+								    os.execute(scripts.."HDMI-right-DVI-right.sh")
+							    end,
+							    desc = "HDMI-right-DVI-right"
+						    },
+						    {
+							    hint = "l",
+							    func = function()
+								    os.execute(scripts.."HDMI-left-DVI-right.sh")
+							    end,
+							    desc = "HDMI-left-DVI-right"
+						    },
+						    {
+							    hint = "n",
+							    func = function()
+								    os.execute(scripts.."HDMI-normal-DVI-right.sh")
+							    end,
+							    desc = "HDMI-normal-DVI-right"
+						    },
+					    },
+					    func=function()
+						    --print("A")
+					    end,
+				    },
+			    },
+
+		    })()
+	    end),
+	    awful.key({ modkey, "Shift",  }, "r",    function ()
+		    menubar.show()
+		    --awful.prompt.run({ prompt = "Rename tab: ", text = awful.tag.selected().name, },
+		    --mypromptbox[mouse.screen].widget,
+		    --function (s)
+		    --awful.tag.selected().name = s
+		    --end)
+	    end),
+	    awful.key({ modkey,    }, "a",  
+	    function () 
+		    revelation({
+			    rule={class="Pidgin"}, 
+			    is_excluded=true
+		    }) 
+	    end),
+	    awful.key({ modkey,    }, "o",  
+	    task.done_modify(modal_sc)
+	    ),
+	    awful.key({ modkey,    }, "e",
+	    modal_sc({
+		    name = "Ассистент Дуся",
+		    actions={
+			    {
+				    hint = "e",
+				    desc = "вопрос",
+				    func = function()
+					    awful.util.spawn("/home/ivn/scripts/dusi_zenity.sh reply")
+					    local rutimer = timer({ timeout = 0.5 })
+					    rutimer:connect_signal("timeout", function ()
+						    set_ru()
+						    rutimer:stop()
+					    end)
+					    rutimer:start()
+				    end
+			    },
+			    {
+				    hint = "u",
+				    desc = "команда",
+				    func = function()
+					    awful.util.spawn("/home/ivn/scripts/dusi_zenity.sh")
+					    local rutimer = timer({ timeout = 0.5 })
+					    rutimer:connect_signal("timeout", function ()
+						    set_ru()
+						    rutimer:stop()
+					    end)
+					    rutimer:start()
+				    end
+			    }
+		    }
+	    })
+	    ),
+	    awful.key({ modkey }, ":", function () 
+		    cheeky.util.switcher()
+		    --hints.focus() 
+	    end),
+awful.key({ modkey, "Shift"   }, "space",  function () awful.layout.inc(layouts, -1) end),
+awful.key({ modkey, "Control" }, "Delete",      awesome.restart),
+awful.key({ modkey, "Shift"   }, "q",      awesome.quit),
+awful.key({ modkey }, "t",
+function()
+	widgets.taglist.global_bydirection("down")
+	if client.focus then client.focus:raise() end
+end),
+awful.key({ modkey }, "n",
+function()
+	widgets.taglist.global_bydirection("up")
+	if client.focus then client.focus:raise() end
+end),
+awful.key({ modkey }, "h",
+function()
+	widgets.taglist.global_bydirection("left")
+	if client.focus then client.focus:raise() end
+end),
+awful.key({ modkey}, "s",
+function()
+	widgets.taglist.global_bydirection("right")
+	if client.focus then client.focus:raise() end
+end),
+awful.key({ modkey, "Shift" }, "h",
+function()
+	widgets.taglist.global_bydirection("left",client.focus,true)
+	if client.focus then client.focus:raise() end
+end),
+awful.key({ modkey, "Shift" }, "s",
+function()
+	widgets.taglist.global_bydirection("right",client.focus,true)
+	if client.focus then client.focus:raise() end
+end),
+
+awful.key({ modkey,           }, "Tab",
+function ()
+	awful.client.focus.history.previous()
+	if client.focus then
+		client.focus:raise()
+	end
+end),
+awful.key({ modkey }, "Escape", awful.tag.history.restore),
+awful.key({ modkey }, "j", function () lain.util.tag_view_nonempty(-1) end),
+awful.key({ modkey }, "k", function () lain.util.tag_view_nonempty(1) end),
+
+awful.key({ modkey, "Shift" }, "j",   awful.tag.viewprev       ),
+awful.key({ modkey, "Shift" }, "k",  awful.tag.viewnext       ),
+awful.key({ modkey, altgr }, "t",
+function ()
+	awful.util.spawn("/home/ivn/scripts/translate_zenity.sh")
+end),
+awful.key({ modkey,           }, "z",      function () task:toggle() end),
+awful.key({ modkey,           }, "w",      function () mainmenu:show() end),
+awful.key({ modkey, "Control" }, "n",  apw.up),
+awful.key({ modkey, "Control" }, "t",  apw.down),
+awful.key({ modkey, "Control" }, "m",  apw.togglemute),
+awful.key({ modkey,           }, "m",
+modal_sc({
+	name="MAIL",
+	actions = {
+		{
+			hint = "m",
+			func = function()
+				local cm = mutt.." /home/ivn/.mutt/Personal'"
+				run_or_raise(cm, { class = "UXTerm" }) 
+			end,
+			desc = "Personal"
+		},
+		{
+			hint = "t",
+			func = function()
+				local cm = mutt.." /home/ivn/.mutt/FateGmail'"
+				run_or_raise(cm, { class = "UXTerm" }) 
+			end,
+			desc = "Gmail"
+		},
+	},
+})
+),
+awful.key({ modkey,   "Shift"        }, "t",
+modal_sc({
+	name="MQTT",
+	actions = {
+		{
+			hint = "t",
+			func = function()
+				os.execute("mosquitto_pub -h 192.168.1.187 -p 1883 -t cmnd/sonoff/POWER -m TOGGLE")
+			end,
+			desc = "lights toggle"
+		},
+		{
+			hint = "h",
+			func = function()
+				os.execute("mosquitto_pub -h 192.168.1.187 -p 1883 -t cmnd/sonoff/POWER -m ON")
+			end,
+			desc = "lights on"
+		},
+		{
+			hint = "n",
+			func = function()
+				os.execute("mosquitto_pub -h 192.168.1.187 -p 1883 -t cmnd/sonoff/POWER -m OFF")
+			end,
+			desc = "lights off"
+		},
+	},
+})
+),
+awful.key({ modkey, "Control" }, "c", 
+function ()
+	run_or_raise("cantata",{class="cantata"})
+	--if mpdwidget.state == "play" then
+	--mpd_stop()
+	--else
+	--bomicontrol("stop")
+	--end
+end)
+)
+config.clientkeys = awful.util.table.join()
+config.clientbuttons = awful.util.table.join()
+
+
+
+config.rules = {
+	{ rule = { class = "Pidgin", role = "buddy_list"},
+	properties = { tag = awful.tag.gettags(1)[2], switchtotag = false, no_autofocus = true }},
+	{ rule = { class = "Pidgin", role = "conversation"},
+	properties = { tag = awful.tag.gettags(1)[2], switchtotag = false, no_autofocus = true },
+	callback = awful.client.setslave },
+	{rule = {role = "DROPDOWN"}, 
+	properties = {opacity = 0.8}},
+	{ rule = { class = "Pavucontrol" },
+	properties = { floating = true, intrusive = true } },
+
+	{ rule = { class = "veromix" },
+	properties = { floating = true, intrusive = true } },
+
+	{ rule = { name = "Громкость" },
+	properties = { floating = true, intrusive = true } },
+
+	{ rule = { class = "Vlc" },
+	properties = { floating = true } },
+	{ rule = { role = "HTOP_CPU" },
+	properties = { floating = true, intrusive = true} },
+	{ rule = { role = "HTOP_MEM" },
+	properties = { floating = true, intrusive = true } },
+
+	{ rule = { class = "Exe"}, properties = {floating = true} },
+	{ rule = { class = "Plugin-container" },
+	properties = { floating = true, focus = true} },
+	{ rule = { class = "bomi"},
+	properties = { opacity = 0.8, switchtotag = false, no_autofocus = true, floating = true, ontop = true, sticky = true  },
+	callback = function(c)
+
+		local scrgeom = capi.screen[capi.mouse.screen].geometry
+		local clgeom  = c:geometry({width = scrgeom.width/5, height = scrgeom.height/5})
+		local clgeom  = c:geometry({x = scrgeom.x + scrgeom.width - clgeom.width, y = scrgeom.y + scrgeom.height - clgeom.height}) 
+		c:connect_signal("property::fullscreen",function(c)
+			if c.fullscreen then
+				c.opacity = 1
+				c.floating = false 
+				c.ontop = false
+				c.sticky = false
+			else
+				c.opacity = 0.8
+				c.floating = true
+				--c.ontop = true
+				c.sticky = true
+			end
+		end)
+	end}
+
+}
+
+
+
+
+return config

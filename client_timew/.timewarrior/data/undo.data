@@ -1,0 +1,60 @@
+txn:
+  type: interval
+  before: 
+  after: {"start":"20161008T170800Z","tags":["gvim","software"]}
+txn:
+  type: interval
+  before: {"start":"20161008T170800Z","tags":["gvim","software"]}
+  after: 
+txn:
+  type: interval
+  before: 
+  after: {"start":"20161008T170800Z","end":"20161008T170849Z","tags":["gvim","software"]}
+txn:
+  type: interval
+  before: 
+  after: {"start":"20161008T170849Z","tags":["firefox","software"]}
+txn:
+  type: interval
+  before: {"start":"20161008T170849Z","tags":["firefox","software"]}
+  after: 
+txn:
+  type: interval
+  before: 
+  after: {"start":"20161008T170849Z","end":"20161008T174616Z","tags":["firefox","software"]}
+txn:
+  type: interval
+  before: 
+  after: {"start":"20161008T174616Z","tags":["gvim"]}
+txn:
+  type: interval
+  before: {"start":"20161008T174616Z","tags":["gvim"]}
+  after: 
+txn:
+  type: interval
+  before: 
+  after: {"start":"20161008T174616Z","end":"20161008T174626Z","tags":["gvim"]}
+txn:
+  type: interval
+  before: 
+  after: {"start":"20161008T174626Z","tags":["termite"]}
+txn:
+  type: interval
+  before: {"start":"20161008T174626Z","tags":["termite"]}
+  after: 
+txn:
+  type: interval
+  before: 
+  after: {"start":"20161008T174626Z","end":"20161008T174701Z","tags":["termite"]}
+txn:
+  type: interval
+  before: 
+  after: {"start":"20161008T174701Z","tags":["termite"]}
+txn:
+  type: interval
+  before: {"start":"20161008T174701Z","tags":["termite"]}
+  after: 
+txn:
+  type: interval
+  before: 
+  after: {"start":"20161008T174701Z","end":"20161008T180548Z","tags":["termite"]}

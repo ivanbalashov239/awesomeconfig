@@ -1,0 +1,21 @@
+#!/bin/bash
+    #config_file="~/.config/awesome/rc.lua"
+#if [ config_file = "multihead" ] ; then
+#Xephyr :3.0 -ac -br +xinerama -screen 600×400 &
+#Xephyr :4.0 -ac -br +xinerama -screen 600×400 &
+#Xdmx :5 -display localhost:3 -display localhost:4 +xinerama
+#else
+#Xephyr -ac -br -noreset -screen 1024x768 :1 &
+#fi
+#sleep 1
+#DISPLAY=:5 awesome -c $config_file
+config_file=$1
+if [ config_file = "" ] ; then
+    config_file="~/.config/awesome/rc.lua"
+fi
+Xephyr -ac -br -noreset -screen 1024x768 :1 &
+sleep 1
+DISPLAY=:1.0 awesome 
+#-c $config_file
+
+

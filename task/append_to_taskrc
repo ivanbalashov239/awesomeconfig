@@ -1,0 +1,8 @@
+hook.post-add-command=~/.task/awesome.lua:refresh
+hook.post-delete-command=~/.task/awesome.lua:refresh
+hook.post-done-command=~/.task/awesome.lua:refresh
+hook.post-edit-command=~/.task/awesome.lua:refresh
+hook.post-modify-command=~/.task/awesome.lua:refresh
+hook.post-annotate-command=~/.task/awesome.lua:refresh
+hook.post-denotate-command=~/.task/awesome.lua:refresh
+hook.post-merge-command=~/.task/awesome.lua:refresh
