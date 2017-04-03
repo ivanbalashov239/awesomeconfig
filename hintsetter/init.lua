@@ -44,7 +44,9 @@ function hintsetter.init()
 
 	client.connect_signal("manage", function(c) 
 		if c.class then
-			hintsetter.windows[c.window] = hintsetter:hint_by_string(c.class):upper()
+			local ch = hintsetter:hint_by_string(c.class):upper()
+			hintsetter.windows[c.window] = ch
+			c.hint = ch
 		end
 		return true
 	end)
@@ -93,7 +95,8 @@ end
 function focus(cl,tag)
 	client.focus = cl
 	cl:raise()
-	awful.tag.viewonly(tag)
+	--awful.tag.viewonly(tag)
+	tag:view_only()
 	client.focus = cl
 	cl:raise()
 end
@@ -135,12 +138,13 @@ function hintsetter:focus(args)
 	local modal_sc = args.modal_sc or nil
 	local rule = args.rule or {}
 	local is_excluded = args.is_excluded or false
-	local screen = args.screen or mouse.screen or 1
+	local screen = args.screen or mouse.screen
 	local hintindex = {} -- Table of visible clients with the hint letter as the keys
-	local taglist = awful.tag.gettags(screen)
+	--local taglist = awful.tag.gettags(screen)
+	local taglist = screen.tags
 	local clientlist = awful.client.visible(screen)
 	local hintindex = {} -- Table of visible clients with the hint letter as the keys
-	local taglist = awful.tag.gettags(screen)
+	--local taglist = awful.tag.gettags(screen)
 	local ind = 0
 	local tagindex = {}
 	for i,thistag in pairs(taglist) do
@@ -225,7 +229,7 @@ function hintsetter:newtag(args)
 	local marked = ""
 	local only = args.only or false
 	local clientlist = {}
-	local taglist = awful.tag.gettags(screen)
+	local taglist = screen.tags
 	for i,thistag in pairs(taglist) do
 		for k,thisclient in pairs(thistag:clients()) do
 			table.insert(clientlist,thisclient)
@@ -283,12 +287,13 @@ function hintsetter.createresult(mark, screen,only)
 		newtable[n]=t
 		n = n + 1
 	end
-	for i,t in pairs(awful.tag.gettags(screen)) do
+	for i,t in pairs(screen.tags) do
 		if i > 1 then
 			clients = t.clients(t)
 			if (#clients == #newtable) then
 				if match(newtable,clients) then
-					awful.tag.viewonly(t)
+					--awful.tag.viewonly(t)
+					t:view_only()
 					return false
 				end
 			end
@@ -300,12 +305,14 @@ function hintsetter.createresult(mark, screen,only)
 	layout = awful.layout.suit.tile,
 	screen = screen})
 
-	awful.tag.viewonly(tag)
+	--awful.tag.viewonly(tag)
+	tag:view_only()
 
 	local name = ""
 
 	for i,j in pairs(markedclients) do
-		awful.client.toggletag(tag,j)
+		--awful.client.toggletag(tag,j)
+		j:toggle_tag(tag)
 		j.maximized_horizontal = false --not c.maximized_horizontal
 		j.maximized_vertical   = false --not c.maximized_vertical
 		name = name .. j.name:sub(0,2)
@@ -342,7 +349,8 @@ local function match_clients(rule, clients)
                 c[k] = v
                 
             end
-            awful.client.toggletag(t, c)
+            --awful.client.toggletag(t, c)
+	    c:toggle_tag(t)
         end
     end
     return clients
@@ -352,7 +360,8 @@ function hintsetter:togglefromtag(args)
 	local args = args or {}
 	local delete = args.delete or false
 	--local tag = tag or awful.tag.selected(mouse.screen or 1)
-	local firsttag = args.tag or awful.tag.gettags(mouse.screen or 1)[1]
+	--local firsttag = args.tag or awful.tag.gettags(mouse.screen or 1)[1]
+	local firsttag = args.tag or mouse.screen.tags[1]
 	local cl = args.client or client.focus
 	local cl_tags = cl:tags()
 	local clients = firsttag:clients()

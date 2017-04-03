@@ -12,7 +12,7 @@ netwidget.shortcuts = {}
 
 local function worker(args)
 	local wifitextlayout = wibox.layout.fixed.horizontal()
-	local backtext = wibox.layout.constraint()
+	local backtext = wibox.container.constraint()
 	local net_wireless = net_widgets.wireless({
 		interface="wlp0s18f2u3", 
 		widget = false, 
@@ -36,7 +36,7 @@ local function worker(args)
 		timeout     = 25,
 	})
 	wifitextlayout:add(widgets.display_l)
-	local background = wibox.widget.background()
+	local background = wibox.container.background()
 	background:set_widget(net_wireless.textbox)
 	background:set_bgimage(beautiful.widget_display)
 	wifitextlayout:add(background)

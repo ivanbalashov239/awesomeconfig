@@ -10,6 +10,9 @@ widgets.spr4px = wibox.widget.imagebox()
 widgets.spr4px:set_image(beautiful.spr4px)
 widgets.spr5px = wibox.widget.imagebox()
 widgets.spr5px:set_image(beautiful.spr5px)
+widgets.bg = beautiful.bg_normal
+widgets.fg = beautiful.fg_normal
+widgets.font = "Terminus 10"
 
 
 widgets.space3 = lain.util.markup.font("Terminus 3", " ")
@@ -54,7 +57,7 @@ local function worker(args)
 			if i > 1 then 
 				layout:add(widgets.display_c)
 			end
-			local background = wibox.widget.background()
+			local background = wibox.container.background()
 			background:set_widget(k)
 			background:set_bgimage(beautiful.widget_display)
 			layout:add(background)

@@ -6,60 +6,95 @@ local awful = require("awful")
 local naughty = require("naughty")
 local fixed 	 = require("wibox.layout.fixed")
 local common 	 = require("awful.widget.common")
-local hintsetter  = require("hintsetter")
+local theme = "pro-dark"
+--local hintsetter  = require("hintsetter")
 local widgets = widgetcreator
 local capi = {
-    mouse = mouse,
-    client = client,
-    screen = screen
-    }
+	mouse = mouse,
+	client = client,
+	screen = screen
+}
 
 local taglist ={}
 taglist.shortcuts = {}
+taglist.tags={}
+--myiconlist         = {}
+--myiconlist.buttons = awful.util.table.join(
+--awful.button({ }, 1, function (c)
+--if c == client.focus then
+--c.minimized = true
+--else
+--c.minimized = false
+--if not c:isvisible() then
+--awful.tag.viewonly(c:tags()[1])
+--end
+--client.focus = c
+--c:raise()
+--end
+--end),
+--awful.button({ }, 12, function (c)
+--c:kill()
+--end),
+--awful.button({ }, 2, function (c)
+--c:kill()
+--end),
+--awful.button({ }, 3, function ()
+--if instance then
+--instance:hide()
+--instance = nil
+--else
+--instance = awful.menu.clients({
+--theme = { width = 250 }
+--})
+--end
+--end),
+--awful.button({ }, 4, function ()
+--awful.client.focus.byidx(1)
+--if client.focus then client.focus:raise() end
+--end),
+--awful.button({ }, 5, function ()
+--awful.client.focus.byidx(-1)
+--if client.focus then client.focus:raise() end
+--end))
+--mytaglist         = {}
+--mytaglist.buttons = awful.util.table.join(
+--awful.button({ }, 1, awful.tag.viewonly),
+--awful.button({ modkey }, 1, awful.client.movetotag),
+----awful.button({ }, 3, awful.tag.viewtoggle),
+----awful.button({ modkey }, 3, awful.client.toggletag),
+--awful.button({ }, 4, function(t) awful.tag.viewnext() end),
+--awful.button({ }, 5, function(t) awful.tag.viewprev() end)
+--)
+awful.tag.attached_connect_signal(nil,"removed",function(tag)
+	table.remove(taglist.tags,tag)
+end)
+awful.tag.attached_connect_signal(nil,"property::activated",function(tag)
+	if tag then
+		table.insert(taglist.tags,tag)
+	end
+	--print(#taglist.tags)
+	--print("added tag")
+	--for i,k in pairs(taglist.tags) do
+	--print(k.name)
+	--end
+	--print("finish")
+end)
+
+function taglist:get_tags()
+	return taglist.tags
+end
 
 local function worker(args)
 	local args = args or {}
-	local screen = args.screen or 1
-	myiconlist         = {}
-	myiconlist.buttons = awful.util.table.join(
-	awful.button({ }, 1, function (c)
-		if c == client.focus then
-			c.minimized = true
-		else
-			c.minimized = false
-			if not c:isvisible() then
-				awful.tag.viewonly(c:tags()[1])
-			end
-			client.focus = c
-			c:raise()
-		end
-	end),
-	awful.button({ }, 12, function (c)
-		c:kill()
-	end),
-	awful.button({ }, 2, function (c)
-		c:kill()
-	end),
-	awful.button({ }, 3, function ()
-		if instance then
-			instance:hide()
-			instance = nil
-		else
-			instance = awful.menu.clients({
-				theme = { width = 250 }
-			})
-		end
-	end),
-	awful.button({ }, 4, function ()
-		awful.client.focus.byidx(1)
-		if client.focus then client.focus:raise() end
-	end),
-	awful.button({ }, 5, function ()
-		awful.client.focus.byidx(-1)
-		if client.focus then client.focus:raise() end
-	end))
-
-	local function taglist_update(w, buttons, label, data, objects)
+	local screen = args.screen or mouse.screen
+	--print(#taglist:get_tags())
+	--uf = list_update
+	--w = args.base_widget or fixed.horizontal()
+	--if args.tags then
+	--taglist.tags = args.tags or {}
+	--end
+	--list_update(w,tags,awful.widget.taglist.taglist_label,screen)
+	function list_update(w, buttons, label, data, objects)
 		local function matchrules(tag)
 			return function(c, screen)
 				--if c.sticky then return true end
@@ -72,176 +107,201 @@ local function worker(args)
 				return false
 			end
 		end
-		local function get_tasklist_update(tag)
-			return function (w, buttons, label, data, objects)
-				-- update the widgets, creating them if needed
-				w:reset()
-				for i, o in ipairs(tag:clients()) do
-					local cache = data[o]
-					local ib, tb, bgb, m, l, munf, mfoc, background
-					if cache then
-						ib = cache.ib
-						bgb = cache.bgb
-						m =  cache.m
-						tb = cache.tb
-						munf = cache.munf
-						mfoc = cache.mfoc
-						l = cache.l
-						tl = cache.tl
-						el = cache.el
-						tbl = cache.tbl
-					else
-						ib = wibox.widget.imagebox()
-						bgb = wibox.widget.background()
-						tb = wibox.widget.textbox()
-						m = wibox.layout.margin(tb, 0, 0)
-						--munf = wibox.layout.margin(ib, 0, 0, 0, 5)
-						--mfoc = wibox.layout.margin(ib, 0, 0, 0, 0)
-						l = wibox.layout.fixed.horizontal()
-						tl = wibox.layout.fixed.horizontal()
-						tbl = wibox.layout.constraint()
-						munf = wibox.layout.margin(l, 0, 0, 0, 5)
-						mfoc = wibox.layout.margin(l, 0, 0, 0, 0)
-						l:add(widgets.display_l)
-						local background = wibox.widget.background()
-						background:set_widget(m)
-						background:set_bgimage(beautiful.widget_display)
-						-- All of this is added in a fixed widget
-						l:fill_space(true)
-						tl:add(background)
-						tbl:set_widget(tl)
-						l:add(tbl)
-						l:add(ib)
-						--l:add(munf)
-
-
-						-- And all of this gets a background
-						bgb:set_widget(l)
-
-						bgb:buttons(common.create_buttons(buttons, o))
-
-						data[o] = {
-							ib = ib,
-							bgb = bgb,
-							m = m,
-							tb = tb,
-							munf   = munf,
-							mfoc = mfoc,
-							l = l,
-							tl = tl,
-							el = el,
-							tbl = tbl,
-						}
-					end
-					if tag.selected then
-						if (o == capi.client.focus) then
-							bgb:set_widget(mfoc)
-						else
-							bgb:set_widget(munf)
-						end
-					else
-						bgb:set_widget(munf)
-					end
-
-					local text, bg, bg_image, icon = label(o)
-					-- The text might be invalid, so use pcall
-					--if not pcall(tb.set_markup, tb, text) then
-					local textlabel = ""
-
-					if hintsetter.windows[o.window] then
-						--tb:set_markup('<span font="Terminus 10" weight="bold">'..hintsetter.windows[o.window]..'</span>')
-						textlabel = hintsetter.windows[o.window]
-					else
-						--tb:set_markup(markup.font("Terminus 4", " ")..'<span font="Terminus 10" weight="bold">'.."_"..'</span>'..markup.font("Terminus 4", " "))
-						textlabel ="_"
-					end
-					--end
-					if o.minimized then
-						--background = wibox.widget.background()
-						--tbl:set_widget(el)
-						--print(o.class.." minimized")
-						textlabel = "^"..textlabel
-						--else
-						--tbl:set_widget(tl)
-					end
-					tb:set_markup('<span font="Terminus 10" weight="bold">'..textlabel..'</span>')
-					if icon == nil then
-						icon = os.getenv("HOME") .. "/.config/awesome/themes/" .. theme .. "/icons/konsole.png"
-					end
-					--bgb:set_bg(bg)
-					if type(bg_image) == "function" then
-						bg_image = bg_image(tb,o,m,objects,i)
-					end
-					bgb:set_bgimage(bg_image)
-					ib:set_image(icon)
-					w:add(bgb)
-				end
-			end
-		end
 		-- update the widgets, creating them if needed
 		w:reset()
+		--w:add(awful.widget.tasklist(screen))
 		local number = -1
-		for i, o in ipairs(objects) do
+		--oldprint(type(objects))
+		--print(taglist.tags == taglist:get_tags())
+		--print("tags "..#taglist.tags)
+		--print("get_tags "..#taglist:get_tags())
+		for i, o in ipairs(taglist:get_tags()) do
+
+			--print(o.name)
 			number = number + 1
+			if number ~= 1 then
+				--break
+				--number = number + 1
+				local cache = data[o]
+				local ib, tb, bgb, m, l
+				if cache then
+					ib = cache.ib
+					tb = cache.tb
+					bgb = cache.bgb
+					m   = cache.m
+				else
+					ib = wibox.widget.imagebox()
+					tb = wibox.widget.textbox()
+					textwidget = wibox.container.background()
+					textwidget:set_bgimage(beautiful.widget_display)
+					textwidget:set_widget(tb)
+					bgb = wibox.container.background()
+					m = wibox.container.margin(tb, 4, 4)
+					l = wibox.layout.fixed.horizontal()
+
+					-- All of this is added in a fixed widget
+					l:fill_space(true)
+					--l:add(m)
+					l:add(widgets.spr)
+					l:add(widgets.spr)
+					--print(o.name)
+					--print("number "..number)
+					if number > 0 then
+						--print("added text label")
+						l:add(widgets.display_l)
+						l:add(textwidget)
+						l:add(widgets.display_r)
+					end
+					--l:add(taglist.tasklist({tag=o, screen = screen, disable_text=true}))
+					l:add(awful.widget.tasklist(screen, matchrules(o),  myiconlist.buttons, nil, taglist.get_tasklist_update(o), fixed.horizontal()))
+					--l:add(awful.widget.tasklist(screen,matchrules(o)))
+					--awful.widget.taglist.filter.all
+					l:add(widgets.spr)
+					l:add(widgets.spr)
+					-- And all of this gets a background
+					--title = wibox({fg=beautiful.fg_normal, bg=beautiful.bg_focus, border_color=beautiful.border_focus, border_width=beautiful.border_width})
+					--title:set_widget(tb)
+					bgb:set_widget(l)
+					--w:connect_signal("mouse::enter", function ()
+					--title.visible = true
+					--title.x = mouse.coords().x 
+					--title.y = mouse.coords().y 
+					--title.screen = capi.mouse.screen
+					--end)
+					--w:connect_signal("mouse::leave", function () title.visible = false end)
+
+					--bgb:buttons(common.create_buttons(buttons, o))
+					data[o] = {
+						ib  = ib,
+						tb  = tb,
+						bgb = bgb,
+						tbm = tbm,
+						ibm = ibm,
+					}
+				end
+
+				local text, bg, bg_image, icon = label(o)
+				-- The text might be invalid, so use pcall
+				if not pcall(tb.set_markup, tb, text) then
+					tb:set_markup("<i>&lt;Invalid text&gt;</i>")
+				end
+				bgb:set_bg(bg)
+				if type(bg_image) == "function" then
+					bg_image = bg_image(tb,o,m,objects,i)
+				end
+				tb:set_text(o.hint or o.name or "no_hint")
+				bgb:set_bgimage(bg_image)
+				ib:set_image(icon)
+				w:add(bgb)
+			end
+		end
+	end
+	--return awful.widget.taglist(screen, awful.widget.taglist.filter.all, mytaglist.buttons)
+	--local taglist = awful.widget.taglist(screen, awful.widget.taglist.filter.all, mytaglist.buttons, {}, taglist_update)
+	return awful.widget.taglist(screen, awful.widget.taglist.filter.all, mytaglist.buttons, {}, list_update)
+	--return w
+end
+--function list_update(w, objects, label,screen)
+function taglist.get_tasklist_update(tag)
+	--oldprint(tag)
+	--print("gettasklist_update")
+	return function (w, buttons, label, data, objects)
+		-- update the widgets, creating them if needed
+		w:reset()
+		for i, o in ipairs(tag:clients()) do
+			--print(o.class)
 			local cache = data[o]
-			local ib, tb, bgb, m, l
+			local ib, tb, bgb, m, l, munf, mfoc, background
 			if cache then
 				ib = cache.ib
-				tb = cache.tb
 				bgb = cache.bgb
-				m   = cache.m
+				m =  cache.m
+				tb = cache.tb
+				munf = cache.munf
+				mfoc = cache.mfoc
+				l = cache.l
+				tl = cache.tl
+				el = cache.el
+				tbl = cache.tbl
 			else
 				ib = wibox.widget.imagebox()
+				bgb = wibox.container.background()
 				tb = wibox.widget.textbox()
-				textwidget = wibox.widget.background()
-				textwidget:set_bgimage(beautiful.widget_display)
-				textwidget:set_widget(tb)
-				bgb = wibox.widget.background()
-				m = wibox.layout.margin(tb, 4, 4)
+				m = wibox.container.margin(tb, 0, 0)
+				--munf = wibox.container.margin(ib, 0, 0, 0, 5)
+				--mfoc = wibox.container.margin(ib, 0, 0, 0, 0)
 				l = wibox.layout.fixed.horizontal()
-
+				tl = wibox.layout.fixed.horizontal()
+				tbl = wibox.container.constraint()
+				munf = wibox.container.margin(l, 0, 0, 0, 5)
+				mfoc = wibox.container.margin(l, 0, 0, 0, 0)
+				l:add(widgets.display_l)
+				local background = wibox.container.background()
+				background:set_widget(m)
+				background:set_bgimage(beautiful.widget_display)
 				-- All of this is added in a fixed widget
 				l:fill_space(true)
-				--l:add(m)
-				l:add(widgets.spr)
-				l:add(widgets.spr)
-				if number > 0 then
-					l:add(widgets.display_l)
-					l:add(textwidget)
-					l:add(widgets.display_r)
-				end
-				l:add(awful.widget.tasklist(s, matchrules(o) ,  myiconlist.buttons, {tasklist_only_icon=true}, get_tasklist_update(o), fixed.horizontal()))
-				--awful.widget.taglist.filter.all
-				l:add(widgets.spr)
-				l:add(widgets.spr)
+				tl:add(background)
+				tbl:set_widget(tl)
+				l:add(tbl)
+				l:add(ib)
+				--l:add(munf)
+
+
 				-- And all of this gets a background
-				--title = wibox({fg=beautiful.fg_normal, bg=beautiful.bg_focus, border_color=beautiful.border_focus, border_width=beautiful.border_width})
-				--title:set_widget(tb)
 				bgb:set_widget(l)
-				--w:connect_signal("mouse::enter", function ()
-				--title.visible = true
-				--title.x = mouse.coords().x 
-				--title.y = mouse.coords().y 
-				--title.screen = capi.mouse.screen
-				--end)
-				--w:connect_signal("mouse::leave", function () title.visible = false end)
+
 				bgb:buttons(common.create_buttons(buttons, o))
 
 				data[o] = {
 					ib = ib,
-					tb = tb,
 					bgb = bgb,
-					m   = m
+					m = m,
+					tb = tb,
+					munf   = munf,
+					mfoc = mfoc,
+					l = l,
+					tl = tl,
+					el = el,
+					tbl = tbl,
 				}
 			end
-			--tb:set_markup("<i>&lt;"..number..":&gt;</i>")
+			if tag.selected then
+				if (o == capi.client.focus) then
+					bgb:set_widget(mfoc)
+				else
+					bgb:set_widget(munf)
+				end
+			else
+				bgb:set_widget(munf)
+			end
 
-			--local text, bg, bg_image, icon = label(o)
+			local text, bg, bg_image, icon, args = label(o, tb)
 			-- The text might be invalid, so use pcall
-			--text = number..":"
-			text = hintsetter.charorder:sub(i,i):upper()
-			if not pcall(tb.set_markup, tb, text) then
-				tb:set_markup("<i>&lt;Invalid text&gt;</i>")
+			--if not pcall(tb.set_markup, tb, text) then
+			local textlabel = ""
+
+			--if hintsetter.windows[o.window] then
+			if o.hint then
+				--tb:set_markup('<span font="Terminus 10" weight="bold">'..hintsetter.windows[o.window]..'</span>')
+				textlabel = o.hint
+			else
+				--tb:set_markup(markup.font("Terminus 4", " ")..'<span font="Terminus 10" weight="bold">'.."_"..'</span>'..markup.font("Terminus 4", " "))
+				textlabel ="_"
+			end
+			--print(textlabel)
+			--end
+			if o.minimized then
+				--background = wibox.widget.background()
+				--tbl:set_widget(el)
+				--print(o.class.." minimized")
+				textlabel = "^"..textlabel
+				--else
+				--tbl:set_widget(tl)
+			end
+			tb:set_markup('<span font="Terminus 10" weight="bold">'..textlabel..'</span>')
+			if icon == nil then
+				icon = os.getenv("HOME") .. "/.config/awesome/themes/" .. theme .. "/icons/konsole.png"
 			end
 			--bgb:set_bg(bg)
 			if type(bg_image) == "function" then
@@ -252,78 +312,12 @@ local function worker(args)
 			w:add(bgb)
 		end
 	end
-
-
-	mytaglist         = {}
-	mytaglist.buttons = awful.util.table.join(
-	awful.button({ }, 1, awful.tag.viewonly),
-	awful.button({ modkey }, 1, awful.client.movetotag),
-	--awful.button({ }, 3, awful.tag.viewtoggle),
-	--awful.button({ modkey }, 3, awful.client.toggletag),
-	awful.button({ }, 4, function(t) awful.tag.viewnext() end),
-	awful.button({ }, 5, function(t) awful.tag.viewprev() end)
-	)
-	--return awful.widget.taglist(screen, awful.widget.taglist.filter.all, mytaglist.buttons)
-	--local taglist = awful.widget.taglist(screen, awful.widget.taglist.filter.all, mytaglist.buttons, {}, taglist_update)
-	local taglist = awful.widget.taglist(screen, awful.widget.taglist.filter.all) --, mytaglist.buttons, {}, list_update)
-	--print(type(taglist))
-	return taglist
-
-end
-function list_update(w, buttons, label, data, objects)
-    -- update the widgets, creating them if needed
-    w:reset()
-    for i, o in ipairs(objects) do
-        local cache = data[o]
-        local ib, tb, bgb, m, l
-        if cache then
-            ib = cache.ib
-            tb = cache.tb
-            bgb = cache.bgb
-            m   = cache.m
-        else
-            ib = wibox.widget.imagebox()
-            tb = wibox.widget.textbox()
-            bgb = wibox.widget.background()
-            m = wibox.layout.margin(tb, 4, 4)
-            l = wibox.layout.fixed.horizontal()
-
-            -- All of this is added in a fixed widget
-            l:fill_space(true)
-            l:add(ib)
-            l:add(m)
-
-            -- And all of this gets a background
-            bgb:set_widget(l)
-
-            bgb:buttons(common.create_buttons(buttons, o))
-
-            data[o] = {
-                ib = ib,
-                tb = tb,
-                bgb = bgb,
-                m   = m
-            }
-        end
-
-        local text, bg, bg_image, icon = label(o)
-        -- The text might be invalid, so use pcall
-        if not pcall(tb.set_markup, tb, text) then
-            tb:set_markup("<i>&lt;Invalid text&gt;</i>")
-        end
-        bgb:set_bg(bg)
-        if type(bg_image) == "function" then
-            bg_image = bg_image(tb,o,m,objects,i)
-        end
-        bgb:set_bgimage(bg_image)
-        ib:set_image(icon)
-        w:add(bgb)
-   end
 end
 function taglist.bydirection(dir, c, all)
 	local sel = c or capi.client.focus
 	if sel then
-		local tag = awful.tag.selected(sel.screen)
+		--local tag = awful.tag.selected(sel.screen)
+		local tag = sel.screen.selected_tag
 		local id = awful.tag.getidx(tag)
 		if id  == 1 then
 			local clientlist = tag:clients()
@@ -356,7 +350,7 @@ function taglist.bydirection(dir, c, all)
 					clid = clid + number
 				end
 			end
-				
+
 		else
 			local cltbl = awful.client.visible(sel.screen)
 			local geomtbl = {}
@@ -390,7 +384,8 @@ function taglist.global_bydirection(dir, c, all)
 	if sel == capi.client.focus then
 		screen.focus_bydirection(dir, scr)
 		if scr ~= capi.mouse.screen then
-			local tag = awful.tag.selected(capi.mouse.screen)
+			--local tag = awful.tag.selected(capi.mouse.screen)
+			local tag = capi.mouse.screen.selected_tag
 			local id = awful.tag.getidx(tag)
 			if id  ~= 1 then
 

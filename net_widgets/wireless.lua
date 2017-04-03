@@ -1,8 +1,11 @@
 local wibox         = require("wibox")
 local awful         = require("awful")
+local shell        = require("awful.util").shell
 local beautiful     = require("beautiful")
 local naughty       = require("naughty")
 local module_path = (...):match ("(.+/)[^/]+$") or ""
+local timer = require("gears").timer
+local helpers = require("lain.helpers")
 
 local wireless = {}
 local function worker(args)
@@ -29,38 +32,40 @@ local function worker(args)
     local net_timer = timer({ timeout = timeout })
     local signal_level = 0
     local function net_update()
-        signal_level = tonumber(awful.util.pread("awk 'NR==3 {printf \"%3.0f\" ,($3/70)*100}' /proc/net/wireless"))
-        if signal_level == nil then
-            connected = false
-            net_text:set_text(" N/A ")
-            net_icon:set_image(ICON_DIR.."wireless_na.png")
-        else
-            connected = true
-            net_text:set_text(string.format("%"..indent.."d%%", signal_level))
-            if signal_level < 25 then
-                net_icon:set_image(ICON_DIR.."wireless_0.png")
-            elseif signal_level < 50 then
-                net_icon:set_image(ICON_DIR.."wireless_1.png")
-            elseif signal_level < 75 then
-                net_icon:set_image(ICON_DIR.."wireless_2.png")
-            else
-                net_icon:set_image(ICON_DIR.."wireless_3.png")
-            end
-        end
-	if settings then
-		settings({
-			signal_level = signal_level,
-			connected = connected,
-			ICON_DIR      = ICON_DIR,
-			interface     = interface,
-			timeout       = timeout,   
-			font          = font,
-			popup_signal  = popup_signal,
-			onclick       = onclick, 
-			widget 	  = widget,
-			indent 	  = indent,	  
-		})
-	end
+	    helpers.async({ shell, "-c", "awk 'NR==3 {printf \"%3.0f\" ,($3/70)*100}' /proc/net/wireless" }, function(f)
+		    signal_level = tonumber(f)
+		    if signal_level == nil then
+			    connected = false
+			    net_text:set_text(" N/A ")
+			    net_icon:set_image(ICON_DIR.."wireless_na.png")
+		    else
+			    connected = true
+			    net_text:set_text(string.format("%"..indent.."d%%", signal_level))
+			    if signal_level < 25 then
+				    net_icon:set_image(ICON_DIR.."wireless_0.png")
+			    elseif signal_level < 50 then
+				    net_icon:set_image(ICON_DIR.."wireless_1.png")
+			    elseif signal_level < 75 then
+				    net_icon:set_image(ICON_DIR.."wireless_2.png")
+			    else
+				    net_icon:set_image(ICON_DIR.."wireless_3.png")
+			    end
+		    end
+		    if settings then
+			    settings({
+				    signal_level = signal_level,
+				    connected = connected,
+				    ICON_DIR      = ICON_DIR,
+				    interface     = interface,
+				    timeout       = timeout,   
+				    font          = font,
+				    popup_signal  = popup_signal,
+				    onclick       = onclick, 
+				    widget 	  = widget,
+				    indent 	  = indent,	  
+			    })
+		    end
+	    end)
     end
 
     net_update()

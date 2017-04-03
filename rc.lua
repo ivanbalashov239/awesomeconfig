@@ -11,21 +11,22 @@ local fixed 	 = require("wibox.layout.fixed")
                    require("awful.autofocus")
 -- | Theme | --
 
-local theme = "pro-dark"
+--local theme = "pro-dark"
 local beautiful  = require("beautiful")
-beautiful.init(os.getenv("HOME") .. "/.config/awesome/themes/" .. theme .. "/theme.lua")
+--beautiful.init(os.getenv("HOME") .. "/.config/awesome/themes/" .. theme .. "/theme.lua")
 --                   require("sharetags")
 local hintsetter  = require("hintsetter")
 hintsetter.init()
 local hints 	 = require("hints")
 hints.init()
-local tyrannical = require("tyrannical")
+--local tyrannical = require("tyrannical")
+local sharedtags = require("sharedtags")
 local apw 	 = require("apw/widget")
 local wibox      = require("wibox")
 local vicious    = require("vicious")
 local naughty    = require("naughty") --"notifybar")
-local hidetray	 = require("hidetray")
-local systray	 = require("systray")
+--local hidetray	 = require("hidetray")
+--local systray	 = require("systray")
 local lain       = require("lain")
 local read_pipe    = require("lain.helpers").read_pipe
 local net_widgets = require("net_widgets")
@@ -56,7 +57,7 @@ local menubar = require("menubar")
 menubar.terminal = "termite"
 menubar.menu_gen.all_menu_dirs = { "/usr/share/applications/", "/usr/local/share/applications", "~/.local/share/applications" }
 local cheeky 	 = require("cheeky")
-local appsuspender = require("appsuspender")
+--local appsuspender = require("appsuspender")
 local im = require("im")
 local task = require("task")
 local capi = {
@@ -65,22 +66,25 @@ local capi = {
     screen = screen
     }
 
+timer = gears.timer
+
 oldprint = print
 function print(s,t)
 	if not s then
 		s = "nill"
 	end
-		if type(s) == "table" then
-			s = table.concat(s,"\n")
-		end
-		naughty.notify({
-			preset = naughty.config.presets.critical,
-			title = s,
-			bg = beautiful.bg_normal,
-			text = awesome.startup_errors,
-			timeout=t,
-			position = "top_left"
-		}) 
+	if type(s) == "table" then
+		s = table.concat(s,"\n")
+	end
+	oldprint(s)
+	naughty.notify({
+		preset = naughty.config.presets.critical,
+		title = tostring(s),
+		bg = beautiful.bg_normal,
+		text = awesome.startup_errors,
+		timeout=t,
+		position = "top_left"
+	}) 
 end
 os.execute('/home/ivn/scripts/run_slimlock_onstart.sh startup &')
 
@@ -118,10 +122,10 @@ end
 
 -- Disable cursor animation:
 
-local oldspawn = awful.util.spawn
-awful.util.spawn = function (s)
-    oldspawn(s, false)
-end
+local oldspawn = awful.spawn
+--awful.spawn = function (s)
+    --oldspawn(s, false)
+--end
 
 -- change notify defaults
 
@@ -132,13 +136,13 @@ end
 
 -- Java GUI's fix:
 
-awful.util.spawn_with_shell("wmname Sawfish") --LG3D")
+awful.spawn.with_shell("wmname Sawfish") --LG3D")
 
 -- | Variable definitions | --
 
 local home   = os.getenv("HOME")
 local exec   = function (s) oldspawn(s, false) end
-local shexec = awful.util.spawn_with_shell
+local shexec = awful.spawn.with_shell
 
 
 modkey        = "Mod4"
@@ -165,11 +169,29 @@ filemanager   = "spacefm"
 locker = '/home/ivn/scripts/run_slimlock_onstart.sh'
 xautolock     = "xautolock -locker '"..locker.."' -nowlocker '"..locker.."' -time 10 &"
 locknow       = "xautolock -locknow &"
-configuration = termax .. ' -e "vim -O $HOME/.config/awesome/rc.lua $HOME/.config/awesome/themes/' ..theme.. '/theme.lua"'
+--configuration = termax .. ' -e "vim -O $HOME/.config/awesome/rc.lua $HOME/.config/awesome/themes/' ..theme.. '/theme.lua"'
 lastpidgin = nil
 
 -- | Table of layouts | --
 
+awful.layout.layouts = {
+    --awful.layout.suit.floating,
+    awful.layout.suit.tile,
+    awful.layout.suit.tile.left,
+    awful.layout.suit.tile.bottom,
+    awful.layout.suit.tile.top,
+    awful.layout.suit.fair,
+    awful.layout.suit.fair.horizontal,
+    awful.layout.suit.spiral,
+    awful.layout.suit.spiral.dwindle,
+    awful.layout.suit.max,
+    awful.layout.suit.max.fullscreen,
+    awful.layout.suit.magnifier,
+    awful.layout.suit.corner.nw,
+    -- awful.layout.suit.corner.ne,
+    -- awful.layout.suit.corner.sw,
+    -- awful.layout.suit.corner.se,
+}
 local layouts =
 {
     awful.layout.suit.tile,
@@ -182,118 +204,145 @@ local layouts =
 
 -- | Wallpaper | --
 
-if beautiful.wallpaper then
-    for s = 1, screen.count() do
-        -- gears.wallpaper.tiled(beautiful.wallpaper, s)
-        gears.wallpaper.maximized(beautiful.wallpaper, s, true)
+local function set_wallpaper(s)
+    -- Wallpaper
+    if beautiful.wallpaper then
+        local wallpaper = beautiful.wallpaper
+        -- If wallpaper is a function, call it with the screen
+        if type(wallpaper) == "function" then
+            wallpaper = wallpaper(s)
+        end
+        gears.wallpaper.maximized(wallpaper, s, true)
     end
 end
+screen.connect_signal("property::geometry", set_wallpaper)
+--if beautiful.wallpaper then
+    --for s = 1, screen.count() do
+        ---- gears.wallpaper.tiled(beautiful.wallpaper, s)
+        --gears.wallpaper.maximized(beautiful.wallpaper, s, true)
+    --end
+--end
 
 -- | Tags | --
-tagnames = { "Others", "IM", "IDEA"}
-tyrannical.tags = {
-    {
-	name        = tagnames[1], --"Others",                 -- Call the tag "Term"
-	init        = true,                   -- Load the tag on startup
-	exclusive   = true,                   -- Refuse any other type of clients (by classes)
-	screen      = {1,2},                  -- Create this tag on screen 1 and screen 2
-	fallback    = true,
-	layout      = awful.layout.suit.max,
-	--hide 	    = true,
-	--instance    = {"dev", "ops"},         -- Accept the following instances. This takes precedence over 'class'
-	class       = { --Accept the following classes, refuse everything else (because of "exclusive=true")
-	    "xterm" , "urxvt" , "aterm","URxvt","XTerm","konsole","terminator","gnome-terminal", "Termite", "Firefox", "Gvim"
-	}
-    } ,
-    {
-	name        = tagnames[2],
-	init        = true, 	
-	exclusive   = true,               
-	screen	    = 1,                    
-	hide	    = true,
-	ncol	    = 3,
-	mwfact      = 0.15,
-	exclusive   = true,
-	layout      = awful.layout.suit.tile,
-	no_focus_stealing_in = true,
-	
-	class = {
-		"Psi", "psi", "skype", "xchat", "choqok", "hotot", "qwit", "Pidgin","telegram-desktop","TelegramDesktop"
-	}
-    } ,
-    ----{
-        ----name        = "Internet",
-        ----init        = true,
-        ----exclusive   = true,
-      ------icon        = "~net.png",                 -- Use this icon for the tag (uncomment with a real path)
-        ----screen      = screen.count()>1 and 2 or 1,-- Setup on screen 2 if there is more than 1 screen, else on screen 1
-        ----layout      = awful.layout.suit.max,      -- Use the max layout
-        ----class = {
-            ----"Opera"         , "Firefox"        , "Rekonq"    , "Dillo"        , "Arora",
-            ----"Chromium"      , "nightly"        , "minefield"     }
-    ----} ,
+tagnames = { "others", "im"}
+local tags = sharedtags({
+    { name = "others",
+    layout      = awful.layout.suit.max,
+    },
+    { name = "im",
+    layout = awful.layout.layouts[1],
+    hide	    = true,
+    mwfact      = 0.15,
+    },
+    --{ name = "misc", layout = awful.layout.layouts[2] },
+    --{ name = "chat", screen = 2, layout = awful.layout.layouts[2] },
+    --{ layout = awful.layout.layouts[2] },
+    --{ screen = 2, layout = awful.layout.layouts[2] }
+})
+widgets.taglist.tags = tags
+--tyrannical.tags = {
     --{
-	--name = tagnames[3],
-	--init        = false,
-	--exclusive   = true,
-	--screen      = 1,
-	--layout      = awful.layout.suit.floating,
-	--exec_once   = {"dolphin"}, --When the tag is accessed for the first time, execute this command
-	--class  = {
-	    --"Idea", "jetbrains-idea-ce", "sun-awt-X11-XFramePeer"
+	--name        = tagnames[1], --"Others",                 -- Call the tag "Term"
+	--init        = true,                   -- Load the tag on startup
+	--exclusive   = true,                   -- Refuse any other type of clients (by classes)
+	--screen      = {1,2},                  -- Create this tag on screen 1 and screen 2
+	--fallback    = true,
+	--layout      = awful.layout.suit.max,
+	----hide 	    = true,
+	----instance    = {"dev", "ops"},         -- Accept the following instances. This takes precedence over 'class'
+	--class       = { --Accept the following classes, refuse everything else (because of "exclusive=true")
+	    --"xterm" , "urxvt" , "aterm","URxvt","XTerm","konsole","terminator","gnome-terminal", "Termite", "Firefox", "Gvim"
 	--}
     --} ,
     --{
-	--name = tagnames[3],
-	--init        = false,
+	--name        = tagnames[2],
+	--init        = true, 	
+	--exclusive   = true,               
+	--screen	    = 1,                    
+	--hide	    = true,
+	--ncol	    = 3,
+	--mwfact      = 0.15,
 	--exclusive   = true,
-	--screen      = {1,2},
-	--layout      = awful.layout.suit.tile                          ,
-	--class ={ 
-	    --"Firefox", "gvim", "Gvim"
-	    --}
-    --},
-    --{
-        --name        = "Doc",
-        --init        = false, -- This tag wont be created at startup, but will be when one of the
-                             ---- client in the "class" section will start. It will be created on
-                             ---- the client startup screen
-        ----exclusive   = true,
-	--fallback = true,
-        --layout      = awful.layout.suit.tile,
-        --class       = {
-            --"Assistant"     , "Okular"         , "Evince"    , "EPDFviewer"   , "xpdf",
-            --"Xpdf"          ,                                        }
+	--layout      = awful.layout.suit.tile,
+	--no_focus_stealing_in = true,
+	
+	--class = {
+		--"Psi", "psi", "skype", "xchat", "choqok", "hotot", "qwit", "Pidgin","telegram-desktop","TelegramDesktop"
+	--}
     --} ,
-}
+    ------{
+        ------name        = "Internet",
+        ------init        = true,
+        ------exclusive   = true,
+      --------icon        = "~net.png",                 -- Use this icon for the tag (uncomment with a real path)
+        ------screen      = screen.count()>1 and 2 or 1,-- Setup on screen 2 if there is more than 1 screen, else on screen 1
+        ------layout      = awful.layout.suit.max,      -- Use the max layout
+        ------class = {
+            ------"Opera"         , "Firefox"        , "Rekonq"    , "Dillo"        , "Arora",
+            ------"Chromium"      , "nightly"        , "minefield"     }
+    ------} ,
+    ----{
+	----name = tagnames[3],
+	----init        = false,
+	----exclusive   = true,
+	----screen      = 1,
+	----layout      = awful.layout.suit.floating,
+	----exec_once   = {"dolphin"}, --When the tag is accessed for the first time, execute this command
+	----class  = {
+	    ----"Idea", "jetbrains-idea-ce", "sun-awt-X11-XFramePeer"
+	----}
+    ----} ,
+    ----{
+	----name = tagnames[3],
+	----init        = false,
+	----exclusive   = true,
+	----screen      = {1,2},
+	----layout      = awful.layout.suit.tile                          ,
+	----class ={ 
+	    ----"Firefox", "gvim", "Gvim"
+	    ----}
+    ----},
+    ----{
+        ----name        = "Doc",
+        ----init        = false, -- This tag wont be created at startup, but will be when one of the
+                             ------ client in the "class" section will start. It will be created on
+                             ------ the client startup screen
+        ------exclusive   = true,
+	----fallback = true,
+        ----layout      = awful.layout.suit.tile,
+        ----class       = {
+            ----"Assistant"     , "Okular"         , "Evince"    , "EPDFviewer"   , "xpdf",
+            ----"Xpdf"          ,                                        }
+    ----} ,
+--}
 
--- Ignore the tag "exclusive" property for the following clients (matched by classes)
-tyrannical.properties.intrusive = {
-    "ksnapshot"     , "pinentry"       , "gtksu"     , "kcalc"        , "xcalc"               ,
-    "feh"           , "Gradient editor", "About KDE" , "Paste Special", "Background color"    ,
-    "kcolorchooser" , "plasmoidviewer" , "Xephyr"    , "kruler"       , "plasmaengineexplorer", "veromix"
-}
+---- Ignore the tag "exclusive" property for the following clients (matched by classes)
+--tyrannical.properties.intrusive = {
+    --"ksnapshot"     , "pinentry"       , "gtksu"     , "kcalc"        , "xcalc"               ,
+    --"feh"           , "Gradient editor", "About KDE" , "Paste Special", "Background color"    ,
+    --"kcolorchooser" , "plasmoidviewer" , "Xephyr"    , "kruler"       , "plasmaengineexplorer", "veromix"
+--}
 
--- Ignore the tiled layout for the matching clients
-tyrannical.properties.floating = {
-    "MPlayer"      , "pinentry"        , "ksnapshot"  , "pinentry"     , "gtksu"          ,
-    "xine"         , "feh"             , "kmix"       , "kcalc"        , "xcalc"          ,
-    "yakuake"      , "Select Color$"   , "kruler"     , "kcolorchooser", "Paste Special"  ,
-    "New Form"     , "Insert Picture"  , "kcharselect", "mythfrontend" , "plasmoidviewer" 
-}
+---- Ignore the tiled layout for the matching clients
+--tyrannical.properties.floating = {
+    --"MPlayer"      , "pinentry"        , "ksnapshot"  , "pinentry"     , "gtksu"          ,
+    --"xine"         , "feh"             , "kmix"       , "kcalc"        , "xcalc"          ,
+    --"yakuake"      , "Select Color$"   , "kruler"     , "kcolorchooser", "Paste Special"  ,
+    --"New Form"     , "Insert Picture"  , "kcharselect", "mythfrontend" , "plasmoidviewer" 
+--}
 
--- Make the matching clients (by classes) on top of the default layout
-tyrannical.properties.ontop = {
-    "Xephyr"       , "ksnapshot"       , "kruler"
-}
+---- Make the matching clients (by classes) on top of the default layout
+--tyrannical.properties.ontop = {
+    --"Xephyr"       , "ksnapshot"       , "kruler"
+--}
 
--- Force the matching clients (by classes) to be centered on the screen on init
-tyrannical.properties.centered = {
-    "kcalc"
-}
+---- Force the matching clients (by classes) to be centered on the screen on init
+--tyrannical.properties.centered = {
+    --"kcalc"
+--}
 
---tyrannical.settings.block_children_focus_stealing = true --Block popups ()
-tyrannical.settings.group_children = true --Force popups/dialogs to have the same tags as the parent client
+----tyrannical.settings.block_children_focus_stealing = true --Block popups ()
+--tyrannical.settings.group_children = true --Force popups/dialogs to have the same tags as the parent client
 
     --{ rule = { class = "Plugin-container" },
                     --properties = { floating = true} },
@@ -754,44 +803,59 @@ mywibox           = {}
 mypromptbox       = {}
 mylayoutbox       = {}
 mynotifybar = {}
-tray = hidetray({revers = true})
+--tray = hidetray({revers = true})
 text = wibox.widget.textbox("0")
-systray:attachtext(text)
+--systray:attachtext(text)
 --hidetray:show(1)
 --hidetray.hidetimer:start()
 
-for s = 1, screen.count() do
+awful.screen.connect_for_each_screen(function(s)
+--for s = 1, screen.count() do
 	--if s == 1 then
 	--end
-	awful.tag.viewonly(awful.tag.gettags(s)[1])
+	--
+    set_wallpaper(s)
+    --awful.tag.viewonly(awful.tag.gettags(s)[1])
    
-    mypromptbox[s] = awful.widget.prompt()
+    s.mypromptbox = awful.widget.prompt()
+    --mypromptbox[s] = awful.widget.prompt()
     
-    mylayoutbox[s] = awful.widget.layoutbox(s)
-    mylayoutbox[s]:buttons(awful.util.table.join(
-    awful.button({ }, 1, function () awful.layout.inc(layouts, 1) end),
-    awful.button({ }, 3, function () awful.layout.inc(layouts, -1) end),
-    awful.button({ }, 4, function () awful.layout.inc(layouts, 1) end),
-    awful.button({ }, 5, function () awful.layout.inc(layouts, -1) end)))
+    s.mylayoutbox = awful.widget.layoutbox(s)
+    s.mylayoutbox:buttons(awful.util.table.join(
+                           awful.button({ }, 1, function () awful.layout.inc( 1) end),
+                           awful.button({ }, 3, function () awful.layout.inc(-1) end),
+                           awful.button({ }, 4, function () awful.layout.inc( 1) end),
+                           awful.button({ }, 5, function () awful.layout.inc(-1) end)))
+    -- Create a taglist widget
+    --s.mytaglist = awful.widget.taglist(s, awful.widget.taglist.filter.all, mytaglist.buttons,{}, taglist_update)
 
-    --mytaglist[s] = awful.widget.taglist(s, awful.widget.taglist.filter.all, mytaglist.buttons)
-
-    mytaglist[s] = awful.widget.taglist(s, awful.widget.taglist.filter.all, mytaglist.buttons, {}, taglist_update)
+    --s.mytaglist = awful.widget.taglist(s, awful.widget.taglist.filter.all, mytaglist.buttons, {}, taglist_update)
+    -- Create a tasklist widget
+    --s.mytasklist = awful.widget.tasklist(s, awful.widget.tasklist.filter.currenttags, mytasklist.buttons)
     --print(type(widgets.taglist({
 	    --screen = s
     --})))
-    --mytaglist[s]= widgets.taglist({
-	    --screen=s
-    --})
+    s.mytaglist= widgets.taglist({
+	    tags = tags,
+	    screen=s
+    })
 
     -- mytaglist[s] = sharedtags.taglist(s, awful.widget.taglist.filter.all, mytaglist.buttons)
 
-    mytasklist[s] = awful.widget.tasklist(s, matchrules({{class = "Pidgin"},{class="TelegramDesktop"}}, false), mytasklist.buttons)
+    s.mytasklist = awful.widget.tasklist(s, matchrules({{class = "Pidgin"},{class="TelegramDesktop"}}, false), mytasklist.buttons)
+    --s.mytasklist = awful.widget.tasklist(s, awful.widget.tasklist.filter.alltags, mytasklist.buttons)
+    --s.mytasklist = awful.widget.tasklist(s, awful.widget.tasklist.filter.alltags, mytasklist.buttons)
+    --s.mytasklist= widgets.tasklist({
+	    --screen=s
+    --})
 
     --myiconlist[s] = awful.widget.tasklist(s, matchrules({class = "Pidgin"}, true),  myiconlist.buttons, {tasklist_only_icon=true}, tasklist_update, fixed.horizontal())
 
     --tasklist.new(screen, filter, buttons, style, update_function, base_widget)
-    mywibox[s] = awful.wibox({ position = "top", screen = s, height = "22" })
+    --mywibox[s] = awful.wibox({ position = "top", screen = s, height = "22" })
+    s.mywibox = awful.wibar({ position = "top", screen = s, height = "22"})
+
+    -- Add widgets to the wibox
     --if s == 2 then
     --local sidebar = wibox.layout.align.vertical()
     --mynotifybar = awful.wibox({position = "right", screen = s, width = "250"})
@@ -807,8 +871,8 @@ for s = 1, screen.count() do
     --left_layout:add(mylauncher)
     --left_layout:add(spr5px)
     --left_layout:add(myiconlist[s])
-    left_layout:add(spr5px)
-    left_layout:add(mytaglist[s])
+    --left_layout:add(spr5px)
+    --left_layout:add(s.mytaglist)
     --left_layout:add(spr5px)
 
     local centr_layout = wibox.layout.fixed.horizontal()
@@ -816,16 +880,16 @@ for s = 1, screen.count() do
 	    centr_layout:add(k)
     end
 
-    centr_layout:add(mytasklist[s])
+    --centr_layout:add(s.mytasklist)
 
 
     local right_layout = wibox.layout.fixed.horizontal()
-    hidetray:attach({ wibox = mywibox[s], screen = s})
-    local cont = widgetcreator(
-    {
-	    widgets = {spr5px,mypromptbox[s], text, tray[s]}
-    })
-    right_layout:add(cont)
+    --hidetray:attach({ wibox = mywibox[s], screen = s})
+    --local cont = widgetcreator(
+    --{
+	    --widgets = {spr5px,mypromptbox[s], text, tray[s]}
+    --})
+    --right_layout:add(cont)
     for i,k in pairs(config.panel.right) do
 	    right_layout:add(k)
     end
@@ -847,19 +911,37 @@ for s = 1, screen.count() do
     --right_layout:add(calendarwidget)
     --right_layout:add(clockwidget)
     --right_layout:add(spr)
-    right_layout:add(mylayoutbox[s])
-    local layout = wibox.layout.align.horizontal()
-    layout:set_left(left_layout)
-    if s == 1 then
-	    layout:set_middle(centr_layout)
-    end
-    layout:set_right(right_layout)
+    --right_layout:add(s.mylayoutbox)
+    --local layout = wibox.layout.align.horizontal()
+    --layout:set_left(left_layout)
+    --if s == 1 then
+	    --layout:set_middle(centr_layout)
+    --end
+    --layout:set_right(right_layout)
 
-    mywibox[s]:set_bg(beautiful.panel)
+    --mywibox[s]:set_bg(beautiful.panel)
 
-    mywibox[s]:set_widget(layout)
-end
-task.promptbox=mypromptbox
+    --mywibox[s]:set_widget(layout)
+    s.mywibox:setup {
+        layout = wibox.layout.align.horizontal,
+        { -- Left widgets
+            layout = wibox.layout.fixed.horizontal,
+            --mylauncher,
+            s.mytaglist,
+            s.mypromptbox,
+        },
+	s.mytasklist, -- Middle widget
+        { -- Right widgets
+            layout = wibox.layout.fixed.horizontal,
+            --mykeyboardlayout,
+	    wibox.widget.systray(),
+	    right_layout,
+            --mytextclock,
+            s.mylayoutbox,
+        },
+    }
+end)
+--task.promptbox=mypromptbox
 
 -- | Mouse bindings | --
 
@@ -883,7 +965,7 @@ local function bomicontrol(str)
 		command = command.."PlayPause"
 	end
 	command = command.." &"
-	awful.util.spawn_with_shell(command)
+	awful.spawn.with_shell(command)
 end
 dbus.request_name("session", "org.naquadah.awesome.dusi")
 dbus.add_match("session", "interface='org.naquadah.awesome.dusi',member='dusi'")
@@ -928,29 +1010,19 @@ function dusi_notify(text,mode)
 				else
 					text = "нет текста"
 				end
-				awful.util.spawn_with_shell("~/scripts/saytext.sh 'ru' '"..text.."' fast &")
+				awful.spawn.with_shell("~/scripts/saytext.sh 'ru' '"..text.."' fast &")
 				naughty.notify({
 					text = tofont(text,25,true),
 					timeout=5,
 					icon="/home/ivn/scripts/dusi_small.png"
 				})
 				if answer.modal then
-					awful.util.spawn("/home/ivn/scripts/dusi_zenity.sh reply")
+					awful.spawn("/home/ivn/scripts/dusi_zenity.sh reply")
 				end
 			end
 		end
 	end
-	set_en()
-end
-function set_ru()
-	local command = "dbus-send --dest=ru.gentoo.KbddService /ru/gentoo/KbddService ru.gentoo.kbdd.set_layout uint32:1"
-	--print("ALT_L")
-	os.execute(command)
-end
-function set_en()
-	local command = "dbus-send --dest=ru.gentoo.KbddService /ru/gentoo/KbddService ru.gentoo.kbdd.set_layout uint32:0"
-	--print("ALTGR")
-	os.execute(command)
+	widgets.kbdd.set_en()
 end
 function translator(text_tr)
 	--print(text_tr)
@@ -963,7 +1035,7 @@ function translator(text_tr)
 		--print(string.match(text,"[a-zA-Z0-9,.!? ]*"))
 		if string.match(text_tr,"[a-zA-Z0-9,.!? ]*") ==text_tr then
 			lang ="en:ru"
-			awful.util.spawn_with_shell("~/scripts/saytext.sh 'en' '"..text_tr.."' fast &")
+			awful.spawn.with_shell("~/scripts/saytext.sh 'en' '"..text_tr.."' fast &")
 		end
 		local handle = io.popen("trans -no-ansi "..lang.." '"..text_tr.."'")
 		local translation = handle:read("*a")
@@ -977,7 +1049,7 @@ function translator(text_tr)
 		})
 		--return true
 		--end, nil,
-		awful.util.spawn_with_shell("echo '"..text_tr.."' >> "..awful.util.getdir("cache") .. "/history_translate")
+		awful.spawn.with_shell("echo '"..text_tr.."' >> "..awful.util.getdir("cache") .. "/history_translate")
 	end
 end
 
@@ -993,7 +1065,11 @@ globalkeys = awful.util.table.join(config.globalkeys,
 		end),
     awful.key({ modkey, "Control" }, "space", 
     function ()
-	    bomicontrol("play_pause")
+	    print(#tags)
+	    for i,k in pairs(tags) do
+		    print(k.name)
+	    end
+	    --bomicontrol("play_pause")
     end),
     awful.key({ modkey, "Control" }, "r", 
     function ()
@@ -1115,18 +1191,18 @@ globalkeys = awful.util.table.join(config.globalkeys,
     end),
 
 
-    awful.key({ modkey,           }, "/",      function () 
-	    hidetray:show(mouse.screen) 
-	    hidetray.hidetimer:start()
-    end),
+    --awful.key({ modkey,           }, "/",      function () 
+	    --hidetray:show(mouse.screen) 
+	    --hidetray.hidetimer:start()
+    --end),
     awful.key({ modkey 		  }, "r",
     function ()
 	    awful.prompt.run({ prompt = "Run: ", },
-	    mypromptbox[mouse.screen].widget,
+	    mouse.screen.mypromptbox.widget,
 	    function (com)
-		    local result = awful.util.spawn(com)
+		    local result = awful.spawn(com)
 		    if type(result) == "string" then
-			    mypromptbox[mouse.screen].widget:set_text(result)
+			    mouse.screen.mypromptbox.widget:set_text(result)
 		    end
 		    return true
 	    end,
@@ -1154,7 +1230,7 @@ globalkeys = awful.util.table.join(config.globalkeys,
 	    awful.key({ modkey,    }, "i", im),
 	    awful.key({ modkey, "Control" }, "i", 
 	    function ()
-		    local tag = awful.tag.gettags(1)[2]
+		    local tag = tags[2]
 		    awful.tag.viewonly(tag)
 		    hints.focus(1)
 	    end),
@@ -1185,22 +1261,26 @@ globalkeys = awful.util.table.join(config.globalkeys,
 		    hintsetter:togglefromtag()
 	    end),
 	    awful.key({ modkey            }, "x",      function ()
-		    local tag = awful.tag.selected()
+		    --local tag = awful.tag.selected()
+		    local tag = mouse.screen.selected_tag
 		    local clients = tag:clients()
 		    for i,c in pairs(clients) do
 			    local tags = c:tags()
 			    if #tags==1 then
-				    c:tags({awful.tag.gettags(c.screen)[1]})
+				    c:tags({tags[1]})
 			    end
 		    end
-		    awful.tag.delete()--tag,awful.tag.gettags(tag.screen or 1)[1])
+		    --awful.tag.delete()--tag,awful.tag.gettags(tag.screen or 1)[1])
+		    --tag:delete(tags[1])
+		    tag:delete()
+		    print('deleted')
 	    end),
 	    awful.key({ modkey,  }, "Left",     function() brightnessdec() end),
 	    awful.key({ modkey,  }, "Right",    function() brightnessinc() end),
 	    awful.key({ modkey,altgr  }, "h",   function() brightnessdec() end),
 	    awful.key({ modkey,altgr  }, "s",   function() brightnessinc() end),
-	    awful.key({ altgr  }, "Alt_L",   set_ru),
-	    awful.key({ altkey  }, "ISO_Level3_Shift",   set_en)
+	    awful.key({ altgr  }, "Alt_L",   widgets.kbdd.set_ru),
+	    awful.key({ altkey  }, "ISO_Level3_Shift",   widgets.kbdd.set_en)
 	    )
 
 	    clientkeys = awful.util.table.join(config.clientkeys,
@@ -1222,43 +1302,6 @@ globalkeys = awful.util.table.join(config.globalkeys,
 	    --end)
 	    )
 
-	    for i = 1, 9 do
-		    globalkeys = awful.util.table.join(globalkeys,
-		    awful.key({ modkey }, "#" .. i + 9,
-		    function ()
-			    local screen = mouse.screen
-			    local tag = awful.tag.gettags(screen)[i]
-			    if tag then
-				    awful.tag.viewonly(tag)
-			    end
-		    end),
-		    awful.key({ modkey, "Control" }, "#" .. i + 9,
-		    function ()
-			    local screen = mouse.screen
-			    local tag = awful.tag.gettags(screen)[i]
-			    if tag then
-				    awful.tag.viewtoggle(tag)
-			    end
-		    end),
-		    awful.key({ modkey, "Shift" }, "#" .. i + 9,
-		    function ()
-			    if client.focus then
-				    local tag = awful.tag.gettags(client.focus.screen)[i]
-				    if tag then
-					    awful.client.movetotag(tag)
-				    end
-			    end
-		    end),
-		    awful.key({ modkey, "Control", "Shift" }, "#" .. i + 9,
-		    function ()
-			    if client.focus then
-				    local tag = awful.tag.gettags(client.focus.screen)[i]
-				    if tag then
-					    awful.client.toggletag(tag)
-				    end
-			    end
-		    end))
-	    end
 
 	    clientbuttons = awful.util.table.join(config.clientbuttons,
 	    awful.button({ }, 1, function (c) client.focus = c; c:raise() end),
@@ -1315,9 +1358,9 @@ globalkeys = awful.util.table.join(config.globalkeys,
     end
     },
     { rule = { class = "Pidgin", role = "buddy_list"},
-    properties = { tag = awful.tag.gettags(1)[2], switchtotag = false, no_autofocus = true }},
+    properties = { tag = tags[2], switchtotag = false, no_autofocus = true }},
     { rule = { class = "Pidgin", role = "conversation"},
-    properties = { tag = awful.tag.gettags(1)[2], switchtotag = false, no_autofocus = true },
+    properties = { tag = tags[2], switchtotag = false, no_autofocus = true },
     callback = awful.client.setslave },
     {rule = {role = "DROPDOWN"}, 
     properties = {opacity = 0.8}},
@@ -1351,7 +1394,7 @@ globalkeys = awful.util.table.join(config.globalkeys,
 -- | Signals | --
 
 local function timemute()
-	awful.util.spawn_with_shell("rm /tmp/timemute>/dev/null || touch /tmp/timemute")
+	awful.spawn.with_shell("rm /tmp/timemute>/dev/null || touch /tmp/timemute")
 end
 
 
@@ -1418,8 +1461,8 @@ function(c)
 		if index then
 			table.remove(tabl, index)
 			if #tabl == 0 then
-				awful.util.spawn("xset s off")
-				awful.util.spawn("xset -dpms")
+				awful.spawn("xset s off")
+				awful.spawn("xset -dpms")
 				os.execute("xautolock -enable")
 
 				if checkclass(c.class) then
@@ -1435,8 +1478,8 @@ function(c)
 		if c.fullscreen then
 			table.insert(fullscreened_clients, c)
 			if #fullscreened_clients == 1 then
-				awful.util.spawn("xset s off")
-				awful.util.spawn("xset -dpms")
+				awful.spawn("xset s off")
+				awful.spawn("xset -dpms")
 				--naughty.suspend()
 				os.execute("xautolock -disable")
 				if checkclass(c.class) then
@@ -1559,7 +1602,9 @@ function(c)
 	}
 	mousetimer = timer({ timeout = 0.1 })
 	function moveMouse(x_co, y_co)
-		mousetimer:stop()
+		if mousetimer.data.source_id ~= nil then
+			mousetimer:stop()
+		end
 		mousetimer = timer({ timeout = 0.1 })
 		mousetimer:connect_signal("timeout", function ()
 			mouse.coords({ x=x_co, y=y_co })
@@ -1642,7 +1687,7 @@ function(c)
 	end)
 
 	client.connect_signal("manage", function(c) 
-		taglist = awful.tag.gettags(c.screen)
+		taglist = tags
 		tag = taglist[1]
 		for i,t in pairs(c.tags(c)) do
 			if t == taglist[2] then
@@ -1710,7 +1755,7 @@ function(c)
 	--end)
 	tag.connect_signal("property::selected", function(t)
 		if t.name == tagnames[2] and not t.selected and #awful.tag.selectedlist() == 0 then
-			awful.tag.viewonly(awful.tag.gettags(1)[1])
+			awful.tag.viewonly(tags[1])
 		end
 	end)
 
@@ -1776,13 +1821,15 @@ function(c)
 		elseif type(cmd) == "function" then
 			cmd()
 			return
+		elseif type(cmd) == "table" then
+			return
 		end
 		findme = cmd
 		firstspace = cmd:find(" ")
 		if firstspace then
 			findme = cmd:sub(0, firstspace-1)
 		end
-		awful.util.spawn_with_shell("pgrep -u $USER -x " .. findme .. " > /dev/null || (" .. cmd .. ")")
+		awful.spawn.with_shell("pgrep -u $USER -x " .. findme .. " > /dev/null || (" .. cmd .. ")")
 	end
 
 	-- | Autostart | --
@@ -1791,12 +1838,12 @@ function(c)
 		"xset +dpms",
 	}
 
-	for i,k in pairs(config.autostart.execute) do
-		os.execute(k)
-	end
-	for i,k in pairs(config.autostart.run_once) do
-		run_once(k)
-	end
+	--for i,k in pairs(config.autostart.execute) do
+		--os.execute(k)
+	--end
+	--for i,k in pairs(config.autostart.run_once) do
+		--run_once(k)
+	--end
 
 	--autostarttimer:stop()
 	local notif = naughty.notify({ preset = naughty.config.presets.critical,

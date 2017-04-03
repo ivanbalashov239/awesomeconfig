@@ -3,6 +3,7 @@ hostname = hst:read()
 hst:close()
 --local config = require(hostname)
 local gears      = require("gears")
+timer = gears.timer
 local awful      = require("awful")
 awful.rules      = require("awful.rules")
 local common 	 = require("awful.widget.common")
@@ -18,13 +19,13 @@ local hintsetter  = require("hintsetter")
 hintsetter.init()
 local hints 	 = require("hints")
 hints.init()
-local tyrannical = require("tyrannical")
+--local tyrannical = require("tyrannical")
 local apw 	 = require("apw/widget")
 local wibox      = require("wibox")
 local vicious    = require("vicious")
 local naughty    = require("naughty") --"notifybar")
-local hidetray	 = require("hidetray")
-local systray	 = require("systray")
+--local hidetray	 = require("hidetray")
+--local systray	 = require("systray")
 local lain       = require("lain")
 local read_pipe    = require("lain.helpers").read_pipe
 local net_widgets = require("net_widgets")
@@ -56,7 +57,7 @@ local menubar = require("menubar")
 menubar.terminal = "termite"
 menubar.menu_gen.all_menu_dirs = { "/usr/share/applications/", "/usr/local/share/applications", "~/.local/share/applications" }
 local cheeky 	 = require("cheeky")
-local appsuspender = require("appsuspender")
+--local appsuspender = require("appsuspender")
 local im = require("im")
 local task = require("task")
 local capi = {
@@ -93,7 +94,7 @@ config.panel.middle = {
 config.panel.right = {
 	widgets.kbdd(),
 	widgets.mpd(),
-	widgets.taskwidget(),
+	--widgets.taskwidget(),
 	widgets.weather(),
 	widgets.net(),
 	widgets.pulse(),
@@ -133,7 +134,7 @@ config.autostart.execute = {
 	'xcape -t 1000 -e "Control_L=Tab;ISO_Level3_Shift=Multi_key"',
 	"xkbcomp $DISPLAY - | egrep -v 'group . = AltGr;' | xkbcomp - $DISPLAY"
 }
-local xkbtimer = timer({ timeout = 2000 })
+local xkbtimer = gears.timer({ timeout = 2000 })
 xkbtimer:connect_signal("timeout", function ()
 	awful.util.spawn_with_shell("xkbcomp $DISPLAY - | egrep -v 'group . = AltGr;' | xkbcomp - $DISPLAY")
 end)
@@ -345,7 +346,7 @@ config.globalkeys = awful.util.table.join(
 					    awful.util.spawn("/home/ivn/scripts/dusi_zenity.sh reply")
 					    local rutimer = timer({ timeout = 0.5 })
 					    rutimer:connect_signal("timeout", function ()
-						    set_ru()
+						    kbddwidget.set_ru()
 						    rutimer:stop()
 					    end)
 					    rutimer:start()
@@ -358,7 +359,7 @@ config.globalkeys = awful.util.table.join(
 					    awful.util.spawn("/home/ivn/scripts/dusi_zenity.sh")
 					    local rutimer = timer({ timeout = 0.5 })
 					    rutimer:connect_signal("timeout", function ()
-						    set_ru()
+						    kbddwidget.set_ru()
 						    rutimer:stop()
 					    end)
 					    rutimer:start()
@@ -494,11 +495,11 @@ config.clientbuttons = awful.util.table.join()
 
 
 config.rules = {
-	{ rule = { class = "Pidgin", role = "buddy_list"},
-	properties = { tag = awful.tag.gettags(1)[2], switchtotag = false, no_autofocus = true }},
-	{ rule = { class = "Pidgin", role = "conversation"},
-	properties = { tag = awful.tag.gettags(1)[2], switchtotag = false, no_autofocus = true },
-	callback = awful.client.setslave },
+	--{ rule = { class = "Pidgin", role = "buddy_list"},
+	--properties = { tag = awful.tag.gettags(1)[2], switchtotag = false, no_autofocus = true }},
+	--{ rule = { class = "Pidgin", role = "conversation"},
+	--properties = { tag = awful.tag.gettags(1)[2], switchtotag = false, no_autofocus = true },
+	--callback = awful.client.setslave },
 	{rule = {role = "DROPDOWN"}, 
 	properties = {opacity = 0.8}},
 	{ rule = { class = "Pavucontrol" },

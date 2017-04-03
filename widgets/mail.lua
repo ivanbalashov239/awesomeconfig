@@ -54,58 +54,90 @@ local function worker(args)
 			local cm = mutt.." /home/ivn/.mutt/"..args.mailbox.."'"
 			run_or_raise(cm, { class = "UXTerm" }) 
 		end
-		args.textbox = lain.widgets.maildir({
-			mailpath = "/home/ivn/Mail/"..args.mailbox,
+		local mailpath = args.mailbox
+		local mymaildir = lain.widget.watch({
+			timeout = 60,
+			stoppable = true,
+			cmd = { awful.util.shell, "-c", string.format("ls -1dr %s/*/new/*", mailpath) },
 			settings = function()
-				args.textbox:set_text(total) --newmail)
-				args.total = total
-				args.newmail = newmail
-				if total > 0 then
-					args.textbox:show(args.notiftimeout or 10)
-					--mailnotif({
-					--title = args.mailbox,
-					--text = newmail,
-					--timeout = args.notiftimeout or 10,
-					--})
+				local inbox_now = { digest = "" }
+
+				for dir in output:gmatch(".-/(%w+)/new") do
+					inbox_now[dir] = 1
+					for _ in output:gmatch(dir) do
+						inbox_now[dir] = inbox_now[dir] + 1
+					end
+					if #inbox_now.digest > 0 then inbox_now.digest = inbox_now.digest .. ", " end
+					inbox_now.digest = inbox_now.digest .. string.format("%s (%d)", dir, inbox_now[dir])
 				end
-			end,
-			ignore_boxes = ignoremail,
-			timeout = args.timertimeout or 30,
+				--args.total = total
+				--args.newmail = newmail
+				--if total > 0 then
+					--args.textbox:show(args.notiftimeout or 10)
+					----mailnotif({
+					----title = args.mailbox,
+					----text = newmail,
+					----timeout = args.notiftimeout or 10,
+					----})
+				--end
+
+				-- customize here
+				widget:set_text(inbox_now.digest)
+			end
 		})
-		local mail_notify = nil
-		function args.textbox:hide()
-			if mail_notify ~= nil then
-				naughty.destroy(mail_notify)
-				mail_notify = nil
-			end
-		end
-		function args.textbox:show(t_out)
-			args.textbox:hide()
-			mail_notify = mailnotif({
-				title = args.mailbox,
-				text = args.newmail ~= "" and args.newmail or args.total,
-				icon = "/home/ivn/Mail/"..args.mailbox..".png",
-				timeout = t_out,
-				run = run,
-			})
-		end
-		function args.textbox:attach(widget)
-			widget:connect_signal('mouse::enter', function () args.textbox:show(0) end)
-			widget:connect_signal('mouse::leave', function () args.textbox:hide()  end)
-		end
-		local mailbuttons = awful.util.table.join(awful.button({ }, 1,
-		run
-		))
-		args.textbox:buttons(mailbuttons)
-		args.textbox:set_text("0")
-		local timer = timer({ timeout = 1 })
-		timer:connect_signal("timeout", function ()
-			if lain.helpers and lain.helpers.timer_table and lain.helpers.timer_table["/home/ivn/Mail/"..args.mailbox] then
-				lain.helpers.timer_table["/home/ivn/Mail/"..args.mailbox]:emit_signal("timeout")
-				timer:stop()
-			end
-		end)
-		timer:start()
+		args.textbox = mymaildir.widget
+		--args.textbox = lain.widgets.maildir({
+			--mailpath = "/home/ivn/Mail/"..args.mailbox,
+			--settings = function()
+				--args.textbox:set_text(total) --newmail)
+				--args.total = total
+				--args.newmail = newmail
+				--if total > 0 then
+					--args.textbox:show(args.notiftimeout or 10)
+					----mailnotif({
+					----title = args.mailbox,
+					----text = newmail,
+					----timeout = args.notiftimeout or 10,
+					----})
+				--end
+			--end,
+			--ignore_boxes = ignoremail,
+			--timeout = args.timertimeout or 30,
+		--})
+		--local mail_notify = nil
+		--function args.textbox:hide()
+			--if mail_notify ~= nil then
+				--naughty.destroy(mail_notify)
+				--mail_notify = nil
+			--end
+		--end
+		--function args.textbox:show(t_out)
+			--args.textbox:hide()
+			--mail_notify = mailnotif({
+				--title = args.mailbox,
+				--text = args.newmail ~= "" and args.newmail or args.total,
+				--icon = "/home/ivn/Mail/"..args.mailbox..".png",
+				--timeout = t_out,
+				--run = run,
+			--})
+		--end
+		--function args.textbox:attach(widget)
+			--widget:connect_signal('mouse::enter', function () args.textbox:show(0) end)
+			--widget:connect_signal('mouse::leave', function () args.textbox:hide()  end)
+		--end
+		--local mailbuttons = awful.util.table.join(awful.button({ }, 1,
+		--run
+		--))
+		--args.textbox:buttons(mailbuttons)
+		--args.textbox:set_text("0")
+		--local timer = timer({ timeout = 1 })
+		--timer:connect_signal("timeout", function ()
+			--if lain.helpers and lain.helpers.timer_table and lain.helpers.timer_table["/home/ivn/Mail/"..args.mailbox] then
+				--lain.helpers.timer_table["/home/ivn/Mail/"..args.mailbox]:emit_signal("timeout")
+				--timer:stop()
+			--end
+		--end)
+		--timer:start()
 		return args.textbox
 	end
 
@@ -117,40 +149,40 @@ local function worker(args)
 		text = "MAIL",
 		textboxes = {mail_widget1, mail_widget3 }, --2, mail_widget3},
 	})
-	mail_widget3:attach(mailwidget)
+	--mail_widget3:attach(mailwidget)
 	--mail_widget2:attach(mailwidget)
-	mail_widget1:attach(mailwidget)
-	mailwidget:buttons(awful.util.table.join(awful.button({ }, 1,
-	function ()
-		local timer = timer({ timeout = 1 })
-		timer:connect_signal("timeout", function ()
-			local cm = mutt.." /home/ivn/.mutt/Personal'"
-			run_or_raise(cm, { class = "UXTerm" }) 
-			timer:stop()
-		end)
-		timer:start()
-	end),
-	awful.button({ }, 2,
-	function ()
-		local timer = timer({ timeout = 1 })
-		timer:connect_signal("timeout", function ()
-			local cm = mutt.." /home/ivn/.mutt/FateYandex'"
-			run_or_raise(cm, { class = "UXTerm" }) 
-			timer:stop()
-		end)
-		timer:start()
-	end),
-	awful.button({ }, 3,
-	function ()
-		local timer = timer({ timeout = 1 })
-		timer:connect_signal("timeout", function ()
-			local cm = mutt.." /home/ivn/.mutt/FateGmail'"
-			run_or_raise(cm, { class = "UXTerm" }) 
-			timer:stop()
-		end)
-		timer:start()
-	end)
-	))
+	--mail_widget1:attach(mailwidget)
+	--mailwidget:buttons(awful.util.table.join(awful.button({ }, 1,
+	--function ()
+		--local timer = timer({ timeout = 1 })
+		--timer:connect_signal("timeout", function ()
+			--local cm = mutt.." /home/ivn/.mutt/Personal'"
+			--run_or_raise(cm, { class = "UXTerm" }) 
+			--timer:stop()
+		--end)
+		--timer:start()
+	--end),
+	--awful.button({ }, 2,
+	--function ()
+		--local timer = timer({ timeout = 1 })
+		--timer:connect_signal("timeout", function ()
+			--local cm = mutt.." /home/ivn/.mutt/FateYandex'"
+			--run_or_raise(cm, { class = "UXTerm" }) 
+			--timer:stop()
+		--end)
+		--timer:start()
+	--end),
+	--awful.button({ }, 3,
+	--function ()
+		--local timer = timer({ timeout = 1 })
+		--timer:connect_signal("timeout", function ()
+			--local cm = mutt.." /home/ivn/.mutt/FateGmail'"
+			--run_or_raise(cm, { class = "UXTerm" }) 
+			--timer:stop()
+		--end)
+		--timer:start()
+	--end)
+	--))
 	--wibox.widget.textbox()
 	--vicious.register(mail_widget, vicious.widgets.gmail, vspace1 .. "${count}" .. vspace1, 1200)
 

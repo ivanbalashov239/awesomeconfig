@@ -1,10 +1,12 @@
 local widgetcreator = require("widgets")
+local widgets = widgetcreator
 local beautiful = require("beautiful")
 local wibox = require("wibox")
 local lain = require("lain")
 local awful = require("awful")
 local utf8 	 = require("utf8_simple")
 local read_pipe    = require("lain.helpers").read_pipe
+local timer = require("gears").timer
 
 local mpdwidget ={}
 mpdwidget.shortcuts = {}
@@ -47,13 +49,13 @@ local function worker(args)
 	end)
 	--mpd_skip_timer:start()
 
-	local widget = lain.widgets.mpd({
+	local widget = lain.widget.mpd({
 		--notify = "off",
 		settings = function ()
 			mpdwidget.mpdwidget.state = mpd_now.state
 			if mpd_now.state == "play" then
 				--print(mpd_now.title)
-				mpd_skip_timer:emit_signal("timeout")
+				--mpd_skip_timer:emit_signal("timeout")
 				mpdwidget.mpdwidget:set_markup(" Title loading ")
 				mpd_now.artist = string.gsub(mpd_now.artist,"&quot;","'")
 				mpd_now.title = string.gsub(mpd_now.title,"&quot;","'")
@@ -90,18 +92,18 @@ local function worker(args)
 				--play_pause_icon:set_image(beautiful.mpd_play)
 				mpd_sepl:set_image(beautiful.mpd_sepl)
 				mpd_sepr:set_image(beautiful.mpd_sepr)
-			else
-				mpdwidget.mpdwidget:set_markup("")
-				--play_pause_icon:set_image(beautiful.mpd_play)
-				mpd_sepl:set_image(nil)
-				mpd_sepr:set_image(nil)
+			--else
+				--mpdwidget.mpdwidget:set_text("")
+				----play_pause_icon:set_image(beautiful.mpd_play)
+				--mpd_sepl:set_image(nil)
+				--mpd_sepr:set_image(nil)
 			end
 		end
 	})
 	mpdwidget.update = widget.update
 	mpdwidget.mpdwidget = widget
 	mpdwidget.mpdwidget.state = ""
-	print(mpdwidget.mpdwidget.state)
+	--print(mpdwidget.mpdwidget.state)
 	widget.nextchar = function()
 		if mpd_now.state == "play" then
 			--widget.nowplaying = "123456789abcdefghijklmnoprst"
@@ -138,7 +140,7 @@ local function worker(args)
 
 	musicwidget = widgetcreator(
 	{
-		textboxes = {widget}
+		textboxes = {widget.widget}
 	})
 	musicwidget:buttons(awful.util.table.join(
 	awful.button({ }, 12, function () run_once("cantata") end),

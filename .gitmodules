@@ -1,0 +1,6 @@
+[submodule "lain"]
+	path = lain
+	url = git@github.com:copycat-killer/lain.git
+[submodule "sharedtags"]
+	path = sharedtags
+	url = git@github.com:Drauthius/awesome-sharedtags.git

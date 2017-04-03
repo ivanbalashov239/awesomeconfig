@@ -1,4 +1,5 @@
 local widgetcreator = require("widgets")
+local widgets = widgetcreator
 local beautiful = require("beautiful")
 local wibox = require("wibox")
 local lain = require("lain")
@@ -10,7 +11,7 @@ local weatherwidget ={}
 weatherwidget.shortcuts = {}
 
 local function worker(args)
-	weather_widget = lain.widgets.weather({
+	weather_widget = lain.widget.weather({
 		APPID = "9a42072650caa7c0145df83667e701f5",
 		city_id = "519690",
 		settings = function()
@@ -40,8 +41,9 @@ local function worker(args)
 		end,
 		notification_text_fun = function(wn)
 			--local day = string.gsub(read_pipe(string.format(date_cmd, wn["dt"])), "\n", "")
-			local day = string.gsub(read_pipe(string.format("date -u -d @%d +'%%A %%d'", -- customize date cmd here
-			wn["dt"])), "\n", "")
+			--local day = string.gsub(read_pipe(string.format("date -u -d @%d +'%%A %%d'", -- customize date cmd here
+			--wn["dt"])), "\n", "")
+			local day = os.date("%a %d", wn["dt"])
 
 			local tmin = math.floor(wn["temp"]["min"])
 			local tmax = math.floor(wn["temp"]["max"])

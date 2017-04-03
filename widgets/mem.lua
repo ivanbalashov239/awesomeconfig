@@ -13,6 +13,7 @@ local memwidget ={}
 memwidget.shortcuts = {}
 
 local function worker(args)
+	local args = args or {}
 
 
 	local membuttons = awful.util.table.join(awful.button({ }, 1,
@@ -20,7 +21,7 @@ local function worker(args)
 
 
 	local memp_widget = wibox.widget.textbox()
-	local mem_widget = lain.widgets.mem({
+	local mem_widget = lain.widget.mem({
 		timeout = 15,
 		settings = function()
 			local perc = math.ceil(mem_now.used/mem_now.total*100, 0, 3)
@@ -28,14 +29,14 @@ local function worker(args)
 			widget:set_markup(widgets.space3 .. mem_now.used .. "MB" .. lain.util.markup.font("Tamsyn 4", " "))
 		end
 	})
-	local memwidget = wibox.widget.background()
-	memwidget:set_widget(mem_widget)
-	memwidget:set_bgimage(beautiful.widget_display)
+	--local memwidget = wibox.widget.background()
+	--memwidget:set_widget(mem_widget)
+	--memwidget:set_bgimage(beautiful.widget_display)
 	local memwidget = widgetcreator(
 	{
 		--image = beautiful.widget_mem,
 		text = "RAM",
-		textboxes = {mem_widget, memp_widget}
+		textboxes = {mem_widget.widget, memp_widget}
 	})
 	memwidget:buttons(membuttons)
 	return memwidget

@@ -5,6 +5,7 @@ local lain = require("lain")
 local awful = require("awful")
 local naughty = require("naughty")
 local task = require("task")
+local timer = require("gears").timer
 
 local taskwidget ={}
 taskwidget.shortcuts = {}

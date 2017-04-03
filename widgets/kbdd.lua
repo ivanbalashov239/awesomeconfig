@@ -8,6 +8,16 @@ local naughty = require("naughty")
 
 local kbddwidget ={}
 kbddwidget.shortcuts = {}
+function kbddwidget.set_ru()
+	local command = "dbus-send --dest=ru.gentoo.KbddService /ru/gentoo/KbddService ru.gentoo.kbdd.set_layout uint32:1"
+	--print("ALT_L")
+	os.execute(command)
+end
+function kbddwidget.set_en()
+	local command = "dbus-send --dest=ru.gentoo.KbddService /ru/gentoo/KbddService ru.gentoo.kbdd.set_layout uint32:0"
+	--print("ALTGR")
+	os.execute(command)
+end
 
 local function worker(args)
 	local kbddnotify = nil
@@ -34,6 +44,7 @@ local function worker(args)
 		})
 	end
 	)
+	--local kbdtext = awful.widget.keyboardlayout()
 	local switch_kbd_layout ="dbus-send --dest=ru.gentoo.KbddService /ru/gentoo/KbddService ru.gentoo.kbdd.prev_layout"
 
 	local kbdwidget = widgetcreator(

@@ -1,8 +1,11 @@
 local wibox         = require("wibox")
 local awful         = require("awful")
+local shell        = require("awful.util").shell
 local beautiful     = require("beautiful")
 local naughty       = require("naughty")
 local module_path = (...):match ("(.+/)[^/]+$") or ""
+local timer = require("gears").timer
+local helpers = require("lain.helpers")
 
 local indicator = {}
 local function worker(args)
@@ -64,15 +67,17 @@ local function worker(args)
     local function net_update()
         connected = false
         for _, i in pairs(interfaces) do
-            state = awful.util.pread("ip link show "..i.." | awk 'NR==1 {printf \"%s\", $9}'")
-            if (state == "UP") then
-                connected = true
-            end
-            if connected then
-                widget:set_image(ICON_DIR.."wired.png")
-            else
-                widget:set_image(ICON_DIR.."wired_na.png")
-            end
+		helpers.async({ shell, "-c", "ip link show "..i.." | awk 'NR==1 {printf \"%s\", $9}'" }, function(f)
+			state = f
+			if (state == "UP") then
+				connected = true
+			end
+			if connected then
+				widget:set_image(ICON_DIR.."wired.png")
+			else
+				widget:set_image(ICON_DIR.."wired_na.png")
+			end
+		end)
         end
     end
 

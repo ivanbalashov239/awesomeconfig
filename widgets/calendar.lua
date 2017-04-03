@@ -10,7 +10,7 @@ local calendarwidget ={}
 calendarwidget.shortcuts = {}
 
 local function worker(args)
-	local mytextcalendar = awful.widget.textclock( lain.util.markup(widgets.clockgf, widgets.space3 .. "%a %d %b"))
+	local mytextcalendar = wibox.widget.textclock( lain.util.markup(widgets.clockgf, widgets.space3 .. "%a %d %b"))
 
 	local calendarwidget = widgetcreator(
 	{ 
@@ -18,12 +18,15 @@ local function worker(args)
 		textboxes = {mytextcalendar}
 	})
 
-	lain.widgets.calendar:attach(calendarwidget, 
-	{ 
-		font_size = 13,
-		cal       = "/usr/bin/cal -m "
-	}
-	)
+	--lain.widget.calendar({
+		--attach_to = {calendarwidget},
+		--notification_preset = {
+			--font = widgets.font,
+			--fg   = widgets.fg,
+			--bg   = widgets.bg
+		--}
+	--})
+	lain.widget.calendar.attach(calendarwidget)
 
 	return calendarwidget
 end
