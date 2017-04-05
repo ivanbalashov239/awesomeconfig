@@ -11,17 +11,19 @@ local fixed 	 = require("wibox.layout.fixed")
                    require("awful.autofocus")
 -- | Theme | --
 
---local theme = "pro-dark"
+local theme = "pro-dark"
 local beautiful  = require("beautiful")
---beautiful.init(os.getenv("HOME") .. "/.config/awesome/themes/" .. theme .. "/theme.lua")
+beautiful.init(os.getenv("HOME") .. "/.config/awesome/themes/" .. theme .. "/theme.lua")
 --                   require("sharetags")
 local hintsetter  = require("hintsetter")
-hintsetter.init()
+hintsetter.init({
+charorder = "aoeuidhtnspyfgcrlqjkxbwvz1234567890"
+})
 local hints 	 = require("hints")
 hints.init()
 --local tyrannical = require("tyrannical")
 local sharedtags = require("sharedtags")
-local apw 	 = require("apw/widget")
+--local apw 	 = require("apw/widget")
 local wibox      = require("wibox")
 local vicious    = require("vicious")
 local naughty    = require("naughty") --"notifybar")
@@ -224,21 +226,26 @@ screen.connect_signal("property::geometry", set_wallpaper)
 --end
 
 -- | Tags | --
-tagnames = { "others", "im"}
+tagnames = { "all", "im"}
 local tags = sharedtags({
-    { name = "others",
+    { name = "all",
     layout      = awful.layout.suit.max,
+    hint = "a",
     },
     { name = "im",
     layout = awful.layout.layouts[1],
-    hide	    = true,
+    hidden	    = true,
     mwfact      = 0.15,
+    hint = "i",
     },
     --{ name = "misc", layout = awful.layout.layouts[2] },
     --{ name = "chat", screen = 2, layout = awful.layout.layouts[2] },
     --{ layout = awful.layout.layouts[2] },
     --{ screen = 2, layout = awful.layout.layouts[2] }
 })
+tags[2].hidden = true
+tags[1].hint = "a"
+tags[2].hint = "i"
 widgets.taglist.tags = tags
 --tyrannical.tags = {
     --{
@@ -499,213 +506,6 @@ mpdwidget =      config.mpdwidget
 --clockwidget  =   config.clockwidget
 --calendarwidget = config.calendarwidget
 
--- | Taglist | --
-
-local function taglist_update(w, buttons, label, data, objects)
-	local function matchrules(tag)
-		return function(c, screen)
-			--if c.sticky then return true end
-			--local ctags = c:tags()
-			--for _, v in ipairs(ctags) do
-				--if v == tag then
-					--return true
-				--end
-			--end
-			return false
-		end
-	end
-	local function get_tasklist_update(tag)
-		return function (w, buttons, label, data, objects)
-			-- update the widgets, creating them if needed
-			w:reset()
-			for i, o in ipairs(tag:clients()) do
-				local cache = data[o]
-				local ib, tb, bgb, m, l, munf, mfoc, background
-				if cache then
-					ib = cache.ib
-					bgb = cache.bgb
-					m =  cache.m
-					tb = cache.tb
-					munf = cache.munf
-					mfoc = cache.mfoc
-					l = cache.l
-					tl = cache.tl
-					el = cache.el
-					tbl = cache.tbl
-				else
-					ib = wibox.widget.imagebox()
-					bgb = wibox.widget.background()
-					tb = wibox.widget.textbox()
-					m = wibox.layout.margin(tb, 0, 0)
-					--munf = wibox.layout.margin(ib, 0, 0, 0, 5)
-					--mfoc = wibox.layout.margin(ib, 0, 0, 0, 0)
-					l = wibox.layout.fixed.horizontal()
-					tl = wibox.layout.fixed.horizontal()
-					tbl = wibox.layout.constraint()
-					munf = wibox.layout.margin(l, 0, 0, 0, 5)
-					mfoc = wibox.layout.margin(l, 0, 0, 0, 0)
-					l:add(widget_display_l)
-					local background = wibox.widget.background()
-					background:set_widget(m)
-					background:set_bgimage(beautiful.widget_display)
-					-- All of this is added in a fixed widget
-					l:fill_space(true)
-					tl:add(background)
-					tbl:set_widget(tl)
-					l:add(tbl)
-					l:add(ib)
-					--l:add(munf)
-
-
-					-- And all of this gets a background
-					bgb:set_widget(l)
-
-					bgb:buttons(common.create_buttons(buttons, o))
-
-					data[o] = {
-						ib = ib,
-						bgb = bgb,
-						m = m,
-						tb = tb,
-						munf   = munf,
-						mfoc = mfoc,
-						l = l,
-						tl = tl,
-						el = el,
-						tbl = tbl,
-					}
-				end
-				if tag.selected then
-					if (o == capi.client.focus) then
-						bgb:set_widget(mfoc)
-					else
-						bgb:set_widget(munf)
-					end
-				else
-					bgb:set_widget(munf)
-				end
-
-				local text, bg, bg_image, icon = label(o)
-				-- The text might be invalid, so use pcall
-				--if not pcall(tb.set_markup, tb, text) then
-				local textlabel = ""
-
-				if hintsetter.windows[o.window] then
-					--tb:set_markup('<span font="Terminus 10" weight="bold">'..hintsetter.windows[o.window]..'</span>')
-					textlabel = hintsetter.windows[o.window]
-				else
-					--tb:set_markup(markup.font("Terminus 4", " ")..'<span font="Terminus 10" weight="bold">'.."_"..'</span>'..markup.font("Terminus 4", " "))
-					textlabel ="_"
-				end
-				--end
-				if o.minimized then
-					--background = wibox.widget.background()
-					--tbl:set_widget(el)
-					--print(o.class.." minimized")
-					textlabel = "^"..textlabel
-				--else
-					--tbl:set_widget(tl)
-				end
-				tb:set_markup('<span font="Terminus 10" weight="bold">'..textlabel..'</span>')
-				if icon == nil then
-					icon = os.getenv("HOME") .. "/.config/awesome/themes/" .. theme .. "/icons/konsole.png"
-				end
-				--bgb:set_bg(bg)
-				if type(bg_image) == "function" then
-					bg_image = bg_image(tb,o,m,objects,i)
-				end
-				bgb:set_bgimage(bg_image)
-				ib:set_image(icon)
-				w:add(bgb)
-			end
-		end
-	end
-	-- update the widgets, creating them if needed
-	w:reset()
-	local number = -1
-	for i, o in ipairs(objects) do
-		number = number + 1
-		local cache = data[o]
-		local ib, tb, bgb, m, l
-		if cache then
-			ib = cache.ib
-			tb = cache.tb
-			bgb = cache.bgb
-			m   = cache.m
-		else
-			ib = wibox.widget.imagebox()
-			tb = wibox.widget.textbox()
-			textwidget = wibox.widget.background()
-			textwidget:set_bgimage(beautiful.widget_display)
-			textwidget:set_widget(tb)
-			bgb = wibox.widget.background()
-			m = wibox.layout.margin(tb, 4, 4)
-			l = wibox.layout.fixed.horizontal()
-
-			-- All of this is added in a fixed widget
-			l:fill_space(true)
-			--l:add(m)
-			l:add(spr)
-			l:add(spr)
-			if number > 0 then
-				l:add(widget_display_l)
-				l:add(textwidget)
-				l:add(widget_display_r)
-			end
-			l:add(awful.widget.tasklist(s, matchrules(o) ,  myiconlist.buttons, {tasklist_only_icon=true}, get_tasklist_update(o), fixed.horizontal()))
-			--awful.widget.taglist.filter.all
-			l:add(spr)
-			l:add(spr)
-			-- And all of this gets a background
-			--title = wibox({fg=beautiful.fg_normal, bg=beautiful.bg_focus, border_color=beautiful.border_focus, border_width=beautiful.border_width})
-			--title:set_widget(tb)
-			bgb:set_widget(l)
-			--w:connect_signal("mouse::enter", function ()
-			--title.visible = true
-			--title.x = mouse.coords().x 
-			--title.y = mouse.coords().y 
-			--title.screen = capi.mouse.screen
-			--end)
-			--w:connect_signal("mouse::leave", function () title.visible = false end)
-			bgb:buttons(common.create_buttons(buttons, o))
-
-			data[o] = {
-				ib = ib,
-				tb = tb,
-				bgb = bgb,
-				m   = m
-			}
-		end
-		--tb:set_markup("<i>&lt;"..number..":&gt;</i>")
-
-		local text, bg, bg_image, icon = label(o)
-		-- The text might be invalid, so use pcall
-		--text = number..":"
-		text = hintsetter.charorder:sub(i,i):upper()
-		if not pcall(tb.set_markup, tb, text) then
-			tb:set_markup("<i>&lt;Invalid text&gt;</i>")
-		end
-		--bgb:set_bg(bg)
-		if type(bg_image) == "function" then
-			bg_image = bg_image(tb,o,m,objects,i)
-		end
-		bgb:set_bgimage(bg_image)
-		ib:set_image(icon)
-		w:add(bgb)
-	end
-end
-
-
-mytaglist         = {}
-mytaglist.buttons = awful.util.table.join(
-                    awful.button({ }, 1, awful.tag.viewonly),
-                    awful.button({ modkey }, 1, awful.client.movetotag),
-                    --awful.button({ }, 3, awful.tag.viewtoggle),
-                    --awful.button({ modkey }, 3, awful.client.toggletag),
-                    awful.button({ }, 4, function(t) awful.tag.viewnext() end),
-                    awful.button({ }, 5, function(t) awful.tag.viewprev() end)
-                    )
-
 -- | Tasklist | --
 
 myiconlist         = {}
@@ -853,7 +653,7 @@ awful.screen.connect_for_each_screen(function(s)
 
     --tasklist.new(screen, filter, buttons, style, update_function, base_widget)
     --mywibox[s] = awful.wibox({ position = "top", screen = s, height = "22" })
-    s.mywibox = awful.wibar({ position = "top", screen = s, height = "22"})
+    s.mywibox = awful.wibar({ position = "top", screen = s, height = "22", bgimage = beautiful.panel})
 
     -- Add widgets to the wibox
     --if s == 2 then
@@ -1225,7 +1025,8 @@ globalkeys = awful.util.table.join(config.globalkeys,
 	    end),
 	    awful.key({ modkey,           }, "space",
 	    function ()
-		    hintsetter:focus({modal_sc = modal_sc}) 
+		    --hintsetter:focus({modal_sc = modal_sc}) 
+		    widgets.taglist.focus()
 	    end),
 	    awful.key({ modkey,    }, "i", im),
 	    awful.key({ modkey, "Control" }, "i", 
@@ -1236,7 +1037,8 @@ globalkeys = awful.util.table.join(config.globalkeys,
 	    end),
 	    awful.key({ modkey, "Shift" }, "b",  
 	    function () 
-		    hintsetter:newtag({
+		    --hintsetter:newtag({
+		    widgets.taglist.newtag({
 			    screen = capi.mouse.screen,
 		    })
 		    --newtag({
@@ -1247,7 +1049,8 @@ globalkeys = awful.util.table.join(config.globalkeys,
 	    end),
 	    awful.key({ modkey,    }, "b",  
 	    function () 
-		    hintsetter:newtag({
+		    --hintsetter:newtag({
+		    widgets.taglist.newtag({
 			    screen = capi.mouse.screen,
 			    only = true,
 		    })
@@ -1258,22 +1061,44 @@ globalkeys = awful.util.table.join(config.globalkeys,
 		    --}) 
 	    end),
 	    awful.key({ modkey            }, "@",      function ()
-		    hintsetter:togglefromtag()
+		    widgets.taglist.togglefromtag()
 	    end),
 	    awful.key({ modkey            }, "x",      function ()
-		    --local tag = awful.tag.selected()
-		    local tag = mouse.screen.selected_tag
-		    local clients = tag:clients()
-		    for i,c in pairs(clients) do
-			    local tags = c:tags()
-			    if #tags==1 then
-				    c:tags({tags[1]})
+		    local t = awful.screen.focused().selected_tag
+		    if not t then return end
+		    --print(t.name)
+		    if t == tags[1] or t.hidden then
+
+			    --print(t.name)
+			    return
+		    else
+			    --t.volatile = true
+			    --print("volatile "..tostring(tag.volatile))
+			    local clients = t:clients()
+			    for _,c in pairs(clients)do
+				    if #(c:tags()) == 1 then
+					    c:tags({tags[1]})
+				    end
 			    end
+			    --t:clients({})
+			    --print(t.name)
+			    --t:delete()
+			    t:delete({fallback_tag=tags[1], force=true})
+			    tags[1]:view_only()
+			    --local tag = awful.tag.selected()
+			    --local tag = mouse.screen.selected_tag
+			    --local clients = tag:clients()
+			    --for i,c in pairs(clients) do
+			    --local tags = c:tags()
+			    --if #tags==1 then
+			    --c:tags({tags[1]})
+			    --end
+			    --end
+			    ----awful.tag.delete()--tag,awful.tag.gettags(tag.screen or 1)[1])
+			    ----tag:delete(tags[1])
+			    --tag:delete()
+			    --print(t.name..' deleted')
 		    end
-		    --awful.tag.delete()--tag,awful.tag.gettags(tag.screen or 1)[1])
-		    --tag:delete(tags[1])
-		    tag:delete()
-		    print('deleted')
 	    end),
 	    awful.key({ modkey,  }, "Left",     function() brightnessdec() end),
 	    awful.key({ modkey,  }, "Right",    function() brightnessinc() end),
@@ -1306,9 +1131,10 @@ globalkeys = awful.util.table.join(config.globalkeys,
 	    clientbuttons = awful.util.table.join(config.clientbuttons,
 	    awful.button({ }, 1, function (c) client.focus = c; c:raise() end),
 	    awful.button({ modkey }, 1, awful.mouse.client.move),
-	    awful.button({ modkey }, 3, awful.mouse.client.resize),
-	    awful.button({ modkey, "Control" }, 4, apw.up),
-	    awful.button({ modkey, "Control" }, 5, apw.down))
+	    awful.button({ modkey }, 3, awful.mouse.client.resize)
+	    --awful.button({ modkey, "Control" }, 4, apw.up),
+	    --awful.button({ modkey, "Control" }, 5, apw.down)
+	    )
 
 	    awful.menu.menu_keys = {
 		    up    = { "n", "Up" },
@@ -1322,8 +1148,20 @@ globalkeys = awful.util.table.join(config.globalkeys,
 	    root.keys(globalkeys)
 
 	    -- | Rules | --
+	    local function concat_rules(tables)
+		   local result = {}
+		   for i,k in pairs(tables) do
+			   for a,b in pairs(k) do
+				   if b then
+					   table.insert(result,b)
+				   end
+			   end
+		   end
+		   return result
+	   end
 
-	    awful.rules.rules = awful.util.table.join(config.rules,
+	    --awful.rules.rules = awful.util.table.join(config.rules,
+	    awful.rules.rules = concat_rules({config.rules,{
 	    { rule = { },
 	    properties = { border_width = beautiful.border_width,
 	    border_color = beautiful.border_normal,
@@ -1388,7 +1226,7 @@ globalkeys = awful.util.table.join(config.globalkeys,
 		end)
 	end
 }
-
+}}
 )
 
 -- | Signals | --
@@ -1414,64 +1252,59 @@ function(c)
 	if c.class then 
 		if c.class == "bomi" then
 			playif()
-		elseif c.class == "Evolution-alarm-notify" then
-			local notif = naughty.notify({ 
-				title = "ALARM NOTIFY",
-				bg = beautiful.bg_normal,
-				text = "DO IT!!!",
-				timeout = 25})
+		end
+	end
+end
+)
+
+dbus.request_name("session", "org.mpris.MediaPlayer2")
+dbus.add_match("session", "interface='org.freedesktop.DBus.Properties',member='PropertiesChanged'")
+dbus.connect_signal("org.freedesktop.DBus.Properties", function(...)
+	local data = {...}
+	local status = data[3].PlaybackStatus
+	if status == "Playing" then
+		pauseif()
+	elseif status == "Paused" then
+		playif()
+	end
+	--for i,str in pairs(data) do
+	--print(i.." "..tostring(str))
+	--if type(str) == "table" then
+	--for k,n in pairs(str) do
+	--print(k.." "..tostring(n))
+	--end
+	--end
+	--end
+end
+)
+
+local function checkclass(class)
+	local table = {"Virtualbox","Bomi"}
+	for i,n in pairs(table) do
+		if n == class then
+			return false
+		end
+	end
+	return true
+end
+local fullscreened_clients = {}
+
+local function remove_client(tabl, c)
+	local index = awful.util.table.hasitem(tabl, c)
+	if index then
+		table.remove(tabl, index)
+		if #tabl == 0 then
+			awful.spawn("xset s off")
+			awful.spawn("xset -dpms")
+			os.execute("xautolock -enable")
+
+			if checkclass(c.class) then
+				timemute()
+				playif()
 			end
-		end
+		end             
 	end
-	)
-	dbus.request_name("session", "org.mpris.MediaPlayer2")
-	dbus.add_match("session", "interface='org.freedesktop.DBus.Properties',member='PropertiesChanged'")
-	dbus.connect_signal("org.freedesktop.DBus.Properties", function(...)
-		local data = {...}
-		local status = data[3].PlaybackStatus
-		if status == "Playing" then
-			pauseif()
-		elseif status == "Paused" then
-			playif()
-		end
-		--for i,str in pairs(data) do
-		--print(i.." "..tostring(str))
-		--if type(str) == "table" then
-		--for k,n in pairs(str) do
-		--print(k.." "..tostring(n))
-		--end
-		--end
-		--end
-	end
-	)
-
-	local function checkclass(class)
-		local table = {"Virtualbox","Bomi"}
-		for i,n in pairs(table) do
-			if n == class then
-				return false
-			end
-		end
-		return true
-	end
-	local fullscreened_clients = {}
-
-	local function remove_client(tabl, c)
-		local index = awful.util.table.hasitem(tabl, c)
-		if index then
-			table.remove(tabl, index)
-			if #tabl == 0 then
-				awful.spawn("xset s off")
-				awful.spawn("xset -dpms")
-				os.execute("xautolock -enable")
-
-				if checkclass(c.class) then
-					timemute()
-					playif()
-				end
-			end             
-		end
-	end
+end
 
 	client.connect_signal("property::fullscreen",
 	function(c)
@@ -1492,21 +1325,21 @@ function(c)
 		end
 	end)
 
-	client.connect_signal("untagged",
-	function(c,t)
-		--for i,t in pairs(c.tags(c)) do
-		local del = true
-		for _,n in pairs(tagnames) do
-			if t.name == n then
-				del = false
-			end
-		end
-		if del and #(t:clients()) < 2 then
-			awful.tag.delete(t)
-		end
+	--client.connect_signal("untagged",
+	--function(c,t)
+		----for i,t in pairs(c.tags(c)) do
+		--local del = true
+		--for _,n in pairs(tags) do
+			--if t.name == n.name then
+				--del = false
+			--end
 		--end
+		--if del and #(t:clients()) < 2 then
+			--t:delete()
+		--end
+		----end
 
-	end)
+	--end)
 	client.connect_signal("unmanage",
 	function(c)
 		if c.fullscreen then

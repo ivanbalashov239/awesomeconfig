@@ -19,8 +19,8 @@ local function worker(args)
 	--end
 	--})
 	pulseaudio = lain.widget.pulseaudio({
+		cmd = "pacmd list-sinks | sed -n -e '/base volume/d' -e '/volume:/p' -e '/muted:/p' -e '/device\\.string/p' -e '/index/p' -e '/device.string/p'",
 		settings = function()
-			--print("pulse")
 			if volume_now.left ~= "N/A" and volume_now.right ~= "N/A" then
 				if volume_now.left == volume_now.right then
 					vlevel = volume_now.left .. "%"
@@ -65,6 +65,11 @@ local function worker(args)
 			--widget:set_markup(lain.util.markup(markup, vlevel))
 		end
 	})
+	pulsewidget.pulse = pulseaudio
+	pulsewidget.update = function()
+		pulseaudio.update()
+		pulsebar.update()
+	end
 	local pulsewidget = widgetcreator(
 	{
 		widgets = {
@@ -81,6 +86,19 @@ local function worker(args)
 	})
 	--apw:setbuttons(pulsewidget)
 	return pulsewidget
+end
+
+function pulsewidget.up()
+	awful.spawn(string.format("pactl set-sink-volume %d +10%%", pulsewidget.pulse.device))
+	pulsewidget.update()
+end
+function pulsewidget.down()
+	 awful.spawn(string.format("pactl set-sink-volume %d -10%%", pulsewidget.pulse.device))
+         pulsewidget.update()
+end
+function pulsewidget.togglemute()
+	os.execute(string.format("pactl set-sink-mute %d toggle", pulsewidget.pulse.device))
+	pulsewidget.update()
 end
 
 return setmetatable(pulsewidget, {__call = function(_,...) return worker(...) end})

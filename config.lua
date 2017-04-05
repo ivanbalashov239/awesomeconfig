@@ -1,7 +1,7 @@
 hst = io.popen("uname -n")
 hostname = hst:read()
 hst:close()
---local config = require(hostname)
+local host = require(hostname) or {}
 local gears      = require("gears")
 timer = gears.timer
 local awful      = require("awful")
@@ -15,12 +15,12 @@ local theme = "pro-dark"
 local beautiful  = require("beautiful")
 beautiful.init(os.getenv("HOME") .. "/.config/awesome/themes/" .. theme .. "/theme.lua")
 --                   require("sharetags")
-local hintsetter  = require("hintsetter")
-hintsetter.init()
-local hints 	 = require("hints")
-hints.init()
+--local hintsetter  = require("hintsetter")
+--hintsetter.init()
+--local hints 	 = require("hints")
+--hints.init()
 --local tyrannical = require("tyrannical")
-local apw 	 = require("apw/widget")
+--local apw 	 = require("apw/widget")
 local wibox      = require("wibox")
 local vicious    = require("vicious")
 local naughty    = require("naughty") --"notifybar")
@@ -70,19 +70,6 @@ local capi = {
 
 
 local config = {}
---config.musicwidget = widgets.mpd()
---config.pulsewidget = widgets.pulse()
---config.kbdwidget = widgets.kbdd()
---config.mailwidget = widgets.mail()
---config.cpuwidget = widgets.cpu_tmp()
---config.memwidget = widgets.mem()
---config.fswidget = widgets.fs()
---config.taskwidget = widgets.taskwidget()
---config.netwidget = widgets.net()
---config.weatherwidget = widgets.weather()
---config.clockwidget = widgets.time()
---config.calendarwidget = widgets.calendar()
-
 config.panel = {}
 config.panel.left = {
 	widgets.spr5px,
@@ -98,10 +85,13 @@ config.panel.right = {
 	widgets.weather(),
 	widgets.net(),
 	widgets.pulse(),
-	widgets.cpu_tmp(),
+	widgets.cpu_tmp({
+		tempfile = host.cpu_tmpfile,
+	}),
 	widgets.mem(),
-	widgets.mail(),
+	host.widgets.mail(),
 	widgets.fs(),
+	host.widgets.battery(),
 	widgets.calendar(),
 	widgets.time(),
 	widgets.spr
@@ -203,9 +193,9 @@ config.globalkeys = awful.util.table.join(
 	    --awful.key({ modkey            }, "\\",     function () exec("sublime_text") end),
 	    awful.key({ modkey            }, "$",      function () exec("gcolor2") end),
 	    awful.key({ modkey            }, "`",      function () exec("xwinmosaic") end),
-	    awful.key({ }, "XF86AudioRaiseVolume",  apw.up),
-	    awful.key({ }, "XF86AudioLowerVolume",  apw.down),
-	    awful.key({ }, "XF86AudioMute",         apw.togglemute),
+	    awful.key({ }, "XF86AudioRaiseVolume",  widgets.pulse.up),
+	    awful.key({ }, "XF86AudioLowerVolume",  widgets.pulse.down),
+	    awful.key({ }, "XF86AudioMute",         widgets.pulse.togglemute),
 	    awful.key({ }, "XF86Sleep",         function () exec("systemctl suspend") end),
 	    awful.key({ }, "XF86Explorer",      function () exec("systemctl suspend") end),
 	    awful.key({ }, "XF86PowerOff",      
@@ -414,8 +404,8 @@ function ()
 	end
 end),
 awful.key({ modkey }, "Escape", awful.tag.history.restore),
-awful.key({ modkey }, "j", function () lain.util.tag_view_nonempty(-1) end),
-awful.key({ modkey }, "k", function () lain.util.tag_view_nonempty(1) end),
+awful.key({ modkey }, "j", function () widgets.taglist.prevtag({}) end),
+awful.key({ modkey }, "k", function () widgets.taglist.nexttag({}) end),
 
 awful.key({ modkey, "Shift" }, "j",   awful.tag.viewprev       ),
 awful.key({ modkey, "Shift" }, "k",  awful.tag.viewnext       ),
@@ -425,9 +415,9 @@ function ()
 end),
 awful.key({ modkey,           }, "z",      function () task:toggle() end),
 awful.key({ modkey,           }, "w",      function () mainmenu:show() end),
-awful.key({ modkey, "Control" }, "n",  apw.up),
-awful.key({ modkey, "Control" }, "t",  apw.down),
-awful.key({ modkey, "Control" }, "m",  apw.togglemute),
+awful.key({ modkey, "Control" }, "n",  widgets.pulse.up),
+awful.key({ modkey, "Control" }, "t",  widgets.pulse.down),
+awful.key({ modkey, "Control" }, "m",  widgets.pulse.togglemute),
 awful.key({ modkey,           }, "m",
 modal_sc({
 	name="MAIL",

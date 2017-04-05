@@ -11,7 +11,7 @@ theme            = {}
 theme.icons      = os.getenv("HOME") .. "/.config/awesome/themes/pro-dark/icons/"
 theme.icon_theme = "Faenza"
 theme.wallpaper  = os.getenv("HOME") .. "/.config/awesome/themes/pro-dark/wallpapers/pro-dark-shadow.png"
-theme.panel      = "png:" .. theme.icons .. "/panel/panel.png"
+theme.panel      = theme.icons .. "panel/panel.png"
 theme.font       = "Terminus 9"
 theme.panel_color= "#343434" 
 

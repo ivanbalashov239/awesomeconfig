@@ -3,9 +3,12 @@ local beautiful = require("beautiful")
 local wibox = require("wibox")
 local lain = require("lain")
 local awful = require("awful")
+local modal_sc = require("modal_sc")      
+local hintsetter  = require("hintsetter")
 local naughty = require("naughty")
 local fixed 	 = require("wibox.layout.fixed")
 local common 	 = require("awful.widget.common")
+local sharedtags = require("sharedtags")
 local theme = "pro-dark"
 --local hintsetter  = require("hintsetter")
 local widgets = widgetcreator
@@ -56,24 +59,39 @@ taglist.tags={}
 --awful.client.focus.byidx(-1)
 --if client.focus then client.focus:raise() end
 --end))
---mytaglist         = {}
---mytaglist.buttons = awful.util.table.join(
---awful.button({ }, 1, awful.tag.viewonly),
---awful.button({ modkey }, 1, awful.client.movetotag),
-----awful.button({ }, 3, awful.tag.viewtoggle),
-----awful.button({ modkey }, 3, awful.client.toggletag),
---awful.button({ }, 4, function(t) awful.tag.viewnext() end),
---awful.button({ }, 5, function(t) awful.tag.viewprev() end)
---)
-awful.tag.attached_connect_signal(nil,"removed",function(tag)
-	table.remove(taglist.tags,tag)
-end)
+mytaglist         = {}
+mytaglist.buttons = awful.util.table.join(
+awful.button({ }, 1, awful.tag.viewonly),
+awful.button({ modkey }, 1, awful.client.movetotag),
+--awful.button({ }, 3, awful.tag.viewtoggle),
+--awful.button({ modkey }, 3, awful.client.toggletag),
+awful.button({ }, 4, function(t) awful.tag.viewnext() end),
+awful.button({ }, 5, function(t) awful.tag.viewprev() end)
+)
+--awful.tag.attached_connect_signal(nil,"removed",function(tag)
+	----print(tag.name)
+	----table.remove(taglist.tags,tag)
+	----for i,k in pairs(taglist.tags)do
+		----print(k.name)
+	----end
+--end)
 awful.tag.attached_connect_signal(nil,"property::activated",function(tag)
-	if tag then
+	if tag and tag.activated then
 		table.insert(taglist.tags,tag)
+		--print("add "..tag.index..tostring(tag.volatile))
+		--taglist.tags[tag.index] = tag
+	elseif tag then
+		--print("remove "..tag.name or tag.index)
+		--print(tag.index..tostring(tag.volatile))
+		for i,k in pairs(taglist.tags)do
+			if k == tag then
+				table.remove(taglist.tags,i)
+				break
+			end
+		end
+		--taglist.tags[tag.index] = nil
 	end
 	--print(#taglist.tags)
-	--print("added tag")
 	--for i,k in pairs(taglist.tags) do
 	--print(k.name)
 	--end
@@ -119,7 +137,7 @@ local function worker(args)
 
 			--print(o.name)
 			number = number + 1
-			if number ~= 1 then
+			if not o.hidden and o.activated then
 				--break
 				--number = number + 1
 				local cache = data[o]
@@ -146,7 +164,8 @@ local function worker(args)
 					l:add(widgets.spr)
 					--print(o.name)
 					--print("number "..number)
-					if number > 0 then
+					if number > 0 and #(o:clients()) > 1 then
+				--if #(tag:clients()) > 1 then
 						--print("added text label")
 						l:add(widgets.display_l)
 						l:add(textwidget)
@@ -185,12 +204,12 @@ local function worker(args)
 				if not pcall(tb.set_markup, tb, text) then
 					tb:set_markup("<i>&lt;Invalid text&gt;</i>")
 				end
-				bgb:set_bg(bg)
-				if type(bg_image) == "function" then
-					bg_image = bg_image(tb,o,m,objects,i)
-				end
+				--bgb:set_bg(bg)
+				--if type(bg_image) == "function" then
+					--bg_image = bg_image(tb,o,m,objects,i)
+				--end
 				tb:set_text(o.hint or o.name or "no_hint")
-				bgb:set_bgimage(bg_image)
+				--bgb:set_bgimage(bg_image)
 				ib:set_image(icon)
 				w:add(bgb)
 			end
@@ -201,6 +220,22 @@ local function worker(args)
 	return awful.widget.taglist(screen, awful.widget.taglist.filter.all, mytaglist.buttons, {}, list_update)
 	--return w
 end
+function get_clients_by_geometry(tag)
+	local clients = tag:clients()
+	if tag == taglist.tags[1] then
+		return clients
+	end
+	table.sort(clients,compare_by_geometry)
+	return clients
+
+end
+function compare_by_geometry(a,b)
+	if a.x == b.x then
+		return a.y < b.y
+	else
+		return a.x < b.x
+	end
+end
 --function list_update(w, objects, label,screen)
 function taglist.get_tasklist_update(tag)
 	--oldprint(tag)
@@ -208,7 +243,10 @@ function taglist.get_tasklist_update(tag)
 	return function (w, buttons, label, data, objects)
 		-- update the widgets, creating them if needed
 		w:reset()
-		for i, o in ipairs(tag:clients()) do
+		local clients =get_clients_by_geometry(tag)
+		--print(type(clients))
+		--print("update tasklist")
+		for i, o in ipairs(clients) do
 			--print(o.class)
 			local cache = data[o]
 			local ib, tb, bgb, m, l, munf, mfoc, background
@@ -241,7 +279,9 @@ function taglist.get_tasklist_update(tag)
 				background:set_bgimage(beautiful.widget_display)
 				-- All of this is added in a fixed widget
 				l:fill_space(true)
+				--if #(tag:clients()) > 1 then
 				tl:add(background)
+				--end
 				tbl:set_widget(tl)
 				l:add(tbl)
 				l:add(ib)
@@ -319,7 +359,8 @@ function taglist.bydirection(dir, c, all)
 		--local tag = awful.tag.selected(sel.screen)
 		local tag = sel.screen.selected_tag
 		local id = awful.tag.getidx(tag)
-		if id  == 1 then
+		--if id  == 1 then
+		if tag == taglist.tags[1] then
 			local clientlist = tag:clients()
 			local clid = nil
 			for i,cl in pairs(clientlist) do
@@ -403,5 +444,251 @@ function taglist.global_bydirection(dir, c, all)
 		end
 	end
 end    	
+
+function taglist.nexttag(args)
+	local args = args or {}
+	local screen = args.screen or capi.mouse.screen
+	local nonempty = args.nonempty or true
+	local direction = args.direction or 1
+	local current = false
+	for i,k in ipairs(taglist:get_tags())do
+		--print(k.name)
+			if current then
+				if not k.hidden and ((nonempty and #(k:clients())>0) or not nonempty) then
+					--print("switch to "..k.name)
+						sharedtags.viewonly(k,screen)
+						k:view_only()
+						break
+				end
+			else
+				if k == screen.selected_tag then
+					--print(k.name.." current")
+					current = true
+				end
+			end
+	end
+end
+function taglist.prevtag(args)
+	local args = args or {}
+	local screen = args.screen or capi.mouse.screen
+	local nonempty = args.nonempty or true
+	local direction = args.direction or 1
+	local current = false
+	local prevtag = nil
+	for i,k in ipairs(taglist:get_tags())do
+		--print(prevtag and prevtag.name or "nil")
+		--print(tostring(i)..tostring(k.name))
+		if not current then
+			if k == screen.selected_tag then
+				--print(k.name.." current")
+				current = true
+			elseif nonempty and #(k:clients())> 0 and not k.hidden then
+				--print("setting prev "..k.name)
+				prevtag = k
+			end
+		end
+		--print(prevtag and "prevtag "..prevtag.name or "no prev tag")
+		if current then
+			--k:view_only()
+			if prevtag and not prevtag.hidden and ((nonempty and #(k:clients())>0) or not nonempty ) then
+				--print("switching to "..prevtag.name)
+				sharedtags.viewonly(prevtag,screen)
+				break
+			elseif nonempty and #(k:clients())> 0 and not k.hidden then
+				--print("setting prev "..k.name)
+				prevtag = k
+			end
+		end
+	end
+end
+function taglist.focus(args)
+	local args = args or {}
+	--local modal_sc = args.modal_sc or nil
+	local rule = args.rule or {}
+	local is_excluded = args.is_excluded or false
+	local screen = args.screen or mouse.screen
+	local hintindex = {} -- Table of visible clients with the hint letter as the keys
+	--local taglist = awful.tag.gettags(screen)
+	--local taglist = screen.tags
+	local clientlist = {}
+	local hintindex = {} -- Table of visible clients with the hint letter as the keys
+	--local taglist = awful.tag.gettags(screen)
+	local ind = 0
+	local tagindex = {}
+	for i,thistag in pairs(taglist:get_tags()) do
+		--if not (thistag.name == "IM") then
+			--ind = ind + 1
+			--tagindex[thistag] = hintsetter.charorder:sub(ind,ind)
+		--end
+		for k,thisclient in pairs(thistag:clients()) do
+			table.insert(clientlist,thisclient)
+			--if hintsetter.windows[thisclient.window] then
+				--hintindex[hintsetter.windows[thisclient.window]:lower()] = thisclient
+			--end
+		end
+	end
+	for i,thisclient in pairs(clientlist) do -- Move wiboxes to center of visible windows and populate hintindex
+		local char = thisclient.hint
+		if char then
+			hintindex[char:lower()] = thisclient
+		end
+		--debuginfo(thisclient.class)
+	end
+	--debuginfo(hintindex)
+	local focus = function(cl,tag)
+		client.focus = cl
+		cl:raise()
+		--awful.tag.viewonly(tag)
+		sharedtags.viewonly(tag,screen)
+		tag:view_only()
+		client.focus = cl
+		cl:raise()
+	end
+	actions = {}
+	for i, cl in pairs(hintindex) do
+		tags = {}
+		for _, tag in pairs(cl:tags()) do
+			local hint = tag.hint
+			if hint then
+				table.insert(tags,
+				{
+					hint = hint,
+					func = function()
+						focus(cl,tag)
+					end
+				}
+				)
+			end
+		end
+		if #tags > 1 then
+			table.insert(actions,{
+				modal = true,
+				hint = cl.hint,
+				desc = cl.class.." | "..cl.name,
+				actions = tags
+			})
+		else
+			table.insert(actions,{
+				hint = i,
+				desc = cl.class.." | "..cl.name,
+				func = function()
+					focus(cl,cl:tags()[1])
+				end
+			})
+		end
+	end
+	modal_sc({
+		name = "Choose client",
+		actions = actions
+	})()
+end
+function taglist.newtag(args)
+	local args = args or {}
+	local screen = args.screen or mouse.screen
+	local hintindex = {}
+	local marked = ""
+	local only = args.only or false
+	local clientlist = {}
+	--local taglist = screen.tags
+	for i,thistag in pairs(taglist:get_tags()) do
+		for k,thisclient in pairs(thistag:clients()) do
+			table.insert(clientlist,thisclient)
+			if thisclient.hint then
+				hintindex[thisclient.hint:lower()] = thisclient
+			end
+		end
+	end
+	marked = {}
+	markedstring = ""
+	function newtag()
+		actions = {}
+		for i,k in pairs(hintindex) do
+			--print(k.hint)
+			table.insert(actions,{
+				hint = i,
+				desc = k.class.." | "..k.name,
+				func = function()
+					if marked[i] then
+						marked[i] = nil
+						markedstring = markedstring:gsub(i,"")
+					else
+						marked[i] = k
+						markedstring = markedstring..i
+					end
+					newtag()
+				end
+			})
+		end
+		markedclients = {}
+		--string = ""
+		for i,k in pairs(marked)do
+			table.insert(markedclients,k)
+			--string = string..i
+		end
+		table.insert(actions,{
+			hint = "Return",
+			desc = "create tag",
+			func = function()
+				if #markedclients < 1 then
+					return false
+				end
+				local tagname = ""
+				local tag = awful.tag.add(tagname, { volatile = true, 
+				selected = true,
+				layout = awful.layout.suit.tile,
+				screen = screen})
+				tag:clients(markedclients)
+				sharedtags.viewonly(tag,screen)
+				tag:view_only()
+				if #markedclients == 1 then
+					local c = markedclients[1]
+					if c.hint then
+						if tag.hint then
+							hintsetter.tag_used[tag.hint]= nil
+						end
+						tag.hint = hintsetter:hint_tag(c.hint)
+						hintsetter.tag_used[tag.hint]= tag
+					end
+				end
+				for i,j in pairs(markedclients) do
+					j.maximized_horizontal = false --not c.maximized_horizontal
+					j.maximized_vertical   = false --not c.maximized_vertical
+					if only then
+						local tags = j:tags()
+						for i,k in ipairs(tags)do
+							if k == taglist.tags[1] then
+								table.remove(tags,i)
+							end
+						end
+						j:tags(tags)
+					end
+				end
+			end
+		})
+		modal_sc({
+			name = "Choose client: "..markedstring:upper(),
+			actions = actions
+		})()
+	end
+	newtag()
+end
+function taglist.togglefromtag(client,tag)
+	local client = client or capi.client.focus
+	local tag = tag or taglist.tags[1]
+	local tags = client:tags()
+	for i,k in ipairs(tags)do
+		if k == taglist.tags[1] then
+			table.remove(tags,i)
+			if #tags == 0 then
+				client:tags({tag})
+			else
+				client:tags(tags)
+			end
+			return
+		end
+	end
+	table.insert(tags,tag)
+	client:tags(tags)
+end
 
 return setmetatable(taglist, {__call = function(_,...) return worker(...) end})
