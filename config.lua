@@ -1,7 +1,3 @@
-hst = io.popen("uname -n")
-hostname = hst:read()
-hst:close()
-local host = require(hostname) or {}
 local gears      = require("gears")
 timer = gears.timer
 local awful      = require("awful")
@@ -21,6 +17,10 @@ beautiful.init(os.getenv("HOME") .. "/.config/awesome/themes/" .. theme .. "/the
 --hints.init()
 --local tyrannical = require("tyrannical")
 --local apw 	 = require("apw/widget")
+hst = io.popen("uname -n")
+hostname = hst:read()
+hst:close()
+local host = require(hostname) or {}
 local wibox      = require("wibox")
 local vicious    = require("vicious")
 local naughty    = require("naughty") --"notifybar")
