@@ -89,9 +89,9 @@ config.panel.right = {
 		tempfile = host.cpu_tmpfile,
 	}),
 	widgets.mem(),
-	host.widgets.mail(),
+	host.widgets.mail,
 	widgets.fs(),
-	host.widgets.battery(),
+	host.widgets.battery,
 	widgets.calendar(),
 	widgets.time(),
 	widgets.spr
