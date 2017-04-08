@@ -24,7 +24,7 @@ local host = require(hostname) or {}
 local wibox      = require("wibox")
 local vicious    = require("vicious")
 local naughty    = require("naughty") --"notifybar")
---local hidetray	 = require("hidetray")
+local hidetray	 = require("hidetray")
 --local systray	 = require("systray")
 local lain       = require("lain")
 local read_pipe    = require("lain.helpers").read_pipe
@@ -162,7 +162,7 @@ config.globalkeys = awful.util.table.join(
 	    awful.key({ modkey }, "l",
 	    function ()
 		    awful.prompt.run({ prompt = "Run Lua code: " },
-		    mypromptbox[mouse.screen].widget,
+		    mouse.screen.mypromptbox.widget,
 		    awful.util.eval, nil,
 		    awful.util.getdir("cache") .. "/history_eval")
 	    end),

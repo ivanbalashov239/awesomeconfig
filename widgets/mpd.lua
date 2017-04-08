@@ -70,12 +70,12 @@ local function worker(args)
 				titlesub = utf8.sub(mpd_now.title:upper():gsub("&.-;", string.lower), 0, 12)
 				nowplayingtext = mpd_now.artist .. "-" .. mpd_now.title .. " "
 				mpdwidget.mpdwidget.nowplaying = nowplayingtext
-				nowtext = markup.font("Tamsyn 3", " ")
-				.. markup.font("tamsyn 7",
+				nowtext = lain.util.markup.font("Tamsyn 3", " ")
+				.. lain.util.markup.font("tamsyn 7",
 				artistsub
 				.. "—" ..
 				titlesub)
-				.. markup.font("Tamsyn 2", " ")
+				.. lain.util.markup.font("Tamsyn 2", " ")
 
 				--nowplayingtext = mpd_now.artist.." "..mpd_now.title
 				--nowplayingtext = utf8.sub(nowplayingtext, 0, 35)
@@ -87,7 +87,7 @@ local function worker(args)
 				mpd_sepl:set_image(beautiful.mpd_sepl)
 				mpd_sepr:set_image(beautiful.mpd_sepr)
 			elseif mpd_now.state == "pause" then
-				widget:set_markup(markup.font("Tamsyn 4", "") ..
+				widget:set_markup( lain.util.markup.font("Tamsyn 4", "") ..
 				markup.font("Tamsyn 7", "MPD PAUSED") ..
 				markup.font("Tamsyn 10", ""))
 				--play_pause_icon:set_image(beautiful.mpd_play)
@@ -235,6 +235,23 @@ end
 function mpdwidget.seek_backward()
 	awful.util.spawn_with_shell("mpc seek -00:00:10 &")
 	mpdwidget.update()
+end
+function mpdwidget.mpriscontrol(str)
+	local command = "dbus-send --print-reply --session --dest=org.mpris.MediaPlayer2.bomi /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player."
+	if str == "play" then
+		command = command.."Play"
+	elseif str == "pause" then
+		command = command.."Pause"
+	elseif str == "next" then
+		command = command.."Next"
+	elseif str == "prev" then
+		command = command.."Prev"
+	elseif str == "play_pause" then
+		command = command.."PlayPause"
+	end
+	command = command.." &"
+	os.execute(command)
+	--awful.spawn.with_shell(command)
 end
 
 return setmetatable(mpdwidget, {__call = function(_,...) return worker(...) end})

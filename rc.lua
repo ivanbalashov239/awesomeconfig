@@ -21,7 +21,7 @@ local sharedtags = require("sharedtags")
 --local apw 	 = require("apw/widget")
 local wibox      = require("wibox")
 local naughty    = require("naughty") --"notifybar")
---local hidetray	 = require("hidetray")
+local hidetray	 = require("hidetray")
 --local systray	 = require("systray")
 local lain       = require("lain")
 local read_pipe    = require("lain.helpers").read_pipe
@@ -530,7 +530,10 @@ mypromptbox       = {}
 mylayoutbox       = {}
 mynotifybar = {}
 --tray = hidetray({revers = true})
-text = wibox.widget.textbox("0")
+--text = wibox.widget.textbox("0")
+hidetray({
+		    --container = wibox.layout.fixed.horizontal()
+	    })
 --systray:attachtext(text)
 --hidetray:show(1)
 --hidetray.hidetimer:start()
@@ -654,18 +657,26 @@ awful.screen.connect_for_each_screen(function(s)
             layout = wibox.layout.fixed.horizontal,
             --mylauncher,
             s.mytaglist,
-            s.mypromptbox,
         },
 	s.mytasklist, -- Middle widget
         { -- Right widgets
             layout = wibox.layout.fixed.horizontal,
+            s.mypromptbox,
             --mykeyboardlayout,
-	    wibox.widget.systray(),
+	    --wibox.widget.systray(),
+	    widgets({
+		    textboxes = {hidetray.textbox}
+	    }),
+	    hidetray.tray,
 	    right_layout,
             --mytextclock,
             s.mylayoutbox,
         },
     }
+    hidetray:attach({
+	    wibox = s.mywibox,
+	    screen = s
+    })
 end)
 --task.promptbox=mypromptbox
 
@@ -677,22 +688,6 @@ root.buttons(awful.util.table.join(
     awful.button({modkey, }, 5, awful.tag.viewprev)
 ))
 -- | Key bindings | --
-local function bomicontrol(str)
-	local command = "dbus-send --print-reply --session --dest=org.mpris.MediaPlayer2.bomi /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player."
-	if str == "play" then
-		command = command.."Play"
-	elseif str == "pause" then
-		command = command.."Pause"
-	elseif str == "next" then
-		command = command.."Next"
-	elseif str == "prev" then
-		command = command.."Prev"
-	elseif str == "play_pause" then
-		command = command.."PlayPause"
-	end
-	command = command.." &"
-	awful.spawn.with_shell(command)
-end
 dbus.request_name("session", "org.naquadah.awesome.dusi")
 dbus.add_match("session", "interface='org.naquadah.awesome.dusi',member='dusi'")
 dbus.connect_signal("org.naquadah.awesome.dusi",
@@ -756,7 +751,7 @@ function translator(text_tr)
 	--local text_tr = lain.helpers.first_line("/tmp/translate")
 	--print("-"..text_tr.."-"..#text_tr,2)
 	if text_tr and #text_tr > 0 then
-		--print(text_tr)
+		print(text_tr)
 		local lang ="ru:en"
 		--print(string.match(text,"[a-zA-Z0-9,.!? ]*"))
 		if string.match(text_tr,"[a-zA-Z0-9,.!? ]*") ==text_tr then
@@ -765,9 +760,11 @@ function translator(text_tr)
 		end
 		local handle = io.popen("trans -no-ansi "..lang.." '"..text_tr.."'")
 		local translation = handle:read("*a")
+		--print(translation)
 		handle:close()
 		local t ='<span font="Cantarel 18">'..translation.."</span>"
-		timenotify = naughty.notify({
+		local timenotify = naughty.notify({
+			title = "",
 			text = t,
 			--icon = "/home/ivn/Загрузки/KFaenzafordark/apps/48/time-admin2.png",
 			timeout = 10,
@@ -786,7 +783,7 @@ globalkeys = awful.util.table.join(config.globalkeys,
 			if mpdwidget.state == "play" then
 				widgets.mpd.prev()
 			else
-				bomicontrol("prev")
+				widgets.mpd.mpriscontrol("prev")
 			end
 		end),
     awful.key({ modkey, "Control" }, "space", 
@@ -795,14 +792,14 @@ globalkeys = awful.util.table.join(config.globalkeys,
 	    --for i,k in pairs(tags) do
 		    --print(k.name)
 	    --end
-	    bomicontrol("play_pause")
+	    widgets.mpd.mpriscontrol("play_pause")
     end),
     awful.key({ modkey, "Control" }, "r", 
     function ()
 	    if not mpdwidget.state == "play" then
-		    bomicontrol("pause")
+		    widgets.mpd.mpriscontrol("pause")
 	    --else
-		    --bomicontrol("play")
+		    --widgets.mpd.mpriscontrol("play")
 	    end
 	    widgets.mpd.play_pause()
     end),
@@ -896,7 +893,7 @@ globalkeys = awful.util.table.join(config.globalkeys,
 	    if mpdwidget.state == "play" then
 		    widgets.mpd.next()
 	    else
-		    bomicontrol("next")
+		    widgets.mpd.mpriscontrol("next")
 	    end
     end),
     awful.key({ modkey,   }, "Home", 
@@ -917,10 +914,10 @@ globalkeys = awful.util.table.join(config.globalkeys,
     end),
 
 
-    --awful.key({ modkey,           }, "/",      function () 
-	    --hidetray:show(mouse.screen) 
-	    --hidetray.hidetimer:start()
-    --end),
+    awful.key({ modkey,           }, "/",      function () 
+	    hidetray:show(mouse.screen) 
+	    hidetray.hidetimer:start()
+    end),
     awful.key({ modkey 		  }, "r",
     function ()
 	    awful.prompt.run({ prompt = "Run: ", },
@@ -948,7 +945,7 @@ globalkeys = awful.util.table.join(config.globalkeys,
 	    awful.key({ modkey, "Control" }, "Return", 
 	    function () 
 		    os.execute(locknow)
-		    bomicontrol("pause")
+		    widgets.mpd.mpriscontrol("pause")
 	    end),
 	    awful.key({ modkey,           }, "space",
 	    function ()
@@ -1348,11 +1345,6 @@ end
 		----end
 
 	--end)
-	awesome.connect_signal("systray::update",
-	function(t)
-		local num_entries = awesome.systray()
-		print(num_entries)
-	end)
 	client.connect_signal("unmanage",
 	function(c)
 		if c.fullscreen then
