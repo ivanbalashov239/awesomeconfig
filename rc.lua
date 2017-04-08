@@ -1,19 +1,14 @@
-hst = io.popen("uname -n")
-hostname = hst:read()
-hst:close()
---local config = require(hostname)
-local config = require("config")
-local gears      = require("gears")
-local awful      = require("awful")
-awful.rules      = require("awful.rules")
-local common 	 = require("awful.widget.common")
-local fixed 	 = require("wibox.layout.fixed")
-                   require("awful.autofocus")
 -- | Theme | --
 
 local theme = "pro-dark"
 local beautiful  = require("beautiful")
 beautiful.init(os.getenv("HOME") .. "/.config/awesome/themes/" .. theme .. "/theme.lua")
+
+local config = require("config")
+local gears      = require("gears")
+local awful      = require("awful")
+--awful.rules      = require("awful.rules")
+                   require("awful.autofocus")
 --                   require("sharetags")
 local hintsetter  = require("hintsetter")
 hintsetter.init({
@@ -25,13 +20,11 @@ hints.init()
 local sharedtags = require("sharedtags")
 --local apw 	 = require("apw/widget")
 local wibox      = require("wibox")
-local vicious    = require("vicious")
 local naughty    = require("naughty") --"notifybar")
 --local hidetray	 = require("hidetray")
 --local systray	 = require("systray")
 local lain       = require("lain")
 local read_pipe    = require("lain.helpers").read_pipe
-local net_widgets = require("net_widgets")
 --local cyclefocus = require('cyclefocus')
 local rork = require("rork")      
 local run_or_raise = rork.run_or_raise
@@ -48,17 +41,10 @@ local json = require('cjson')
 local freedesktop = {}
 freedesktop.menu = require('freedesktop.menu')
 freedesktop.utils = require('freedesktop.utils')
-local revelation = require("revelation")      
-revelation.init()
-local newtag	 = require("newtag")      
-newtag.init()
-local scratch	 = require("scratch")
-local utf8 	 = require("utf8_simple")
 lain.helpers     = require("lain.helpers")
-local menubar = require("menubar")
-menubar.terminal = "termite"
-menubar.menu_gen.all_menu_dirs = { "/usr/share/applications/", "/usr/local/share/applications", "~/.local/share/applications" }
-local cheeky 	 = require("cheeky")
+--local menubar = require("menubar")
+--menubar.terminal = "termite"
+--menubar.menu_gen.all_menu_dirs = { "/usr/share/applications/", "/usr/local/share/applications", "~/.local/share/applications" }
 --local appsuspender = require("appsuspender")
 local im = require("im")
 local task = require("task")
@@ -154,8 +140,8 @@ altkey        = "Mod1"
 -- table of apps and they classes
 apps = {}
 terminal      = "termite"
-menubar.utils.terminal = terminal -- Set the terminal for applications that require it
-menubar.menu_gen.all_menu_dirs = { "/usr/share/applications/", "/usr/local/share/applications", "~/.local/share/applications" }
+--menubar.utils.terminal = terminal -- Set the terminal for applications that require it
+--menubar.menu_gen.all_menu_dirs = { "/usr/share/applications/", "/usr/local/share/applications", "~/.local/share/applications" }
 dropdownterm  = "termite -r DROPDOWN -e 'tmux attach -t dropdown '"
 tmux          = "termite -e tmux"
 termax        = "termite --geometry 1680x1034+0+22"
@@ -430,67 +416,7 @@ menu_main = {
 
 	  markup = lain.util.markup
 
-	  space3 = markup.font("Terminus 3", " ")
-	  space2 = markup.font("Terminus 2", " ")
-	  vspace1 = '<span font="Terminus 3"> </span>'
-	  vspace2 = '<span font="Terminus 3">  </span>'
-	  clockgf = beautiful.clockgf
 
-	  -- | Widgets | --
-
-	  spr = wibox.widget.imagebox()
-	  spr:set_image(beautiful.spr)
-	  spr4px = wibox.widget.imagebox()
-	  spr4px:set_image(beautiful.spr4px)
-	  spr5px = wibox.widget.imagebox()
-	  spr5px:set_image(beautiful.spr5px)
-
-	  widget_display = wibox.widget.imagebox()
-	  widget_display:set_image(beautiful.widget_display)
-	  widget_display_r = wibox.widget.imagebox()
-	  widget_display_r:set_image(beautiful.widget_display_r)
-	  widget_display_l = wibox.widget.imagebox()
-	  widget_display_l:set_image(beautiful.widget_display_l)
-	  widget_display_c = wibox.widget.imagebox()
-	  widget_display_c:set_image(beautiful.widget_display_c)
-
-	  local function widgetcreator(args)
-		  local layout = args.layout or wibox.layout.fixed.horizontal()
-		  local spr = args.spr or spr
-		  layout:add(spr)
-		  if args.image then
-			  local widget_image = wibox.widget.imagebox()
-			  widget_image:set_image(args.image)
-			  layout:add(widget_image)
-		  end
-		  if args.text then
-			  local widget_text = wibox.widget.textbox()
-			  widget_text:set_markup(markup.font("Terminus 4", " ")..'<span font="Terminus 10" weight="bold">'..args.text..'</span>'..markup.font("Terminus 4", " "))
-			  layout:add(widget_text)
-		  end
-		  if args.widgets then
-			  for i,k in pairs(args.widgets) do
-				  layout:add(k)
-			  end
-		  end
-
-		  if args.textboxes then
-
-			  layout:add(widget_display_l)
-			  for i,k in pairs(args.textboxes) do
-				  if i > 1 then 
-					  layout:add(widget_display_c)
-				  end
-				  local background = wibox.widget.background()
-				  background:set_widget(k)
-				  background:set_bgimage(beautiful.widget_display)
-				  layout:add(background)
-			  end
-			  layout:add(widget_display_r)
-		  end
-		  layout:add(spr5px)
-		  return layout
-	  end
 
 --musicwidget =    config.musicwidget
 mpdwidget =      config.mpdwidget
@@ -865,11 +791,11 @@ globalkeys = awful.util.table.join(config.globalkeys,
 		end),
     awful.key({ modkey, "Control" }, "space", 
     function ()
-	    print(#tags)
-	    for i,k in pairs(tags) do
-		    print(k.name)
-	    end
-	    --bomicontrol("play_pause")
+	    --print(#tags)
+	    --for i,k in pairs(tags) do
+		    --print(k.name)
+	    --end
+	    bomicontrol("play_pause")
     end),
     awful.key({ modkey, "Control" }, "r", 
     function ()
@@ -1012,9 +938,10 @@ globalkeys = awful.util.table.join(config.globalkeys,
     awful.key({ modkey, altgr           }, "d",   function ()  
 	    local s = (capi.mouse.screen + 1) % (#capi.screen + 1)
 	    if s == 0 then
-		    s = s + 1
+		    s = 1
 	    end
-	    local screengeom = capi.screen[s].workarea
+	    local screen = capi.screen[s]
+	    local screengeom = screen.workarea
 	    moveMouse(math.floor(screengeom.x + screengeom.width / 2), math.floor(screengeom.y + screengeom.height / 2))                    
     end),
 	    awful.key({ modkey,           }, "Return", function () exec(terminal) end),
@@ -1110,7 +1037,8 @@ globalkeys = awful.util.table.join(config.globalkeys,
 
 	    clientkeys = awful.util.table.join(config.clientkeys,
 	    awful.key({ modkey,           }, "d",      function (c) 
-		    awful.client.movetoscreen(c)
+		    --awful.client.movetoscreen(c)
+		    sharedtags.viewonly(o,screen.selected)
 		    client.focus = c
 		    c:raise()
 	    end),
@@ -1180,10 +1108,29 @@ globalkeys = awful.util.table.join(config.globalkeys,
 	    end
     },
     { rule = { class = "TelegramDesktop"},
+    properties = { tag = tags[2]},
     callback = function(c)
 	    im.lastpidgin = c
+	    local telegramtimer = timer({ timeout = 5 })
+	    local function escape()
+		    if telegramtimer.data.source_id ~= nil then
+			    telegramtimer:stop()
+		    end
+		    telegramtimer = timer({ timeout = 5 })
+		    telegramtimer:connect_signal("timeout", function ()
+			    os.execute("xdotool key --clearmodifiers --window "..c.window.." Escape")
+			    telegramtimer:stop()
+		    end)
+		    telegramtimer:start()
+	    end
 	    c:connect_signal("unfocus",function(c)
 		    im.lastpidgin = c
+		    escape()
+	    end)
+	    c:connect_signal("focus",function(c)
+		    if telegramtimer.data.source_id ~= nil then
+			    telegramtimer:stop()
+		    end
 	    end)
 	    awful.client.setslave(c)
 	    c:connect_signal("property::name",function(c)
@@ -1205,23 +1152,84 @@ globalkeys = awful.util.table.join(config.globalkeys,
     --{rule = {class = "bomi"}, 
     --properties = {opacity = 1, floating = true, ontop = true} }
 	{ rule = { class = "bomi"},
-	properties = { opacity = 0.8, switchtotag = false, no_autofocus = true, floating = true, ontop = true, sticky = true  },
+	properties = { opacity = 0.8, switchtotag = false, no_autofocus = true, floating = true, }, --ontop = true, sticky = false  },
 	callback = function(c)
 
-		local scrgeom = capi.screen[capi.mouse.screen].geometry
-		local clgeom  = c:geometry({width = scrgeom.width/5, height = scrgeom.height/5})
-		local clgeom  = c:geometry({x = scrgeom.x + scrgeom.width - clgeom.width, y = scrgeom.y + scrgeom.height - clgeom.height}) 
+		local function set_geometry(c,s)
+			--c.screen = s
+			--print("set geometry")
+			local scrgeom = c.screen.workarea
+			local clgeom  = {}
+			if scrgeom.height < scrgeom.width then
+				clgeom  = {
+					width = scrgeom.width/5,
+					height = scrgeom.height/5,
+				  	x = scrgeom.x + scrgeom.width - scrgeom.width/5,
+					y = scrgeom.y + scrgeom.height - scrgeom.height/5,
+				}
+			else
+				clgeom  = {
+					width = scrgeom.height/5,
+					height = scrgeom.width/5,
+				  	x = scrgeom.x + scrgeom.width - scrgeom.height/5,
+					y = scrgeom.y + scrgeom.height - scrgeom.width/5,
+				}
+			end
+			if c.fullscreen then
+				oldgeom = clgeom
+			else
+				oldgeom = clgeom
+				c:geometry(clgeom)
+			end
+		end
+		set_geometry(c)
+		capi.screen.connect_signal("property::workarea",function()
+			set_geometry(c)
+		end)
+		--c:connect_signal("request::geometry",set_geometry)
+		--local scrgeom = capi.screen[capi.mouse.screen].geometry
+		--local clgeom  = c:geometry({width = scrgeom.width/5, height = scrgeom.height/5})
+		--local clgeom  = c:geometry({x = scrgeom.x + scrgeom.width - clgeom.width, y = scrgeom.y + scrgeom.height - clgeom.height}) 
+		local oldgeom = nil
+		c:connect_signal("tagged",function(c,t)
+			if t then
+				if #(t:clients()) == 1 then
+					c.opacity = 1
+					c.floating = false 
+					c.ontop = false
+					c.sticky = false
+					oldgeom = c:geometry()
+				end
+			end
+		end)
+		c:connect_signal("untagged",function(c,t)
+			if t then
+				if #(t:clients()) == 0 then
+					c.opacity = 0.8
+					c.floating = true
+				c.ontop = false
+					--c.ontop = true
+					--c.sticky = true
+					c:geometry(oldgeom)
+					oldgeom = nil
+				end
+			end
+		end)
 		c:connect_signal("property::fullscreen",function(c)
 			if c.fullscreen then
 				c.opacity = 1
 				c.floating = false 
 				c.ontop = false
-				c.sticky = false
+				--c.sticky = false
+				oldgeom = c:geometry()
 			else
 				c.opacity = 0.8
 				c.floating = true
+				c.ontop = false
 				--c.ontop = true
-				c.sticky = true
+				--c.sticky = true
+				c:geometry(oldgeom)
+				oldgeom = nil
 			end
 		end)
 	end
@@ -1340,6 +1348,11 @@ end
 		----end
 
 	--end)
+	awesome.connect_signal("systray::update",
+	function(t)
+		local num_entries = awesome.systray()
+		print(num_entries)
+	end)
 	client.connect_signal("unmanage",
 	function(c)
 		if c.fullscreen then
@@ -1666,17 +1679,13 @@ end
 	end
 
 	-- | Autostart | --
-	local start_on_thinkpad = {
-		"xset s on",
-		"xset +dpms",
-	}
 
-	--for i,k in pairs(config.autostart.execute) do
-		--os.execute(k)
-	--end
-	--for i,k in pairs(config.autostart.run_once) do
-		--run_once(k)
-	--end
+	for i,k in pairs(config.autostart.execute) do
+		os.execute(k)
+	end
+	for i,k in pairs(config.autostart.run_once) do
+		run_once(k)
+	end
 
 	--autostarttimer:stop()
 	local notif = naughty.notify({ preset = naughty.config.presets.critical,

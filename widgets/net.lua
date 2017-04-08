@@ -11,8 +11,12 @@ local netwidget ={}
 netwidget.shortcuts = {}
 
 local function worker(args)
+	local args = args or {}
+	local wired_interface = args.wired_interface or "enp5s0"
+	local wireless_interface = args.wireless_interface or "wlp3s0"
 	local wifitextlayout = wibox.layout.fixed.horizontal()
 	local backtext = wibox.container.constraint()
+	print(wired_interface)
 	local net_wireless = net_widgets.wireless({
 		interface="wlp0s18f2u3", 
 		widget = false, 
@@ -26,13 +30,13 @@ local function worker(args)
 			end
 		end
 	}) --, widget=wibox.layout.fixed.horizontal()})
-	if hostname == "jarvis" then
-		interface = "enp5s0"
-	else -- hostname == "Thinkpad" then
-		interface = "enp2s0"
-	end
+	--if hostname == "jarvis" then
+		--interface = "enp5s0"
+	--else -- hostname == "Thinkpad" then
+		--interface = "enp2s0"
+	--end
 	local net_wired = net_widgets.indicator({
-		interfaces  = {interface},
+		interfaces  = {wired_interface},
 		timeout     = 25,
 	})
 	wifitextlayout:add(widgets.display_l)

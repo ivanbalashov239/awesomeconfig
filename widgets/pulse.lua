@@ -9,6 +9,8 @@ local pulsewidget ={}
 pulsewidget.shortcuts = {}
 
 local function worker(args)
+	local args = args or {}
+	local cmd = args.cmd or "pacmd list-sinks | grep -i 'index: 1' -A 65 | sed -n -e '/base volume/d' -e '/volume:/p' -e '/muted:/p' -e '/device\\.string/p' -e '/index/p' -e '/device.string/p'"
 	--local pulse_widgets = apw({
 	--container = false,
 	--mixer1 = function () 
@@ -19,7 +21,8 @@ local function worker(args)
 	--end
 	--})
 	pulseaudio = lain.widget.pulseaudio({
-		cmd = "pacmd list-sinks | sed -n -e '/base volume/d' -e '/volume:/p' -e '/muted:/p' -e '/device\\.string/p' -e '/index/p' -e '/device.string/p'",
+		--cmd = "pacmd list-sinks | grep -i 'index: 1' -A 65 | sed -n -e '/base volume/d' -e '/volume:/p' -e '/muted:/p' -e '/device\\.string/p' -e '/index/p' -e '/device.string/p'",
+		cmd = cmd,
 		settings = function()
 			if volume_now.left ~= "N/A" and volume_now.right ~= "N/A" then
 				if volume_now.left == volume_now.right then
@@ -40,6 +43,7 @@ local function worker(args)
 		end
 	})
 	pulsebar = lain.widget.pulsebar({
+		cmd = cmd,
 		height = 25,
 		width = 10,
 		settings = function()

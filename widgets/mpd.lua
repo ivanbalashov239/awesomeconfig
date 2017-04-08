@@ -48,6 +48,7 @@ local function worker(args)
 		end
 	end)
 	--mpd_skip_timer:start()
+	mpdwidget.mpdwidget = wibox.widget.textbox()
 
 	local widget = lain.widget.mpd({
 		--notify = "off",
@@ -56,7 +57,7 @@ local function worker(args)
 			if mpd_now.state == "play" then
 				--print(mpd_now.title)
 				--mpd_skip_timer:emit_signal("timeout")
-				mpdwidget.mpdwidget:set_markup(" Title loading ")
+				widget:set_markup(" Title loading ")
 				mpd_now.artist = string.gsub(mpd_now.artist,"&quot;","'")
 				mpd_now.title = string.gsub(mpd_now.title,"&quot;","'")
 				mpd_now.artist = string.gsub(mpd_now.artist,"&amp;","and")
@@ -80,13 +81,13 @@ local function worker(args)
 				--nowplayingtext = utf8.sub(nowplayingtext, 0, 35)
 				--nowplayingtext = string.reverse(nowplayingtext)
 				--print(nowplayingtext)
-				mpdwidget.mpdwidget:set_markup(nowtext)
+				widget:set_markup(nowtext)
 
 				--play_pause_icon:set_image(beautiful.mpd_pause)
 				mpd_sepl:set_image(beautiful.mpd_sepl)
 				mpd_sepr:set_image(beautiful.mpd_sepr)
 			elseif mpd_now.state == "pause" then
-				mpdwidget.mpdwidget:set_markup(markup.font("Tamsyn 4", "") ..
+				widget:set_markup(markup.font("Tamsyn 4", "") ..
 				markup.font("Tamsyn 7", "MPD PAUSED") ..
 				markup.font("Tamsyn 10", ""))
 				--play_pause_icon:set_image(beautiful.mpd_play)
@@ -100,8 +101,8 @@ local function worker(args)
 			end
 		end
 	})
-	mpdwidget.update = widget.update
 	mpdwidget.mpdwidget = widget
+	mpdwidget.update = widget.update
 	mpdwidget.mpdwidget.state = ""
 	--print(mpdwidget.mpdwidget.state)
 	widget.nextchar = function()

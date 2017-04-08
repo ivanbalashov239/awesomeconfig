@@ -23,7 +23,9 @@ local function worker(args)
 		},
 		settings  = function()
 			--local home_used = tonumber(fs_info["/home used_p"]) or 0
-			widget:set_text(fs_now.used .. "%")
+			--widget:set_text(fs_now.used .. "%")
+			widget:set_text(fs_now.available_gb .. "GB")
+            --fs_now.available_gb = fs_info[partition .. " avail_gb"] or "N/A"
 		end,
 		showpopup = "off"
 	})
@@ -33,8 +35,8 @@ local function worker(args)
 		text = disk_type,
 		textboxes = {fs_widget.widget}
 	})
-	fswidget:connect_signal('mouse::enter', function () lain.widget.fs.show(0) end)
-	fswidget:connect_signal('mouse::leave', function () lain.widget.fs.hide() end)
+	fswidget:connect_signal('mouse::enter', function () fs_widget.show(0) end)
+	fswidget:connect_signal('mouse::leave', function () fs_widget.hide() end)
 	--local fsnotification = nil
 	--function fswidget:hide()
 		--if fsnotification ~= nil then

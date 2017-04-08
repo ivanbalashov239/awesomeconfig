@@ -83,12 +83,17 @@ config.panel.right = {
 	widgets.mpd(),
 	--widgets.taskwidget(),
 	widgets.weather(),
-	widgets.net(),
+	widgets.net({
+		wired_interface = host.wired_interface,
+		wireless_interface = host.wired_interface,
+	}),
 	widgets.pulse(),
+	awful.widget.only_on_screen (
 	widgets.cpu_tmp({
 		tempfile = host.cpu_tmpfile,
-	}),
-	widgets.mem(),
+	}),"primary"),
+	awful.widget.only_on_screen (
+	widgets.mem(),"primary"),
 	host.widgets.mail,
 	widgets.fs(),
 	host.widgets.battery,
@@ -105,55 +110,44 @@ function run_once(cmd)
 	awful.util.spawn_with_shell("pgrep -u $USER -x " .. findme .. " > /dev/null || (" .. cmd .. ")")
 end
 config.autostart = {}
-config.autostart.execute = {
+config.autostart.execute = awful.util.table.join(host.autostart.execute,{
+
 	--"pkill compton",
 	--"pkill pidgin; pidgin &",
 	"pkill kbdd; kbdd &",
-	"pkill xcape",
 	"setxkbmap 'my(dvp),my(rus)' &",
 	--"setxkbmap 'my(dvp),my(rus)' setxkbmap -option grp:caps_toggle,grp_led:caps -print | xkbcomp - $DISPLAY; xkbcomp $DISPLAY - | egrep -v 'group . = AltGr;' | xkbcomp - $DISPLAY &",
 	--"xkbcomp $HOME/.config/xkb/my $DISPLAY &",
 	"/home/ivn/scripts/trackpoint/trackpointkeys.sh normalmode &",
-	"xset s off",
-	"xset -dpms",
 	"xset m 1/2 4",
-	"pkill dropbox",
-	--"dropbox &",
-	"xinput disable 'SynPS/2 Synaptics TouchPad'",
 	"xrdb -merge ~/.Xresources &",
-	'xcape -t 1000 -e "Control_L=Tab;ISO_Level3_Shift=Multi_key"',
-	"xkbcomp $DISPLAY - | egrep -v 'group . = AltGr;' | xkbcomp - $DISPLAY"
-}
+	'pkill xcape; xcape -t 1000 -e "Control_L=Tab;ISO_Level3_Shift=Multi_key"',
+	"xkbcomp $DISPLAY - | egrep -v 'group . = AltGr;' | xkbcomp - $DISPLAY"}
+)
 local xkbtimer = gears.timer({ timeout = 2000 })
 xkbtimer:connect_signal("timeout", function ()
 	awful.util.spawn_with_shell("xkbcomp $DISPLAY - | egrep -v 'group . = AltGr;' | xkbcomp - $DISPLAY")
 end)
-config.autostart.run_once = {
-	"linconnect-server &",
+local locker = '/home/ivn/scripts/run_slimlock_onstart.sh'
+local xautolock     = "xautolock -locker '"..locker.."' -nowlocker '"..locker.."' -time 10 &"
+local locknow       = "xautolock -locknow &"
+local browser       = "firefox"
+config.autostart.run_once = awful.util.table.join(host.autostart.run_once,{
+
+	--"linconnect-server &",
 	--"kbdd",
 	"mpd /home/ivn/.config/mpd/mpd.conf",
 	--"mpdscribble",
-	"udiskie --tray &",
-	--"nm-applet",
-	--"pa-applet",
-	"qbittorrent --style=gtk+",
-	"redshiftgui",
-	--"indicator-kdeconnect",
-	"dropbox",
-	--"thunderbird",
-	--"parcellite",
-	"pidgin",
 	"env QT_IM_MODULE=xim telegram-desktop",
 	--"telegram-desktop",
 	"compton --config /home/ivn/.config/compton.conf -b &",
 	--"pactl load-module module-loopback source=2 sink=0",
 	xautolock,
-	browser,
 	"perl /usr/share/cantata/scripts/cantata-dynamic start",
 	xkbtimer
 	--"evolution",
 	--"goldendict --style gtk+",
-}
+})
 
 
 config.mpdwidget = widgets.mpd.mpdwidget
@@ -200,7 +194,7 @@ config.globalkeys = awful.util.table.join(
 	    awful.key({ }, "XF86Explorer",      function () exec("systemctl suspend") end),
 	    awful.key({ }, "XF86PowerOff",      
 	    function ()
-		    exec("systemctl suspend")
+		    os.execute("systemctl suspend")
 		    --exec(locknow)
 		    --bomicontrol("pause")
 	    end),
@@ -511,27 +505,6 @@ config.rules = {
 	{ rule = { class = "Exe"}, properties = {floating = true} },
 	{ rule = { class = "Plugin-container" },
 	properties = { floating = true, focus = true} },
-	{ rule = { class = "bomi"},
-	properties = { opacity = 0.8, switchtotag = false, no_autofocus = true, floating = true, ontop = true, sticky = true  },
-	callback = function(c)
-
-		local scrgeom = capi.screen[capi.mouse.screen].geometry
-		local clgeom  = c:geometry({width = scrgeom.width/5, height = scrgeom.height/5})
-		local clgeom  = c:geometry({x = scrgeom.x + scrgeom.width - clgeom.width, y = scrgeom.y + scrgeom.height - clgeom.height}) 
-		c:connect_signal("property::fullscreen",function(c)
-			if c.fullscreen then
-				c.opacity = 1
-				c.floating = false 
-				c.ontop = false
-				c.sticky = false
-			else
-				c.opacity = 0.8
-				c.floating = true
-				--c.ontop = true
-				c.sticky = true
-			end
-		end)
-	end}
 
 }
 

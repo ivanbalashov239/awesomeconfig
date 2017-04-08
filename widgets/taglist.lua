@@ -21,44 +21,6 @@ local capi = {
 local taglist ={}
 taglist.shortcuts = {}
 taglist.tags={}
---myiconlist         = {}
---myiconlist.buttons = awful.util.table.join(
---awful.button({ }, 1, function (c)
---if c == client.focus then
---c.minimized = true
---else
---c.minimized = false
---if not c:isvisible() then
---awful.tag.viewonly(c:tags()[1])
---end
---client.focus = c
---c:raise()
---end
---end),
---awful.button({ }, 12, function (c)
---c:kill()
---end),
---awful.button({ }, 2, function (c)
---c:kill()
---end),
---awful.button({ }, 3, function ()
---if instance then
---instance:hide()
---instance = nil
---else
---instance = awful.menu.clients({
---theme = { width = 250 }
---})
---end
---end),
---awful.button({ }, 4, function ()
---awful.client.focus.byidx(1)
---if client.focus then client.focus:raise() end
---end),
---awful.button({ }, 5, function ()
---awful.client.focus.byidx(-1)
---if client.focus then client.focus:raise() end
---end))
 mytaglist         = {}
 mytaglist.buttons = awful.util.table.join(
 awful.button({ }, 1, awful.tag.viewonly),
@@ -134,6 +96,53 @@ local function worker(args)
 		--print("tags "..#taglist.tags)
 		--print("get_tags "..#taglist:get_tags())
 		for i, o in ipairs(taglist:get_tags()) do
+			local myiconlist         = {}
+			myiconlist.buttons = awful.util.table.join(
+			awful.button({ }, 1, function (c)
+				if c == client.focus and c.screen == screen then
+					c.minimized = true
+				else
+					c.minimized = false
+					if not c:isvisible() or c.screen ~= screen then
+						--awful.tag.viewonly(c:tags()[1])
+						sharedtags.viewonly(o,screen)
+						o:view_only()
+					end
+					client.focus = c
+					c:raise()
+				end
+			end),
+			awful.button({ }, 12, function (c)
+				c:kill()
+			end),
+			awful.button({ }, 2, function (c)
+				c:kill()
+			end),
+			awful.button({ }, 3, function (c)
+				if instance then
+					instance:hide()
+					instance = nil
+				else
+					instance = awful.menu.clients({
+						theme = { width = 250 }
+					})
+				end
+			end),
+			awful.button({ }, 4, function ()
+				taglist.nexttag({
+					screen = screen
+				})
+				--awful.client.focus.byidx(1)
+				if client.focus then client.focus:raise() end
+			end),
+			awful.button({ }, 5, function ()
+				taglist.prevtag({
+					screen = screen
+				})
+				--awful.client.focus.byidx(-1)
+				if client.focus then client.focus:raise() end
+			end)
+			)
 
 			--print(o.name)
 			number = number + 1
@@ -172,7 +181,7 @@ local function worker(args)
 						l:add(widgets.display_r)
 					end
 					--l:add(taglist.tasklist({tag=o, screen = screen, disable_text=true}))
-					l:add(awful.widget.tasklist(screen, matchrules(o),  myiconlist.buttons, nil, taglist.get_tasklist_update(o), fixed.horizontal()))
+					l:add(awful.widget.tasklist(screen, matchrules(o),  myiconlist.buttons, nil, taglist.get_tasklist_update(o,screen), fixed.horizontal()))
 					--l:add(awful.widget.tasklist(screen,matchrules(o)))
 					--awful.widget.taglist.filter.all
 					l:add(widgets.spr)
@@ -237,7 +246,7 @@ function compare_by_geometry(a,b)
 	end
 end
 --function list_update(w, objects, label,screen)
-function taglist.get_tasklist_update(tag)
+function taglist.get_tasklist_update(tag,screen)
 	--oldprint(tag)
 	--print("gettasklist_update")
 	return function (w, buttons, label, data, objects)
@@ -306,7 +315,7 @@ function taglist.get_tasklist_update(tag)
 					tbl = tbl,
 				}
 			end
-			if tag.selected then
+			if tag.selected and tag.screen == screen then
 				if (o == capi.client.focus) then
 					bgb:set_widget(mfoc)
 				else
