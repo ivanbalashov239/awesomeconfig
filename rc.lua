@@ -212,7 +212,7 @@ screen.connect_signal("property::geometry", set_wallpaper)
 --end
 
 -- | Tags | --
-tagnames = { "all", "im"}
+--tagnames = { "all", "im"}
 local tags = sharedtags({
     { name = "all",
     layout      = awful.layout.suit.max,
@@ -229,9 +229,9 @@ local tags = sharedtags({
     --{ layout = awful.layout.layouts[2] },
     --{ screen = 2, layout = awful.layout.layouts[2] }
 })
-tags[2].hidden = true
-tags[1].hint = "a"
-tags[2].hint = "i"
+tags["im"].hidden = true
+tags["all"].hint = "a"
+tags["im"].hint = "i"
 widgets.taglist.tags = tags
 --tyrannical.tags = {
     --{
@@ -955,7 +955,7 @@ globalkeys = awful.util.table.join(config.globalkeys,
 	    awful.key({ modkey,    }, "i", im),
 	    awful.key({ modkey, "Control" }, "i", 
 	    function ()
-		    local tag = tags[2]
+		    local tag = tags["im"]
 		    awful.tag.viewonly(tag)
 		    hints.focus(1)
 	    end),
@@ -991,7 +991,7 @@ globalkeys = awful.util.table.join(config.globalkeys,
 		    local t = awful.screen.focused().selected_tag
 		    if not t then return end
 		    --print(t.name)
-		    if t == tags[1] or t.hidden then
+		    if t == tags["all"] or t.hidden then
 
 			    --print(t.name)
 			    return
@@ -1001,14 +1001,14 @@ globalkeys = awful.util.table.join(config.globalkeys,
 			    local clients = t:clients()
 			    for _,c in pairs(clients)do
 				    if #(c:tags()) == 1 then
-					    c:tags({tags[1]})
+					    c:tags({tags["all"]})
 				    end
 			    end
 			    --t:clients({})
 			    --print(t.name)
 			    --t:delete()
-			    t:delete({fallback_tag=tags[1], force=true})
-			    tags[1]:view_only()
+			    t:delete({fallback_tag=tags["all"], force=true})
+			    tags["all"]:view_only()
 			    --local tag = awful.tag.selected()
 			    --local tag = mouse.screen.selected_tag
 			    --local clients = tag:clients()
@@ -1105,7 +1105,7 @@ globalkeys = awful.util.table.join(config.globalkeys,
 	    end
     },
     { rule = { class = "TelegramDesktop"},
-    properties = { tag = tags[2]},
+    properties = { tag = tags["im"], ontop = true},
     callback = function(c)
 	    im.lastpidgin = c
 	    local telegramtimer = timer({ timeout = 5 })
@@ -1140,16 +1140,16 @@ globalkeys = awful.util.table.join(config.globalkeys,
     end
     },
     { rule = { class = "Pidgin", role = "buddy_list"},
-    properties = { tag = tags[2], switchtotag = false, no_autofocus = true }},
+    properties = { tag = tags["im"], switchtotag = false, no_autofocus = true }},
     { rule = { class = "Pidgin", role = "conversation"},
-    properties = { tag = tags[2], switchtotag = false, no_autofocus = true },
+    properties = { tag = tags["im"], switchtotag = false, no_autofocus = true },
     callback = awful.client.setslave },
     {rule = {role = "DROPDOWN"}, 
     properties = {opacity = 0.8}},
     --{rule = {class = "bomi"}, 
     --properties = {opacity = 1, floating = true, ontop = true} }
 	{ rule = { class = "bomi"},
-	properties = { opacity = 0.8, switchtotag = false, no_autofocus = true, floating = true, }, --ontop = true, sticky = false  },
+	properties = { opacity = 0.8, switchtotag = false, no_autofocus = true, floating = true, ontop = true, sticky = false  },
 	callback = function(c)
 
 		local function set_geometry(c,s)
@@ -1206,7 +1206,7 @@ globalkeys = awful.util.table.join(config.globalkeys,
 					c.floating = true
 				c.ontop = false
 					--c.ontop = true
-					--c.sticky = true
+					c.sticky = true
 					c:geometry(oldgeom)
 					oldgeom = nil
 				end
@@ -1224,7 +1224,7 @@ globalkeys = awful.util.table.join(config.globalkeys,
 				c.floating = true
 				c.ontop = false
 				--c.ontop = true
-				--c.sticky = true
+				c.sticky = true
 				c:geometry(oldgeom)
 				oldgeom = nil
 			end
@@ -1354,8 +1354,8 @@ end
 		for i,t in pairs(c.tags(c)) do
 			--print(i.." "..t.name)
 			del = true
-			for _,n in pairs(tagnames) do
-				if t.name == n then
+			for _,n in pairs(tags) do
+				if t.name == n.name then
 					del = false
 				end
 			end
@@ -1367,6 +1367,46 @@ end
 
 	end)
 
+	tags["im"]:connect_signal("tagged",function(t,c)
+		if not (c.class ==  "TelegramDesktop" or c.class == "Pidgin" )then
+			local tags= c:tags()
+			for i,k in ipairs(tags) do
+				if k == tags["im"] then
+					table.remove(tags,i)
+				end
+			end
+			c:tags(tags)
+		end
+	end)
+	tags["all"]:connect_signal("tagged", function (t,c)
+		if c and c.type == "normal" or not c.floating then
+			local tags = c:tags()
+			for i,k in ipairs(tags)do
+				if not (k.name == "all") and #(k:clients()) == 1 or k == tags["im"] then
+					print(k.name)
+					return
+				end
+			end
+			local tag = awful.tag.add(c.class, { volatile = true, 
+			--selected = true,
+			layout = awful.layout.suit.max,
+			screen = c.screen})
+			tag:clients({c})
+			tag:connect_signal("tagged",function(cl)
+				print(cl.class)
+				if cl and cl.type == "normal" or not cl.floating then
+					tag:clients({c})
+				end
+			end)
+			local clients = t:clients()
+			for i,k in ipairs(clients)do
+				if k == c then
+					table.remove(clients,i)
+				end
+			end
+			t:clients(clients)
+		end
+	end)
 	client.connect_signal("manage", function (c, startup)
 		c:connect_signal("mouse::enter", function(c)
 			if awful.layout.get(c.screen) ~= awful.layout.suit.magnifier
@@ -1524,21 +1564,21 @@ end
 		end)
 	end)
 
-	client.connect_signal("manage", function(c) 
-		taglist = tags
-		tag = taglist[1]
-		for i,t in pairs(c.tags(c)) do
-			if t == taglist[2] then
-				--print(t.name)
-				return true
-			end
-			if t == tag then
-				return true
-			end
-		end
-		awful.client.toggletag(tag,c)
-		return true
-	end)
+	--client.connect_signal("manage", function(c) 
+		--taglist = tags
+		--tag = taglist[1]
+		--for i,t in pairs(c.tags(c)) do
+			--if t == taglist[2] then
+				----print(t.name)
+				--return true
+			--end
+			--if t == tag then
+				--return true
+			--end
+		--end
+		--awful.client.toggletag(tag,c)
+		--return true
+	--end)
 	--client.connect_signal("unfocus", function(c) 
 	--c.border_color = beautiful.border_normal 
 	----	if awful.rules.match(c, {class = "Firefox"}) then  	end
@@ -1591,11 +1631,11 @@ end
 	--c:geometry( {y = 22 } )
 	--end
 	--end)
-	tag.connect_signal("property::selected", function(t)
-		if t.name == tagnames[2] and not t.selected and #awful.tag.selectedlist() == 0 then
-			awful.tag.viewonly(tags[1])
-		end
-	end)
+	--tag.connect_signal("property::selected", function(t)
+		--if t.name == tagnames[2] and not t.selected and #awful.tag.selectedlist() == 0 then
+			--awful.tag.viewonly(tags[1])
+		--end
+	--end)
 
 	function brightnessdec() 
 		for i,k in pairs(screen[mouse.screen].outputs) do
