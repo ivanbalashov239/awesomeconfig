@@ -1101,8 +1101,9 @@ globalkeys = awful.util.table.join(config.globalkeys,
 		    keys = clientkeys,
 		    buttons = clientbuttons },
 		    callback = function(c)
-			    for i,k in pairs(c:tags()) do
-				    print(k.hint)
+			    local thistags = c:tags()
+			    if #thistags == 0 then
+				    c:tags({tags["all"]})
 			    end
 		    end
 	    },
