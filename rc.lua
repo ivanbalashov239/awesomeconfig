@@ -1091,15 +1091,21 @@ globalkeys = awful.util.table.join(config.globalkeys,
 
 	    --awful.rules.rules = awful.util.table.join(config.rules,
 	    awful.rules.rules = concat_rules({config.rules,{
-	    { rule = { },
-	    properties = { border_width = beautiful.border_width,
-	    tag = tags["all"],
-	    border_color = beautiful.border_normal,
-	    focus = awful.client.focus.filter,
-	    size_hints_honor = false,
-	    raise = true,
-	    keys = clientkeys,
-	    buttons = clientbuttons } },
+		    { rule = { },
+		    properties = { border_width = beautiful.border_width,
+		    --tag = tags["all"],
+		    border_color = beautiful.border_normal,
+		    focus = awful.client.focus.filter,
+		    size_hints_honor = false,
+		    raise = true,
+		    keys = clientkeys,
+		    buttons = clientbuttons },
+		    callback = function(c)
+			    for i,k in pairs(c:tags()) do
+				    print(k.hint)
+			    end
+		    end
+	    },
 	    { rule = { class = "Pidgin", role = "conversation"},
 	    callback = function(c)
 		    if not (c.name == "Dusi") then
@@ -1136,6 +1142,7 @@ globalkeys = awful.util.table.join(config.globalkeys,
 	    end)
 	    awful.client.setslave(c)
 	    c:connect_signal("property::name",function(c)
+		    print("|"..c.name.."|")
 		    if c.name:find("Telegram ") then
 			    c.urgent = true
 		    else
@@ -1237,6 +1244,44 @@ globalkeys = awful.util.table.join(config.globalkeys,
 				oldgeom = nil
 			end
 		end)
+		dbus.request_name("session", "org.mpris.MediaPlayer2")
+		dbus.add_match("session", "interface='org.freedesktop.DBus.Properties',member='PropertiesChanged'")
+		dbus.connect_signal("org.freedesktop.DBus.Properties", function(...)
+			local data = {...}
+			--for i,k in pairs(data[3]) do
+			--print(i)
+			--if type(k) == "string" then
+			--print(k)
+			--end
+			--end
+			--print(data[3].Metadata)
+			local state = data[3].PlaybackStatus
+			c.state = state
+			if state == "Playing" then
+				widgets.mpd.pauseif()
+			elseif state == "Paused" then
+				widgets.mpd.playif()
+			end
+			--for i,str in pairs(data) do
+			--print(i.." "..tostring(str))
+			--if type(str) == "table" then
+			--for k,n in pairs(str) do
+			--print(k.." "..tostring(n))
+			--end
+			--end
+			--end
+		end
+		)
+		capi.client.connect_signal("focus",function(cl)
+			local cur_screen = cl.screen
+			local cur_tag = cur_screen.selected_tag
+			c:tags({cur_tag})
+			--c.ontop = true
+		end)
+		client.connect_signal("unmanage",
+		function(c)
+			widgets.mpd.playif()
+		end)
 	end
 }
 }}
@@ -1249,47 +1294,35 @@ local function timemute()
 end
 
 
-lastmpdstatus = "N/A"
-local function playif()
-	if lastmpdstatus and lastmpdstatus == "play" then
-		widgets.mpd.play()
-	end
-end
-local function pauseif()
-	lastmpdstatus = mpdwidget.state
-	widgets.mpd.pause()
-end
 
-client.connect_signal("unmanage",
-function(c)
-	if c.class then 
-		if c.class == "bomi" then
-			playif()
-		end
-	end
-end
-)
 
-dbus.request_name("session", "org.mpris.MediaPlayer2")
-dbus.add_match("session", "interface='org.freedesktop.DBus.Properties',member='PropertiesChanged'")
-dbus.connect_signal("org.freedesktop.DBus.Properties", function(...)
-	local data = {...}
-	local status = data[3].PlaybackStatus
-	if status == "Playing" then
-		pauseif()
-	elseif status == "Paused" then
-		playif()
-	end
-	--for i,str in pairs(data) do
-	--print(i.." "..tostring(str))
-	--if type(str) == "table" then
-	--for k,n in pairs(str) do
-	--print(k.." "..tostring(n))
+--dbus.request_name("session", "org.mpris.MediaPlayer2")
+--dbus.add_match("session", "interface='org.freedesktop.DBus.Properties',member='PropertiesChanged'")
+--dbus.connect_signal("org.freedesktop.DBus.Properties", function(...)
+	--local data = {...}
+	----for i,k in pairs(data[3]) do
+		----print(i)
+		----if type(k) == "string" then
+			----print(k)
+		----end
+	----end
+	----print(data[3].Metadata)
+	--local status = data[3].PlaybackStatus
+	--if status == "Playing" then
+		--pauseif()
+	--elseif status == "Paused" then
+		--playif()
 	--end
-	--end
-	--end
-end
-)
+	----for i,str in pairs(data) do
+	----print(i.." "..tostring(str))
+	----if type(str) == "table" then
+	----for k,n in pairs(str) do
+	----print(k.." "..tostring(n))
+	----end
+	----end
+	----end
+--end
+--)
 
 local function checkclass(class)
 	local table = {"Virtualbox","Bomi"}
@@ -1313,7 +1346,7 @@ local function remove_client(tabl, c)
 
 			if checkclass(c.class) then
 				timemute()
-				playif()
+				widgets.mpd.playif()
 			end
 		end             
 	end
@@ -1329,7 +1362,7 @@ end
 				--naughty.suspend()
 				os.execute("xautolock -disable")
 				if checkclass(c.class) then
-					pauseif()
+					widgets.mpd.pauseif()
 					timemute()
 				end
 			end
@@ -1387,7 +1420,6 @@ end
 		end
 	end)
 	tags["all"]:connect_signal("tagged", function (t,c)
-		--print(c)
 		if c and c.type == "normal" and not c.floating and not c.fullscreen then
 			--print(c.floating)
 			--print(c.sticky)
@@ -1406,6 +1438,7 @@ end
 			capi.client.focus = c
 			tag:connect_signal("tagged",function(t,cl)
 				if cl and cl.type == "normal" and not cl.floating and not cl.fullscreen then
+					--print(cl)
 					--print(cl.class)
 					--tag:clients({c})
 					cl:tags({tags["all"]})

@@ -63,6 +63,15 @@ end)
 function taglist:get_tags()
 	return taglist.tags
 end
+local function check_tag(tag)
+	local n = 0
+	for _,c in ipairs(tag:clients()) do
+		if not c.floating and c.type == "normal" then
+			n = n + 1
+		end
+	end
+	return n == 1
+end
 
 local function worker(args)
 	local args = args or {}
@@ -87,11 +96,12 @@ local function worker(args)
 				return false
 			end
 		end
+
 		local function tagsort(tags)
 			local oneclients = {}
 			local other = {}
 			for i,k in ipairs(tags) do
-				if #(k:clients()) == 1 then
+				if check_tag(k) then
 					table.insert(oneclients,k)
 				else
 					table.insert(other,k)
@@ -234,12 +244,8 @@ local function worker(args)
 
 				end
 				textl:reset()
-				if #(o:clients()) > 1 then
-					--if #(tag:clients()) > 1 then
-					--print("added text label")
-					--l:add(widgets.display_l)
+				if not check_tag(o)then
 					textl:add(textwidget)
-					--l:add(widgets.display_r)
 				end
 
 				local text, bg, bg_image, icon = label(o)
@@ -254,7 +260,11 @@ local function worker(args)
 				tb:set_text(o.hint or o.name or "no_hint")
 				--bgb:set_bgimage(bg_image)
 				ib:set_image(icon)
-				w:add(bgb)
+				if o.name and o.name == "all" and #(o:clients()) == 0 then
+				else
+					w:add(bgb)
+				end
+
 			end
 		end
 
@@ -404,7 +414,19 @@ function taglist.bydirection(dir, c, all)
 		local tag = sel.screen.selected_tag
 		local id = awful.tag.getidx(tag)
 		--if id  == 1 then
-		if #(tag:clients()) == 1 then
+		local cltbl = awful.client.visible(sel.screen)
+		local geomtbl = {}
+		for i,cl in ipairs(cltbl) do
+			geomtbl[i] = cl:geometry()
+		end
+
+		local target = awful.util.get_rectangle_in_direction(dir, geomtbl, sel:geometry())
+
+		-- If we found a client to focus, then do it.
+		if target then
+			capi.client.focus = cltbl[target]
+		end
+		if sel == capi.client.focus and check_tag(tag) then
 			--local tag
 			local newtag = nil
 			if dir == "left" then
@@ -422,51 +444,6 @@ function taglist.bydirection(dir, c, all)
 				sharedtags.viewonly(newtag)
 				newtag:view_only()
 				return
-			end
-		--if tag == taglist.tags[1] then
-			--local clientlist = tag:clients()
-			--local clid = nil
-			--for i,cl in pairs(clientlist) do
-				--if cl == sel then
-					--clid = i
-					--break
-				--end
-			--end
-			--local number = nil
-			--if dir == "left" then
-				--number = -1
-			--elseif dir == "right" then
-				--number = 1
-			--end
-			--if number then
-				--clid = clid + number
-				--while clientlist[clid] do
-					--if not clientlist[clid].minimized or all then
-						--if (clid > 0) and (clid <= #clientlist) then
-							--local target = clientlist[clid]
-							---- If we found a client to focus, then do it.
-							--if target then
-								--capi.client.focus = target
-								--break
-							--end
-						--end
-					--end
-					--clid = clid + number
-				--end
-			--end
-
-		else
-			local cltbl = awful.client.visible(sel.screen)
-			local geomtbl = {}
-			for i,cl in ipairs(cltbl) do
-				geomtbl[i] = cl:geometry()
-			end
-
-			local target = awful.util.get_rectangle_in_direction(dir, geomtbl, sel:geometry())
-
-			-- If we found a client to focus, then do it.
-			if target then
-				capi.client.focus = cltbl[target]
 			end
 		end
 	end
@@ -730,7 +707,7 @@ function taglist.newtag(args)
 					if only then
 						local tags = j:tags()
 						for i,k in ipairs(tags)do
-							if #(k:clients())==1 then
+							if check_tag(k) then
 								k:clients({})
 							--if k == taglist.tags[1] then
 								--table.remove(tags,i)
@@ -753,7 +730,9 @@ function taglist.togglefromtag(client,tag)
 	local tag = tag or taglist.tags["all"]
 	local tags = client:tags()
 	for i,k in ipairs(tags)do
-		if #(k:clients()) == 1 then
+		print(k.hint)
+		if check_tag(k) then
+			print("toggle tag")
 			--table.remove(tags,i)
 			if #tags ~= 1 then
 				--client:tags({tag})

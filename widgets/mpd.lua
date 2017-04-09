@@ -255,5 +255,15 @@ function mpdwidget.mpriscontrol(str)
 	os.execute(command)
 	--awful.spawn.with_shell(command)
 end
+mpdwidget.lastmpdstatus = "N/A"
+function mpdwidget.playif()
+	if mpdwidget.lastmpdstatus and mpdwidget.lastmpdstatus == "play" then
+		mpdwidget.play()
+	end
+end
+function mpdwidget.pauseif()
+	mpdwidget.lastmpdstatus = mpdwidget.mpdwidget.state
+	mpdwidget.pause()
+end
 
 return setmetatable(mpdwidget, {__call = function(_,...) return worker(...) end})
