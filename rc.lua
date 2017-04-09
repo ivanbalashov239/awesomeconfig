@@ -816,7 +816,7 @@ globalkeys = awful.util.table.join(config.globalkeys,
     awful.key({ altgr }, "r", 
     function()
 	    os.execute("python3 /home/ivn/scripts/rate_current_mpd_song.py set rating 6")
-	    mpd_next()
+	    widgets.mpd.next()
     end),
     awful.key({ modkey, altgr }, "r", 
     function()
@@ -988,6 +988,7 @@ globalkeys = awful.util.table.join(config.globalkeys,
 		    widgets.taglist.togglefromtag()
 	    end),
 	    awful.key({ modkey            }, "x",      function ()
+		    local cf = client.focus
 		    local t = awful.screen.focused().selected_tag
 		    if not t then return end
 		    --print(t.name)
@@ -1008,7 +1009,10 @@ globalkeys = awful.util.table.join(config.globalkeys,
 			    --print(t.name)
 			    --t:delete()
 			    t:delete({fallback_tag=tags["all"], force=true})
-			    tags["all"]:view_only()
+			    client.focus = cf
+			    client.focus:tags()[1]:view_only()
+			    client.focus = cf
+			    --tags["all"]:view_only()
 			    --local tag = awful.tag.selected()
 			    --local tag = mouse.screen.selected_tag
 			    --local clients = tag:clients()
@@ -1089,6 +1093,7 @@ globalkeys = awful.util.table.join(config.globalkeys,
 	    awful.rules.rules = concat_rules({config.rules,{
 	    { rule = { },
 	    properties = { border_width = beautiful.border_width,
+	    tag = tags["all"],
 	    border_color = beautiful.border_normal,
 	    focus = awful.client.focus.filter,
 	    size_hints_honor = false,
@@ -1145,9 +1150,12 @@ globalkeys = awful.util.table.join(config.globalkeys,
     properties = { tag = tags["im"], switchtotag = false, no_autofocus = true },
     callback = awful.client.setslave },
     {rule = {role = "DROPDOWN"}, 
-    properties = {opacity = 0.8}},
-    --{rule = {class = "bomi"}, 
-    --properties = {opacity = 1, floating = true, ontop = true} }
+    properties = {opacity = 0.8},
+    callback = function(c)
+	    awesome.connect_signal("exit",function()
+		    c:kill()
+	    end)
+    end},
 	{ rule = { class = "bomi"},
 	properties = { opacity = 0.8, switchtotag = false, no_autofocus = true, floating = true, ontop = true, sticky = false  },
 	callback = function(c)
@@ -1379,11 +1387,13 @@ end
 		end
 	end)
 	tags["all"]:connect_signal("tagged", function (t,c)
-		if c and c.type == "normal" or not c.floating then
+		--print(c)
+		if c and c.type == "normal" and not c.floating and not c.fullscreen then
+			--print(c.floating)
+			--print(c.sticky)
 			local tags = c:tags()
 			for i,k in ipairs(tags)do
 				if not (k.name == "all") and #(k:clients()) == 1 or k == tags["im"] then
-					print(k.name)
 					return
 				end
 			end
@@ -1392,10 +1402,13 @@ end
 			layout = awful.layout.suit.max,
 			screen = c.screen})
 			tag:clients({c})
-			tag:connect_signal("tagged",function(cl)
-				print(cl.class)
-				if cl and cl.type == "normal" or not cl.floating then
-					tag:clients({c})
+			tag:view_only()
+			capi.client.focus = c
+			tag:connect_signal("tagged",function(t,cl)
+				if cl and cl.type == "normal" and not cl.floating and not cl.fullscreen then
+					--print(cl.class)
+					--tag:clients({c})
+					cl:tags({tags["all"]})
 				end
 			end)
 			local clients = t:clients()

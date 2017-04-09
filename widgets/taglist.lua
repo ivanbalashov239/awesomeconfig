@@ -87,15 +87,40 @@ local function worker(args)
 				return false
 			end
 		end
+		local function tagsort(tags)
+			local oneclients = {}
+			local other = {}
+			for i,k in ipairs(tags) do
+				if #(k:clients()) == 1 then
+					table.insert(oneclients,k)
+				else
+					table.insert(other,k)
+				end
+			end
+			local result = {}
+			for i,k in ipairs(oneclients) do
+				table.insert(result,k)
+			end
+			for i,k in ipairs(other) do
+				table.insert(result,k)
+			end
+			return result
+			--return oneclients, other
+		end
 		-- update the widgets, creating them if needed
 		w:reset()
 		--w:add(awful.widget.tasklist(screen))
-		local number = -1
 		--oldprint(type(objects))
 		--print(taglist.tags == taglist:get_tags())
 		--print("tags "..#taglist.tags)
 		--print("get_tags "..#taglist:get_tags())
-		for i, o in ipairs(taglist:get_tags()) do
+		local tags = tagsort(taglist:get_tags())
+		taglist.tags = tags
+		--print(#tags)
+		--table.sort(tags,tagsort)
+		--print(#tags)
+		for i, o in ipairs(tags) do
+			--print(o.hint:upper(), 10)
 			local myiconlist         = {}
 			myiconlist.buttons = awful.util.table.join(
 			awful.button({ }, 1, function (c)
@@ -145,10 +170,8 @@ local function worker(args)
 			)
 
 			--print(o.name)
-			number = number + 1
 			if not o.hidden and o.activated then
 				--break
-				--number = number + 1
 				local cache = data[o]
 				local ib, tb, bgb, m, l
 				if cache then
@@ -156,15 +179,22 @@ local function worker(args)
 					tb = cache.tb
 					bgb = cache.bgb
 					m   = cache.m
+					textwidget = cache.textwidget
+					textl = cache.textl
 				else
 					ib = wibox.widget.imagebox()
 					tb = wibox.widget.textbox()
-					textwidget = wibox.container.background()
-					textwidget:set_bgimage(beautiful.widget_display)
-					textwidget:set_widget(tb)
+					textwidget = widgets({
+						textboxes = {tb}
+					})
+					--textwidget = wibox.container.background()
+					--textwidget:set_bgimage(beautiful.widget_display)
+					--textwidget:set_widget(tb)
 					bgb = wibox.container.background()
 					m = wibox.container.margin(tb, 4, 4)
 					l = wibox.layout.fixed.horizontal()
+					textl = wibox.layout.fixed.horizontal()
+
 
 					-- All of this is added in a fixed widget
 					l:fill_space(true)
@@ -172,14 +202,7 @@ local function worker(args)
 					l:add(widgets.spr)
 					l:add(widgets.spr)
 					--print(o.name)
-					--print("number "..number)
-					if number > 0 and #(o:clients()) > 1 then
-				--if #(tag:clients()) > 1 then
-						--print("added text label")
-						l:add(widgets.display_l)
-						l:add(textwidget)
-						l:add(widgets.display_r)
-					end
+					l:add(textl)
 					--l:add(taglist.tasklist({tag=o, screen = screen, disable_text=true}))
 					l:add(awful.widget.tasklist(screen, matchrules(o),  myiconlist.buttons, nil, taglist.get_tasklist_update(o,screen), fixed.horizontal()))
 					--l:add(awful.widget.tasklist(screen,matchrules(o)))
@@ -205,7 +228,18 @@ local function worker(args)
 						bgb = bgb,
 						tbm = tbm,
 						ibm = ibm,
+						textwidget = textwidget,
+						textl = textl
 					}
+
+				end
+				textl:reset()
+				if #(o:clients()) > 1 then
+					--if #(tag:clients()) > 1 then
+					--print("added text label")
+					--l:add(widgets.display_l)
+					textl:add(textwidget)
+					--l:add(widgets.display_r)
 				end
 
 				local text, bg, bg_image, icon = label(o)
@@ -215,7 +249,7 @@ local function worker(args)
 				end
 				--bgb:set_bg(bg)
 				--if type(bg_image) == "function" then
-					--bg_image = bg_image(tb,o,m,objects,i)
+				--bg_image = bg_image(tb,o,m,objects,i)
 				--end
 				tb:set_text(o.hint or o.name or "no_hint")
 				--bgb:set_bgimage(bg_image)
@@ -223,6 +257,7 @@ local function worker(args)
 				w:add(bgb)
 			end
 		end
+
 	end
 	--return awful.widget.taglist(screen, awful.widget.taglist.filter.all, mytaglist.buttons)
 	--local taglist = awful.widget.taglist(screen, awful.widget.taglist.filter.all, mytaglist.buttons, {}, taglist_update)
@@ -231,7 +266,7 @@ local function worker(args)
 end
 function get_clients_by_geometry(tag)
 	local clients = tag:clients()
-	if tag == taglist.tags[1] then
+	if tag == taglist.tags["all"] then
 		return clients
 	end
 	table.sort(clients,compare_by_geometry)
@@ -369,37 +404,56 @@ function taglist.bydirection(dir, c, all)
 		local tag = sel.screen.selected_tag
 		local id = awful.tag.getidx(tag)
 		--if id  == 1 then
-		if tag == taglist.tags[1] then
-			local clientlist = tag:clients()
-			local clid = nil
-			for i,cl in pairs(clientlist) do
-				if cl == sel then
-					clid = i
-					break
-				end
-			end
-			local number = nil
+		if #(tag:clients()) == 1 then
+			--local tag
+			local newtag = nil
 			if dir == "left" then
-				number = -1
+				newtag = taglist.prevtag({
+					_return = true
+				})
 			elseif dir == "right" then
-				number = 1
+				newtag = taglist.nexttag({
+					_return = true
+				})
+			else
+				return
 			end
-			if number then
-				clid = clid + number
-				while clientlist[clid] do
-					if not clientlist[clid].minimized or all then
-						if (clid > 0) and (clid <= #clientlist) then
-							local target = clientlist[clid]
-							-- If we found a client to focus, then do it.
-							if target then
-								capi.client.focus = target
-								break
-							end
-						end
-					end
-					clid = clid + number
-				end
+			if newtag and  #(newtag:clients()) == 1 then
+				sharedtags.viewonly(newtag)
+				newtag:view_only()
+				return
 			end
+		--if tag == taglist.tags[1] then
+			--local clientlist = tag:clients()
+			--local clid = nil
+			--for i,cl in pairs(clientlist) do
+				--if cl == sel then
+					--clid = i
+					--break
+				--end
+			--end
+			--local number = nil
+			--if dir == "left" then
+				--number = -1
+			--elseif dir == "right" then
+				--number = 1
+			--end
+			--if number then
+				--clid = clid + number
+				--while clientlist[clid] do
+					--if not clientlist[clid].minimized or all then
+						--if (clid > 0) and (clid <= #clientlist) then
+							--local target = clientlist[clid]
+							---- If we found a client to focus, then do it.
+							--if target then
+								--capi.client.focus = target
+								--break
+							--end
+						--end
+					--end
+					--clid = clid + number
+				--end
+			--end
 
 		else
 			local cltbl = awful.client.visible(sel.screen)
@@ -433,24 +487,24 @@ function taglist.global_bydirection(dir, c, all)
 	-- if focus not changed, we must change screen
 	if sel == capi.client.focus then
 		screen.focus_bydirection(dir, scr)
-		if scr ~= capi.mouse.screen then
-			--local tag = awful.tag.selected(capi.mouse.screen)
-			local tag = capi.mouse.screen.selected_tag
-			local id = awful.tag.getidx(tag)
-			if id  ~= 1 then
+		--if scr ~= capi.mouse.screen then
+			----local tag = awful.tag.selected(capi.mouse.screen)
+			--local tag = capi.mouse.screen.selected_tag
+			--local id = awful.tag.getidx(tag)
+			--if id  ~= 1 then
 
-				local cltbl = awful.client.visible(capi.mouse.screen)
-				local geomtbl = {}
-				for i,cl in ipairs(cltbl) do
-					geomtbl[i] = cl:geometry()
-				end
-				local target = awful.util.get_rectangle_in_direction(dir, geomtbl, capi.screen[scr].geometry)
+				--local cltbl = awful.client.visible(capi.mouse.screen)
+				--local geomtbl = {}
+				--for i,cl in ipairs(cltbl) do
+					--geomtbl[i] = cl:geometry()
+				--end
+				--local target = awful.util.get_rectangle_in_direction(dir, geomtbl, capi.screen[scr].geometry)
 
-				if target then
-					capi.client.focus = cltbl[target]
-				end
-			end
-		end
+				--if target then
+					--capi.client.focus = cltbl[target]
+				--end
+			--end
+		--end
 	end
 end    	
 
@@ -460,14 +514,19 @@ function taglist.nexttag(args)
 	local nonempty = args.nonempty or true
 	local direction = args.direction or 1
 	local current = false
+	local _return = args._return or false
 	for i,k in ipairs(taglist:get_tags())do
 		--print(k.name)
 			if current then
 				if not k.hidden and ((nonempty and #(k:clients())>0) or not nonempty) then
 					--print("switch to "..k.name)
+					if _return then
+						return k
+					else
 						sharedtags.viewonly(k,screen)
 						k:view_only()
-						break
+						return
+					end
 				end
 			else
 				if k == screen.selected_tag then
@@ -484,6 +543,7 @@ function taglist.prevtag(args)
 	local direction = args.direction or 1
 	local current = false
 	local prevtag = nil
+	local _return = args._return or false
 	for i,k in ipairs(taglist:get_tags())do
 		--print(prevtag and prevtag.name or "nil")
 		--print(tostring(i)..tostring(k.name))
@@ -501,7 +561,12 @@ function taglist.prevtag(args)
 			--k:view_only()
 			if prevtag and not prevtag.hidden and ((nonempty and #(k:clients())>0) or not nonempty ) then
 				--print("switching to "..prevtag.name)
-				sharedtags.viewonly(prevtag,screen)
+				if _return then
+					return prevtag
+				else
+					sharedtags.viewonly(prevtag,screen)
+					prevtag:view_only()
+				end
 				break
 			elseif nonempty and #(k:clients())> 0 and not k.hidden then
 				--print("setting prev "..k.name)
@@ -665,8 +730,10 @@ function taglist.newtag(args)
 					if only then
 						local tags = j:tags()
 						for i,k in ipairs(tags)do
-							if k == taglist.tags[1] then
-								table.remove(tags,i)
+							if #(k:clients())==1 then
+								k:clients({})
+							--if k == taglist.tags[1] then
+								--table.remove(tags,i)
 							end
 						end
 						j:tags(tags)
@@ -683,15 +750,16 @@ function taglist.newtag(args)
 end
 function taglist.togglefromtag(client,tag)
 	local client = client or capi.client.focus
-	local tag = tag or taglist.tags[1]
+	local tag = tag or taglist.tags["all"]
 	local tags = client:tags()
 	for i,k in ipairs(tags)do
-		if k == taglist.tags[1] then
-			table.remove(tags,i)
-			if #tags == 0 then
-				client:tags({tag})
-			else
-				client:tags(tags)
+		if #(k:clients()) == 1 then
+			--table.remove(tags,i)
+			if #tags ~= 1 then
+				--client:tags({tag})
+			--else
+				k:clients({})
+				--client:tags(tags)
 			end
 			return
 		end

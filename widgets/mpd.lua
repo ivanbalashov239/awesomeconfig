@@ -5,12 +5,30 @@ local wibox = require("wibox")
 local lain = require("lain")
 local awful = require("awful")
 local utf8 	 = require("utf8_simple")
-local read_pipe    = require("lain.helpers").read_pipe
 local timer = require("gears").timer
 
 local mpdwidget ={}
 mpdwidget.shortcuts = {}
-
+function mpdwidget.skip()
+	lain.helpers.async('python3 /home/ivn/scripts/rate_current_mpd_song.py get rating', function(f)
+		local cur_rate = f
+		if tonumber(cur_rate) then
+			cur_rate = math.floor(cur_rate)
+		else
+			cur_rate = nil
+		end
+		if cur_rate then
+			if cur_rate > 1 and cur_rate < 6 then
+				mpdwidget.next()
+			elseif cur_rate == 1 and skip_unrated then
+				mpdwidget.next()
+			end
+		elseif mpdwidget.skip_unrated then
+			--os.execute("python3 /home/ivn/scripts/rate_current_mpd_song.py set rating 1")
+			mpdwidget.next()
+		end
+	end)
+end
 local function worker(args)
 	-- | MPD | --
 
@@ -29,24 +47,7 @@ local function worker(args)
 	local mpd_sepr = wibox.widget.imagebox()
 	mpd_sepr:set_image(beautiful.mpd_sepr)
 	local mpd_skip_timer = timer({timeout=0.5})
-	mpd_skip_timer:connect_signal("timeout", function ()
-		local cur_rate = read_pipe('python3 /home/ivn/scripts/rate_current_mpd_song.py get rating')
-		if tonumber(cur_rate) then
-			cur_rate = math.floor(cur_rate)
-		else
-			cur_rate = nil
-		end
-		if cur_rate then
-			if cur_rate > 1 and cur_rate < 6 then
-				mpdwidget.next()
-			elseif cur_rate == 1 and skip_unrated then
-				mpdwidget.next()
-			end
-		elseif skip_unrated then
-			--os.execute("python3 /home/ivn/scripts/rate_current_mpd_song.py set rating 1")
-			mpdwidget.next()
-		end
-	end)
+	mpd_skip_timer:connect_signal("timeout",mpdwidget.skip)
 	--mpd_skip_timer:start()
 	mpdwidget.mpdwidget = wibox.widget.textbox()
 
@@ -57,6 +58,7 @@ local function worker(args)
 			if mpd_now.state == "play" then
 				--print(mpd_now.title)
 				--mpd_skip_timer:emit_signal("timeout")
+				mpdwidget.skip()
 				widget:set_markup(" Title loading ")
 				mpd_now.artist = string.gsub(mpd_now.artist,"&quot;","'")
 				mpd_now.title = string.gsub(mpd_now.title,"&quot;","'")
