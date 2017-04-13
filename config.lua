@@ -59,7 +59,7 @@ menubar.menu_gen.all_menu_dirs = { "/usr/share/applications/", "/usr/local/share
 local cheeky 	 = require("cheeky")
 --local appsuspender = require("appsuspender")
 local im = require("im")
-local task = require("task")
+--local task = require("task")
 local capi = {
 	mouse = mouse,
 	client = client,
@@ -81,7 +81,7 @@ config.panel.middle = {
 config.panel.right = {
 	widgets.kbdd(),
 	widgets.mpd(),
-	--widgets.taskwidget(),
+	widgets.taskwidget(),
 	widgets.weather(),
 	widgets.net({
 		wired_interface = host.wired_interface,
@@ -316,8 +316,9 @@ config.globalkeys = awful.util.table.join(
 			    is_excluded=true
 		    }) 
 	    end),
-	    awful.key({ modkey,    }, "o",  
-	    task.done_modify(modal_sc)
+	    awful.key({ modkey,    }, "o",  function()
+		    widgets.taskwidget.modal_menu()
+	    end
 	    ),
 	    awful.key({ modkey,    }, "e",
 	    modal_sc({
@@ -407,7 +408,7 @@ awful.key({ modkey, altgr }, "t",
 function ()
 	awful.util.spawn("/home/ivn/scripts/translate_zenity.sh")
 end),
-awful.key({ modkey,           }, "z",      function () task:toggle() end),
+--awful.key({ modkey,           }, "z",      function () task:toggle() end),
 awful.key({ modkey,           }, "w",      function () mainmenu:show() end),
 awful.key({ modkey, "Control" }, "n",  widgets.pulse.up),
 awful.key({ modkey, "Control" }, "t",  widgets.pulse.down),

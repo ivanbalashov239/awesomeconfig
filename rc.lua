@@ -47,7 +47,7 @@ lain.helpers     = require("lain.helpers")
 --menubar.menu_gen.all_menu_dirs = { "/usr/share/applications/", "/usr/local/share/applications", "~/.local/share/applications" }
 --local appsuspender = require("appsuspender")
 local im = require("im")
-local task = require("task")
+--local task = require("task")
 local capi = {
     mouse = mouse,
     client = client,
@@ -1142,14 +1142,17 @@ globalkeys = awful.util.table.join(config.globalkeys,
 		    end
 	    end)
 	    awful.client.setslave(c)
-	    c:connect_signal("property::name",function(c)
-		    print("|"..c.name.."|")
-		    if c.name:find("Telegram ") then
+	    local function urgent(c)
+		    for word in c.name:gmatch("%(.*%)") do
 			    c.urgent = true
-		    else
-			    c.urgent = false
+			    return
 		    end
-	    end)
+		    c.urgent = false
+	    end
+	    c:connect_signal("property::name",urgent)
+	    c:connect_signal("focus",urgent)
+	    c:connect_signal("unfocus",urgent)
+	    c.urgent = false
     end
     },
     { rule = { class = "Pidgin", role = "buddy_list"},
@@ -1196,9 +1199,10 @@ globalkeys = awful.util.table.join(config.globalkeys,
 			end
 		end
 		set_geometry(c)
-		capi.screen.connect_signal("property::workarea",function()
+		local function geomfunc()
 			set_geometry(c)
-		end)
+		end
+		capi.screen.connect_signal("property::workarea",geomfunc)
 		--c:connect_signal("request::geometry",set_geometry)
 		--local scrgeom = capi.screen[capi.mouse.screen].geometry
 		--local clgeom  = c:geometry({width = scrgeom.width/5, height = scrgeom.height/5})
@@ -1273,15 +1277,18 @@ globalkeys = awful.util.table.join(config.globalkeys,
 			--end
 		end
 		)
-		capi.client.connect_signal("focus",function(cl)
+		local function focus(cl)
 			local cur_screen = cl.screen
 			local cur_tag = cur_screen.selected_tag
 			c:tags({cur_tag})
 			--c.ontop = true
-		end)
+		end
+		capi.client.connect_signal("focus",focus)
 		client.connect_signal("unmanage",
 		function(c)
 			widgets.mpd.playif()
+			capi.screen.disconnect_signal("property::workarea",geomfunc)
+			capi.client.disconnect_signal("focus",focus)
 		end)
 	end
 }

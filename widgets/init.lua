@@ -12,6 +12,7 @@ widgets.spr5px = wibox.widget.imagebox()
 widgets.spr5px:set_image(beautiful.spr5px)
 widgets.bg = beautiful.bg_normal
 widgets.fg = beautiful.fg_normal
+widgets.critical = "#bd6873"
 widgets.font = "Terminus 10"
 
 
