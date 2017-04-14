@@ -431,7 +431,7 @@ function taskwidget.modal_actions(item)
 				{
 					desc="2H",
 					func = function()
-						os.execute("task "..task.id.." modify wait:now+2h")
+						os.execute("task "..item.id.." modify wait:now+2h")
 						--awful.util.spawn_with_shell("echo 'yes' | task "..task.id.." delete")
 					end,
 				},
@@ -473,8 +473,10 @@ local function worker(args)
 	taskwidget.reminders.overdue:connect_signal("timeout",function()
 		local n = 0
 		for i,task in pairs(taskwidget.overdue) do
-			n = n + 1
-			taskwidget.show_task(task,15)
+			if not taskwidget.waiting[task.id] then
+				n = n + 1
+				taskwidget.show_task(task,15)
+			end
 		end
 		if n == 0 then
 			taskwidget.reminders.due:stop()
@@ -614,11 +616,11 @@ function taskwidget.show_task(task,timeout,title)
 		table.insert(strings,tofont(tags,15,true))
 		if task.due then
 			local date = todate(task.due)
-			table.insert(strings,tofont(date.day.."."..date.month.."."..date.year,10))
+			table.insert(strings,tofont(todec(date.day).."."..todec(date.month).."."..date.year,10))
 			local today = date.day
 			notify_icon = icons_dir .. today .. ".png"
 			if date.hours and date.minutes then
-				table.insert(strings,tofont(date.hours..":"..date.minutes))
+				table.insert(strings,tofont(tedec(date.hours)..":"..todec(date.minutes)))
 			end
 		end
 		--print(table.concat(strings,"\n"))
