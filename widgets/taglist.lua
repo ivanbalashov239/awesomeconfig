@@ -426,26 +426,26 @@ function taglist.bydirection(dir, c, all)
 		if target then
 			capi.client.focus = cltbl[target]
 		end
-		if sel == capi.client.focus and check_tag(tag) then
-			--local tag
-			local newtag = nil
-			if dir == "left" then
-				newtag = taglist.prevtag({
-					_return = true
-				})
-			elseif dir == "right" then
-				newtag = taglist.nexttag({
-					_return = true
-				})
-			else
-				return
-			end
-			if newtag and  #(newtag:clients()) == 1 then
-				sharedtags.viewonly(newtag)
-				newtag:view_only()
-				return
-			end
-		end
+		--if sel == capi.client.focus and check_tag(tag) then
+			----local tag
+			--local newtag = nil
+			--if dir == "left" then
+				--newtag = taglist.prevtag({
+					--_return = true
+				--})
+			--elseif dir == "right" then
+				--newtag = taglist.nexttag({
+					--_return = true
+				--})
+			--else
+				--return
+			--end
+			--if newtag and  #(newtag:clients()) == 1 then
+				--sharedtags.viewonly(newtag)
+				--newtag:view_only()
+				--return
+			--end
+		--end
 	end
 end
 function taglist.global_bydirection(dir, c, all)
@@ -463,7 +463,29 @@ function taglist.global_bydirection(dir, c, all)
 
 	-- if focus not changed, we must change screen
 	if sel == capi.client.focus then
-		screen.focus_bydirection(dir, scr)
+		if #(scr.clients) > 0 then
+			screen.focus_bydirection(dir, scr)
+			if scr == capi.mouse.screen then
+				--local tag
+				local newtag = nil
+				if dir == "left" then
+					newtag = taglist.prevtag({
+						_return = true
+					})
+				elseif dir == "right" then
+					newtag = taglist.nexttag({
+						_return = true
+					})
+				else
+					return
+				end
+				if newtag and  #(newtag:clients()) == 1 then
+					sharedtags.viewonly(newtag)
+					newtag:view_only()
+					return
+				end
+			end
+		end
 		--if scr ~= capi.mouse.screen then
 			----local tag = awful.tag.selected(capi.mouse.screen)
 			--local tag = capi.mouse.screen.selected_tag
@@ -502,6 +524,11 @@ function taglist.nexttag(args)
 					else
 						sharedtags.viewonly(k,screen)
 						k:view_only()
+						for _,c in pairs(k:clients()) do
+							if not c.floating then
+								capi.client.focus = c
+							end
+						end
 						return
 					end
 				end
@@ -543,6 +570,11 @@ function taglist.prevtag(args)
 				else
 					sharedtags.viewonly(prevtag,screen)
 					prevtag:view_only()
+					for _,c in pairs(prevtag:clients()) do
+						if not c.floating then
+							capi.client.focus = c
+						end
+					end
 				end
 				break
 			elseif nonempty and #(k:clients())> 0 and not k.hidden then

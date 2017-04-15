@@ -472,19 +472,27 @@ local function worker(args)
 	taskwidget.reminders.overdue = timer({ timeout = 600 })
 	taskwidget.reminders.overdue:connect_signal("timeout",function()
 		local n = 0
+		local timeout = 15
+		if taskwidget.reminders.overdue.data.source_id == nil then
+			timeout = nil
+		end
 		for i,task in pairs(taskwidget.overdue) do
 			if not taskwidget.waiting[task.id] then
 				n = n + 1
-				taskwidget.show_task(task,15)
+				taskwidget.show_task(task,timeout)
 			end
 		end
-		if n == 0 then
+		if n == 0 and taskwidget.reminders.overdue.data.source_id ~= nil then
 			taskwidget.reminders.due:stop()
 		end
 	end)
 	taskwidget.reminders.due = timer({ timeout = 30 })
 	taskwidget.reminders.due:connect_signal("timeout",function()
 		local n = 0
+		local timeout = 15
+		if taskwidget.reminders.due.data.source_id == nil then
+			timeout = nil
+		end
 		for i,task in pairs(taskwidget.due) do
 			n = n + 1
 			local min1 = now()
@@ -492,10 +500,10 @@ local function worker(args)
 			min1.minute = min1.minute - 1
 			plus1.minute = plus1.minute + 1
 			if greater_dates(task.due, min1) and greater_dates(plus1,task.due) then
-				taskwidget.show_task(task,15)
+				taskwidget.show_task(task,timeout)
 			end
 		end
-		if n == 0 then
+		if n == 0 and taskwidget.reminders.due.data.source_id ~= nil then
 			taskwidget.reminders.due:stop()
 		end
 	end)
@@ -556,8 +564,8 @@ local function worker(args)
 			--screen = mouse.screen,
 		--})
 	--end
-	--taskwidget:attach(widget,
-	--{
+	taskwidget:attach(widget,
+	{
 		--onclick1=function()
 			--if duetask_notification == nil then
 				--due_notif_show()
@@ -584,8 +592,46 @@ local function worker(args)
 			--due_notif_destroy()
 			--due_notif_show()
 		--end,
-	--})
+	})
 	return widget
+end
+function taskwidget:attach(widget, args)
+	local args = args or {}
+	local onclick1 = args.onclick1
+	local onclick2 = args.onclick2
+	local onclick3 = args.onclick3
+	-- Bind onclick event function
+	buttons = {}
+	if onclick1 then
+		buttons = awful.util.table.join(buttons,
+		awful.button({}, 1, onclick1)
+		)
+	end
+	if onclick2 then
+		buttons = awful.util.table.join(buttons,
+		awful.button({}, 2, onclick2)
+		)
+	end
+	if onclick2 then
+		buttons = awful.util.table.join(buttons,
+		awful.button({}, 12, onclick2)
+		)
+	end
+	if onclick3 then
+		buttons = awful.util.table.join(buttons,
+		awful.button({}, 3, onclick3)
+		)
+	end
+	widget:buttons(buttons)
+	local notif_ids = {}
+	widget:connect_signal('mouse::enter', function () 
+		--task:show(0) 
+		taskwidget.reminders.overdue:emit_signal("timeout")
+		taskwidget.reminders.due:emit_signal("timeout")
+	end)
+	widget:connect_signal('mouse::leave', function () 
+		--task:hide() 
+	end)
 end
 function taskwidget.show_task(task,timeout,title)
 	if task and type(task) == "string" then
@@ -620,7 +666,7 @@ function taskwidget.show_task(task,timeout,title)
 			local today = date.day
 			notify_icon = icons_dir .. today .. ".png"
 			if date.hours and date.minutes then
-				table.insert(strings,tofont(tedec(date.hours)..":"..todec(date.minutes)))
+				table.insert(strings,tofont(todec(date.hours)..":"..todec(date.minutes)))
 			end
 		end
 		--print(table.concat(strings,"\n"))
