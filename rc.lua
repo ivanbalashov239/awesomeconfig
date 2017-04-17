@@ -1284,7 +1284,7 @@ globalkeys = awful.util.table.join(config.globalkeys,
 			--c.ontop = true
 		end
 		capi.client.connect_signal("focus",focus)
-		client.connect_signal("unmanage",
+		capi.client.connect_signal("unmanage",
 		function(c)
 			widgets.mpd.playif()
 			capi.screen.disconnect_signal("property::workarea",geomfunc)

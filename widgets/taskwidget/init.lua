@@ -13,6 +13,7 @@ local naughty = require("naughty")
 local timer = require("gears").timer
 local json	= require("json")
 local modal_sc = require("modal_sc")
+local task = require("taskwidget.task")
 
 local taskwidget ={}
 taskwidget.shortcuts = {}
@@ -44,7 +45,7 @@ function(...)
 		timeout = args[4]
 		title = "Deleted\n"
 		--taskwidget.tasks[id] = nil
-		taskwidget.tasks[taskwidget.uuids[uuid]] = nil
+		taskwidget.tasks[uuid] = nil
 	elseif method_name == "add" or method_name == "command:add" then
 		--task = taskwidget.task_from_json(args[3])
 		uuid = args[3]
@@ -64,7 +65,7 @@ function(...)
 			--task = nil
 		--end
 	end
-	table.insert(taskwidget.afterupdate,function()taskwidget.show_task(uuid,timeout,title)end)
+	table.insert(taskwidget.afterupdate,function() taskwidget.tasks[uuid]:show()end)
 	taskwidget.watch.update()
 	--print(type(task))
 	--taskwidget.update_tasks(taskwidget.tasks)
@@ -72,87 +73,6 @@ function(...)
 end
 )
 
-local function todec(num)
-	if num < 10 then
-		return "0"..num
-	end
-	return num
-end
-local function totime(str)
-	local time = tonumber(str)/100
-	local hours = math.floor(time/100)+3
-	local minutes = math.floor(time%100)
-	return {hours = hours, minutes = minutes }
-end
-local function todate(str)
-	if str and type(str) == "string" then
-		local sep, fields = "T", {}
-		local pattern = string.format("([^%s]+)", sep)
-		str:gsub(pattern, function(c) fields[#fields+1] = c end)
-		local date = tonumber(fields[1])
-		local year = math.floor(date/10000)
-		local month = math.floor((date%10000)/100)
-		local day = math.floor(date%100)
-		local result =  {month=month,year=year,day=day}
-		if fields[2] then
-			local time = totime(fields[2]:sub(1,-2))
-			result.hours = time.hours
-			result.minutes = time.minutes
-		end
-		return result
-	end
-	return str
-end
-local function now()
-	return {
-		year = tonumber(os.date("%Y")),
-		month = tonumber(os.date("%m")),
-		day = tonumber(os.date("%d")),
-		hours = tonumber(os.date("%H")),
-		minutes = tonumber(os.date("%M")),
-	}
-end
-local function today()
-	return {
-		year = tonumber(os.date("%Y")),
-		month = tonumber(os.date("%m")),
-		day = tonumber(os.date("%d")),
-		hours = 0,
-		minutes = 0,
-	}
-end
-local function tofont(str,size,bold,font,color)
-	local bold = bold
-	if bold then
-		bold = "bold"
-	else
-		bold = ""
-	end
-	local size = size or 15
-	local font = font or "Cantarel"
-	local color = color or "white"
-	local text  = "<span font='"..font.." "..bold.." "..size.."' color='"..color.."'>"..str.."</span>"
-	return text
-end
-local function greater_dates(a,b)
-	if a and b then
-		if type(a) == "string" then
-			a = todate(a)
-		end
-		if type(b) == "string" then
-			b = todate(b)
-		end
-		if a.year > b.year then 
-		elseif a.year == b.year and a.month > b.month then
-		elseif a.year == b.year and a.month == b.month and a.day > b.day then
-		elseif a.year == b.year and a.month == b.month and a.day == b.day and a.hours > b.hours then
-		elseif a.year == b.year and a.month == b.month and a.day == b.day and a.hours == b.hours and a.minutes > b.minutes then
-		else
-			return false
-		end
-		return true
-	end
-end
 local function table_size(tab)
 	local n = 0
 	for i,k in pairs(tab) do
@@ -181,61 +101,30 @@ local function prompt(str)
 end
 function taskwidget.update_tasks(tasks)
 	if tasks then
-		taskwidget.tasks = {}
-		taskwidget.due = {}
-		taskwidget.overdue = {}
-		taskwidget.waiting = {}
-		taskwidget.started = {}
-		taskwidget.completed = {}
-		local after = {}
-		for i,task in pairs(tasks) do
-			task = taskwidget.task_from_json(task)
-			if task.id and task.uuid then
-				taskwidget.uuids[task.uuid] = task.id
+		--taskwidget.tasks = {}
+		--taskwidget.due = {}
+		--taskwidget.overdue = {}
+		--taskwidget.waiting = {}
+		--taskwidget.started = {}
+		--taskwidget.completed = {}
+		--local after = {}
+		local updated = {}
+		for i,t in pairs(tasks) do
+			--task = taskwidget.task_from_json(task)
+			t = task(t)
+			local oldtask = taskwidget.tasks[t.uuid]
+			if not t.id and oldtask.id then
+				t.id = oldtask.id
 			end
-			tasks[i] = task
+			--tasks[i] = t
+			updated[t.uuid] = true
+			taskwidget.tasks[t.uuid] = t
 		end
-		for i,task in pairs(tasks) do
-			if task.start then
-				--print("started "..task.id)
-				taskwidget.started[task.id] = task
+		for i,t in pairs(taskwidget.tasks) do
+			if not updated[t.uuid] then
+				taskwidget.tasks[i] = nil
 			end
-			if task.status and taskwidget[task.status] then
-				taskwidget[task.status][task.id] = task
-			end
-			--print(task.due)
-			if greater_dates(now(),task.due) then
-				taskwidget.overdue[task.id] = task
-			elseif greater_dates(task.due,today()) and not taskwidget.waiting[task.id] then
-				taskwidget.due[task.id] = task
-			end
-			taskwidget.tasks[task.id] = task
 		end
-	end
-end
-function taskwidget.task_from_json(task)
-	if task then
-		if type(task) == "string" then
-			task = json.decode(task)
-		end
-		if not task.id and task.uuid and taskwidget.uuids[task.uuid] then
-			task.id = taskwidget.uuids[task.uuid]
-		end
-		if task.depends and type(task.depends) == "string" then
-			local deps = {}
-			for w in (task.depends .. ","):gmatch("([^,]*),") do 
-				local item =taskwidget.uuids[w]
-				table.insert(deps,item)
-			end
-			task.depends = deps
-		end
-		if task.due and type(task.due) == "string" then
-			task.due = todate(task.due)
-		end
-		if task.wait and type(task.wait) == "string" then
-			task.wait = todate(task.wait)
-		end
-		return task
 	end
 end
 function taskwidget:get_tasks()
@@ -271,7 +160,7 @@ function taskwidget.modal_menu(args)
 				description = string.rep(" ",level-1).."∟"
 				--description = string.rep(" ",level)
 			end
-			if item["start"] then
+			if item:is_started() then
 				description = "►"..description
 			else
 				description = " "..description
@@ -281,14 +170,14 @@ function taskwidget.modal_menu(args)
 				tags = table.concat(item["tags"],",")
 			end
 			local due = ""
-			if item["due"] then
+			if item.due then
 				local date_time = todate(item.due)
 				local date = todec(date_time.day).."."..todec(date_time.month).."."..todec(date_time.year)
 				local time = " "..todec(date_time.hours)..":"..todec(date_time.minutes)
 				due = "|"..date..time
 			end
 			local color = "white"
-			if item.status == "waiting" or item.id and taskwidget.overdue[item.id] then
+			if item:is_waiting() or item:is_overdue() then
 				color = widgets.critical
 			end
 
@@ -339,7 +228,7 @@ function taskwidget.modal_actions(item)
 	--print("actions")
 	--print(task["description"])
 	local actions = {}
-	if item["start"] then
+	if item:is_started() then
 		table.insert(actions,{
 			hint = "s",
 			desc = "STOP",
@@ -472,9 +361,11 @@ local function worker(args)
 	taskwidget.reminders.overdue = timer({ timeout = 600 })
 	taskwidget.reminders.overdue:connect_signal("timeout",function()
 		local n = 0
-		for i,task in pairs(taskwidget.overdue) do
-			n = n + 1
-			taskwidget.show_task(task,15)
+		for i,task in pairs(taskwidget.tasks) do
+			if task:is_overdue() then
+				n = n + 1
+				taskwidget.show_task(task,15)
+			end
 		end
 		if n == 0 then
 			taskwidget.reminders.due:stop()
@@ -483,14 +374,12 @@ local function worker(args)
 	taskwidget.reminders.due = timer({ timeout = 30 })
 	taskwidget.reminders.due:connect_signal("timeout",function()
 		local n = 0
-		for i,task in pairs(taskwidget.due) do
+		for i,task in pairs(taskwidget.tasks) do
 			n = n + 1
-			local min1 = now()
-			local plus1 = now()
-			min1.minute = min1.minute - 1
-			plus1.minute = plus1.minute + 1
-			if greater_dates(task.due, min1) and greater_dates(plus1,task.due) then
-				taskwidget.show_task(task,15)
+			if task:is_due() then
+				if task:is_now() then
+					taskwidget.show_task(task,15)
+				end
 			end
 		end
 		if n == 0 then
@@ -519,8 +408,18 @@ local function worker(args)
 	})
 	taskwidget.watch.updatewidget = function(widget)
 		local text = ""
-		local dues = table_size(taskwidget.due)
-		local overdues = table_size(taskwidget.overdue)
+		--local dues = table_size(taskwidget.due)
+		--local overdues = table_size(taskwidget.overdue)
+		local dues = 0
+		local overdues = 0
+		for i,k in pairs(taskwidget.tasks) do
+			if k:is_due() then
+				dues = dues + 1
+			end
+			if k:is_overdue() then
+				overdues = overdues + 1
+			end
+		end
 		if overdues > 0 then
 			text  = "<span color='"..widgets.fg.."'>"..dues.." </span>".."<span color='"..widgets.critical.."'>"..overdues.."</span>"
 			--text = dues.." ".."#bd6873"
@@ -584,72 +483,6 @@ local function worker(args)
 		--end,
 	--})
 	return widget
-end
-function taskwidget.show_task(task,timeout,title)
-	if task and type(task) == "string" then
-		task = taskwidget.tasks[taskwidget.uuids[task]]
-	end
-	if task then
-		local description = task.description or ""
-		local tags = task.tags or {}
-		if task.project then
-			table.insert(tags,task.project)
-		end
-		tags = table.concat(tags,",")
-		--local today = tonumber(os.date('%d'))
-		local notify_icon = nil
-
-		--local title = description
-		local strings={}
-		if #description > 1 then
-			description = description:sub(1,1):upper()..description:sub(2,-1)
-		end
-		if task.id then
-			description = task.id.." "..description
-		end
-		if title then
-			description = title:upper().." "..description
-		end
-		table.insert(strings,tofont(description,20,true))
-		table.insert(strings,tofont(tags,15,true))
-		if task.due then
-			local date = todate(task.due)
-			table.insert(strings,tofont(date.day.."."..date.month.."."..date.year,10))
-			local today = date.day
-			notify_icon = icons_dir .. today .. ".png"
-			if date.hours and date.minutes then
-				table.insert(strings,tofont(date.hours..":"..date.minutes))
-			end
-		end
-		--print(table.concat(strings,"\n"))
-		local notif_id = taskwidget.reminders_ids[task.uuid]
-		if notif_id then
-			naughty.destroy(notif_id)
-		end
-		notif_id = naughty.notify({
-			--		text = string.format('<span font_desc="%s" color="%s">%s</span>', "freemono bold 10", "#eeeeee", tasks),
-			--text = decodeAnsiColor(tasks),
-			--title  = title and "<span font='Terminus bold 20'>"..title.."</span>" or nil,
-			--title = title,
-			--text  = "<span color='"..widgets.fg.."'>"..dues.." </span>"
-			--title = 
-			--text  = "<span font='Cantarel bold 15' color='white'>"..text.."</span>",
-			text = table.concat(strings,"\n"),
-			timeout = timeout or 0,
-			height = not notify_icon and 100 or nil,
-			screen = screennum,
-			bg = theme.bg_focus,
-			--icon = '/usr/share/icons/Faenza/apps/96/x-office-calendar.png',
-			icon = notify_icon,
-			--icon_size = not notify_icon and 50 or nil,
-			--		width = 600,
-			--replace_id = taskwidget.reminders_ids[task.uuid]
-		})
-		if task.uuid then
-			taskwidget.reminders_ids[task.uuid] = notif_id
-		end
-		return notif_id
-	end
 end
 
 
