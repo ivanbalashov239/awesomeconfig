@@ -13,16 +13,12 @@ local naughty = require("naughty")
 local timer = require("gears").timer
 local json	= require("json")
 local modal_sc = require("modal_sc")
-local task = require("taskwidget.task")
+--local task = require(module_path..".task")
+local task = require("widgets.task.task")
 
 local taskwidget ={}
 taskwidget.shortcuts = {}
 taskwidget.tasks = {}
-taskwidget.due = {}
-taskwidget.overdue = {}
-taskwidget.waiting = {}
-taskwidget.uuids = {}
-taskwidget.reminders_ids = {}
 taskwidget.reminders = {}
 taskwidget.afterupdate = {}
 dbus.request_name("session", "org.naquadah.awesome.task")
@@ -65,13 +61,21 @@ function(...)
 			--task = nil
 		--end
 	end
-	table.insert(taskwidget.afterupdate,function() taskwidget.tasks[uuid]:show()end)
+	if uuid then
+		table.insert(taskwidget.afterupdate,function() taskwidget.tasks[uuid]:show(nil, {title = title})end)
+	end
 	taskwidget.watch.update()
 	--print(type(task))
 	--taskwidget.update_tasks(taskwidget.tasks)
 	--taskwidget.watch.updatewidget(taskwidget.watch.widget)
 end
 )
+local function todec(num)
+	if num < 10 then
+		return "0"..num
+	end
+	return num
+end
 
 local function table_size(tab)
 	local n = 0
@@ -110,21 +114,31 @@ function taskwidget.update_tasks(tasks)
 		--local after = {}
 		local updated = {}
 		for i,t in pairs(tasks) do
-			--task = taskwidget.task_from_json(task)
-			t = task(t)
-			local oldtask = taskwidget.tasks[t.uuid]
-			if not t.id and oldtask.id then
-				t.id = oldtask.id
+			--t = taskwidget.task_from_json(t)
+			--print(t == "")
+			--print(i)
+			--print(t)
+			if t then
+				t = task(t)
+				if t and t.uuid then
+					local oldtask = taskwidget.tasks[t.uuid]
+					if oldtask and not t.id and oldtask.id then
+						t.id = oldtask.id
+					end
+					--tasks[i] = t
+					--print(t.uuid)
+					--updated[t.uuid] = true
+					updated[t.uuid] = t
+				end
 			end
-			--tasks[i] = t
-			updated[t.uuid] = true
-			taskwidget.tasks[t.uuid] = t
 		end
-		for i,t in pairs(taskwidget.tasks) do
-			if not updated[t.uuid] then
-				taskwidget.tasks[i] = nil
-			end
-		end
+		taskwidget.tasks = updated
+		--print("updated tasks")
+		--for i,t in pairs(taskwidget.tasks) do
+			--if not updated[t.uuid] then
+				--taskwidget.tasks[t.uuid] = nil
+			--end
+		--end
 	end
 end
 function taskwidget:get_tasks()
@@ -134,7 +148,15 @@ function taskwidget.modal_menu(args)
 	taskwidget.watch.update()
 	local args = args or {}
 	local tasks = args.tasks or taskwidget:get_tasks()
-	local waiting = args.waiting or false
+	local filter = args.filter or function(task)
+		if task:is_waiting() then
+			return false
+		end
+		if task.due then
+			return task:is_due() or task:is_overdue()
+		end
+		return true
+	end
 
 	--pr(tasks[9])
 	local actions = {}
@@ -166,12 +188,12 @@ function taskwidget.modal_menu(args)
 				description = " "..description
 			end
 			local tags = ""
-			if item["tags"] then
+			if item.tags then
 				tags = table.concat(item["tags"],",")
 			end
 			local due = ""
 			if item.due then
-				local date_time = todate(item.due)
+				local date_time = item.due
 				local date = todec(date_time.day).."."..todec(date_time.month).."."..todec(date_time.year)
 				local time = " "..todec(date_time.hours)..":"..todec(date_time.minutes)
 				due = "|"..date..time
@@ -208,12 +230,7 @@ function taskwidget.modal_menu(args)
 		end
 	end
 	for i,item in pairs(tasks) do
-		local skip = false
-		if not waiting then
-			if taskwidget.waiting[item.id] then
-				skip = true
-			end
-		end
+		local skip = not filter(item)
 		if not skip then
 			add_item(item)
 		end
@@ -364,7 +381,8 @@ local function worker(args)
 		for i,task in pairs(taskwidget.tasks) do
 			if task:is_overdue() then
 				n = n + 1
-				taskwidget.show_task(task,15)
+				--taskwidget.show_task(task,15)
+				task:show(15)
 			end
 		end
 		if n == 0 then
@@ -378,7 +396,8 @@ local function worker(args)
 			n = n + 1
 			if task:is_due() then
 				if task:is_now() then
-					taskwidget.show_task(task,15)
+					--taskwidget.show_task(task,15)
+					task:show(15)
 				end
 			end
 		end
@@ -396,7 +415,8 @@ local function worker(args)
 		cmd = { awful.util.shell, "-c", cmd },
 		settings = function()
 			taskwidget.update_tasks(json.decode(output))
-			taskwidget.remind()
+			--taskwidget.remind()
+			--print("settings")
 			taskwidget.watch.updatewidget(widget)
 			for i,k in pairs(taskwidget.afterupdate)do
 				if type(k) == "function" then
@@ -417,6 +437,7 @@ local function worker(args)
 				dues = dues + 1
 			end
 			if k:is_overdue() then
+				--print(i.." "..k.description)
 				overdues = overdues + 1
 			end
 		end
@@ -426,6 +447,8 @@ local function worker(args)
 		else 
 			text  = "<span color='"..widgets.fg.."'>"..dues.." </span>"
 		end
+		--print("module_path "..module_path)
+		--print("text widget")
 		widget:set_markup(text)
 		--tb:set_markup('<span font="Terminus 10" weight="bold">'..textlabel..'</span>')
 		--widget:set_text(table_size(taskwidget.due))

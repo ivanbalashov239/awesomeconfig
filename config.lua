@@ -36,7 +36,8 @@ local run_or_kill = rork.run_or_kill
 local modal_sc = require("modal_sc")      
 
 local widgets = require("widgets")
-local json = require('cjson')
+widgets.taskwidget = require("widgets.task")
+--local json = require('cjson')
 
 --local timew = require("client_timew")
 --timew()
@@ -51,7 +52,7 @@ local newtag	 = require("newtag")
 newtag.init()
 --local quake 	 = require("quake")
 local scratch	 = require("scratch")
-local utf8 	 = require("utf8_simple")
+--local utf8 	 = require("utf8_simple")
 lain.helpers     = require("lain.helpers")
 local menubar = require("menubar")
 menubar.terminal = "termite"
