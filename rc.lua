@@ -751,7 +751,7 @@ function translator(text_tr)
 	--local text_tr = lain.helpers.first_line("/tmp/translate")
 	--print("-"..text_tr.."-"..#text_tr,2)
 	if text_tr and #text_tr > 0 then
-		print(text_tr)
+		--print(text_tr)
 		local lang ="ru:en"
 		--print(string.match(text,"[a-zA-Z0-9,.!? ]*"))
 		if string.match(text_tr,"[a-zA-Z0-9,.!? ]*") ==text_tr then
@@ -1128,6 +1128,7 @@ globalkeys = awful.util.table.join(config.globalkeys,
 		    telegramtimer = timer({ timeout = 5 })
 		    telegramtimer:connect_signal("timeout", function ()
 			    os.execute("xdotool key --clearmodifiers --window "..c.window.." Escape")
+			    os.execute("xdotool key --clearmodifiers --window "..c.window.." Escape")
 			    telegramtimer:stop()
 		    end)
 		    telegramtimer:start()
@@ -1251,7 +1252,7 @@ globalkeys = awful.util.table.join(config.globalkeys,
 		end)
 		dbus.request_name("session", "org.mpris.MediaPlayer2")
 		dbus.add_match("session", "interface='org.freedesktop.DBus.Properties',member='PropertiesChanged'")
-		dbus.connect_signal("org.freedesktop.DBus.Properties", function(...)
+		local function bomi_state(...)
 			local data = {...}
 			--for i,k in pairs(data[3]) do
 			--print(i)
@@ -1261,11 +1262,15 @@ globalkeys = awful.util.table.join(config.globalkeys,
 			--end
 			--print(data[3].Metadata)
 			local state = data[3].PlaybackStatus
-			c.state = state
-			if state == "Playing" then
-				widgets.mpd.pauseif()
-			elseif state == "Paused" then
-				widgets.mpd.playif()
+			if c then
+				c.state = state
+				if state == "Playing" then
+					widgets.mpd.pauseif()
+				elseif state == "Paused" then
+					widgets.mpd.playif()
+				end
+			else
+				dbus.disconnect_signal("org.freedesktop.DBus.Properties", bomi_state)
 			end
 			--for i,str in pairs(data) do
 			--print(i.." "..tostring(str))
@@ -1276,7 +1281,7 @@ globalkeys = awful.util.table.join(config.globalkeys,
 			--end
 			--end
 		end
-		)
+		dbus.connect_signal("org.freedesktop.DBus.Properties", bomi_state)
 		local function focus(cl)
 			local cur_screen = cl.screen
 			local cur_tag = cur_screen.selected_tag
@@ -1284,11 +1289,12 @@ globalkeys = awful.util.table.join(config.globalkeys,
 			--c.ontop = true
 		end
 		capi.client.connect_signal("focus",focus)
-		client.connect_signal("unmanage",
+		c:connect_signal("unmanage",
 		function(c)
 			widgets.mpd.playif()
 			capi.screen.disconnect_signal("property::workarea",geomfunc)
 			capi.client.disconnect_signal("focus",focus)
+			dbus.disconnect_signal("org.freedesktop.DBus.Properties", bomi_state)
 		end)
 	end
 }
