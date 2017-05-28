@@ -4,7 +4,7 @@ local widgetcreator = require("widgets")
 local widgets = widgetcreator
 local beautiful = require("beautiful")
 local wibox = require("wibox")
-local awful         = require("awful")
+--local awful         = require("awful")
 local shell        = require("awful.util").shell
 local lain = require("lain")
 local awful = require("awful")
@@ -62,7 +62,14 @@ function(...)
 		--end
 	end
 	if uuid then
-		table.insert(taskwidget.afterupdate,function() taskwidget.tasks[uuid]:show(nil, {title = title})end)
+		local oldtask = taskwidget.tasks[uuid]
+		table.insert(taskwidget.afterupdate,function()
+			local newtask = taskwidget.tasks[uuid]
+			local t = newtask or oldtask
+			if t then
+				t:show(timeout, {title = title})
+			end
+		end)
 	end
 	taskwidget.watch.update()
 	--print(type(task))
@@ -86,22 +93,23 @@ local function table_size(tab)
 end
 local function prompt(str)
 	--task:show(0)
-	awful.prompt.run({ prompt = "Task: ", text=str or "", },
-	mouse.screen.mypromptbox.widget,
+	awful.prompt.run({
+		prompt = "Task: ",
+		text=str or "",
+		exe_callback = function (result)
+			--task:hide()
+			if result then
+				--os.execute("task "..result)
+				awful.util.spawn_with_shell("task "..result)
+				return true
+			end
+			return false
+		end,
+		history_path = awful.util.getdir("cache") .. "/task_history",
+	},
+	mouse.screen.mypromptbox.widget
 	--task.promptbox[mouse.screen].widget,
-	function (result)
-		--task:hide()
-		if result then
-			--os.execute("task "..result)
-			awful.util.spawn_with_shell("task "..result)
-			return true
-		end
-		return false
-	end,
-	--awful.completion.shell,
-	nil,
-	awful.util.getdir("cache") .. "/task_history",
-	nil)
+	)
 end
 function taskwidget.update_tasks(tasks)
 	if tasks then
@@ -172,9 +180,12 @@ function taskwidget.modal_menu(args)
 	})
 	local task_ids = {}
 	local function add_item(item,level,last)
+		if not item then
+			return
+		end
 		local level = level or 0
 		--print(i)
-		if level > 0 or not task_ids[item.id] then
+		if level > 0 or not task_ids[item.uuid] then
 			local description = ""
 			if level > 0 and not last then
 				description = string.rep(" ",level-1).."⊢"
@@ -188,7 +199,13 @@ function taskwidget.modal_menu(args)
 				description = " "..description
 			end
 			local tags = ""
+			--local tags = task.tags or {}
 			if item.tags then
+				for i,k in ipairs(item.tags) do
+					if k:sub(1,1) ~= "#" then
+						item.tags[i] = "#"..k
+					end
+				end
 				tags = table.concat(item["tags"],",")
 			end
 			local due = ""
@@ -218,14 +235,35 @@ function taskwidget.modal_menu(args)
 				for _,id  in ipairs(item.depends) do 
 					number = number + 1
 					local task = taskwidget.tasks[id]
-					task_ids[task.id] = true
-					for i,k in ipairs(actions) do
-						if task.id == k.id then
-							table.remove(actions,i)
-						end
-					end
+					--task_ids[task.uuid] = true
+					--if task then
+						--task_ids[task.uuid] = true
+					--end
+					--for i,k in ipairs(actions) do
+						--if task.id == k.id then
+							--table.remove(actions,i)
+						--end
+					--end
 					add_item(task, level + 1, number == #(item.depends))
 				end
+			end
+		end
+	end
+	for i,item in pairs(tasks) do
+		if item.depends then
+			--local number = 0
+			for _,id  in ipairs(item.depends) do 
+				--number = number + 1
+				local task = taskwidget.tasks[id]
+				if task then
+					task_ids[task.uuid] = true
+				end
+				--for i,k in ipairs(actions) do
+					--if task.id == k.id then
+						--table.remove(actions,i)
+					--end
+				--end
+				--add_item(task, level + 1, number == #(item.depends))
 			end
 		end
 	end
@@ -272,14 +310,15 @@ function taskwidget.modal_actions(item)
 	table.insert(actions,{
 		hint = "c",
 		desc = "ADD CHILD",
-		func = function() 
-			prompt(" add depends:"..item.id.." ") 
+		func = function()
+			prompt("add blocks:"..item.id.." ") 
 		end,
 	})
 	table.insert(actions,{
 		hint = "p",
 		desc = "ADD PARENT",
-		func = function() prompt("add blocks:"..item.id.." ") 
+		func = function() 
+			prompt(" add depends:"..item.id.." ") 
 		end,
 	})
 	table.insert(actions,{
@@ -337,7 +376,7 @@ function taskwidget.modal_actions(item)
 				{
 					desc="2H",
 					func = function()
-						os.execute("task "..task.id.." modify wait:now+2h")
+						os.execute("task "..item.id.." modify wait:now+2h")
 						--awful.util.spawn_with_shell("echo 'yes' | task "..task.id.." delete")
 					end,
 				},
@@ -345,6 +384,41 @@ function taskwidget.modal_actions(item)
 					desc="5H",
 					func = function()
 						os.execute("task "..item.id.." modify wait:now+5h")
+						--awful.util.spawn_with_shell("echo 'yes' | item "..item.id.." delete")
+					end,
+				},
+				{
+					desc="8H",
+					func = function()
+						os.execute("task "..item.id.." modify wait:now+8h")
+						--awful.util.spawn_with_shell("echo 'yes' | item "..item.id.." delete")
+					end,
+				},
+				{
+					desc="12H",
+					func = function()
+						os.execute("task "..item.id.." modify wait:now+12h")
+						--awful.util.spawn_with_shell("echo 'yes' | item "..item.id.." delete")
+					end,
+				},
+				{
+					desc="1d",
+					func = function()
+						os.execute("task "..item.id.." modify wait:now+24h")
+						--awful.util.spawn_with_shell("echo 'yes' | item "..item.id.." delete")
+					end,
+				},
+				{
+					desc="1.5d",
+					func = function()
+						os.execute("task "..item.id.." modify wait:now+36h")
+						--awful.util.spawn_with_shell("echo 'yes' | item "..item.id.." delete")
+					end,
+				},
+				{
+					desc="2d",
+					func = function()
+						os.execute("task "..item.id.." modify wait:now+48h")
 						--awful.util.spawn_with_shell("echo 'yes' | item "..item.id.." delete")
 					end,
 				},
@@ -373,7 +447,7 @@ local function worker(args)
 	taskwidget.imagebox = taskwidget.imagebox or args.imagebox or wibox.widget.imagebox()
 	local images	= args.images or {def="tasksmall.png"}
 	taskwidget.imagebox:set_image(ICON_DIR..images.def)
-	local timeout	= args.timeout or 300
+	local timeout	= args.timeout or 1000
 
 	taskwidget.reminders.overdue = timer({ timeout = 600 })
 	taskwidget.reminders.overdue:connect_signal("timeout",function()
@@ -386,17 +460,23 @@ local function worker(args)
 			end
 		end
 		if n == 0 then
-			taskwidget.reminders.due:stop()
+			taskwidget.reminders.overdue:stop()
 		end
 	end)
 	taskwidget.reminders.due = timer({ timeout = 30 })
 	taskwidget.reminders.due:connect_signal("timeout",function()
+		--print("due reminder")
 		local n = 0
 		for i,task in pairs(taskwidget.tasks) do
 			n = n + 1
 			if task:is_due() then
 				if task:is_now() then
 					--taskwidget.show_task(task,15)
+					local lang = ru
+					if string.match(task.description,"[a-zA-Z0-9,.!? ]*") ==text_tr then
+						lang ="en"
+					end
+					awful.spawn.with_shell("~/scripts/saytext.sh '"..lang.."' '"..task.description:gsub("'","´").."' fast &")
 					task:show(15)
 				end
 			end
@@ -415,7 +495,7 @@ local function worker(args)
 		cmd = { awful.util.shell, "-c", cmd },
 		settings = function()
 			taskwidget.update_tasks(json.decode(output))
-			--taskwidget.remind()
+			taskwidget.remind()
 			--print("settings")
 			taskwidget.watch.updatewidget(widget)
 			for i,k in pairs(taskwidget.afterupdate)do
@@ -445,7 +525,7 @@ local function worker(args)
 			text  = "<span color='"..widgets.fg.."'>"..dues.." </span>".."<span color='"..widgets.critical.."'>"..overdues.."</span>"
 			--text = dues.." ".."#bd6873"
 		else 
-			text  = "<span color='"..widgets.fg.."'>"..dues.." </span>"
+			text  = "<span color='"..widgets.fg.."'>"..dues.."</span>"
 		end
 		--print("module_path "..module_path)
 		--print("text widget")
@@ -460,6 +540,26 @@ local function worker(args)
 		--text = "TASK",
 		textboxes = {taskwidget.watch.widget}
 	})
+	widget:connect_signal('mouse::enter', function () 
+		--print("show reminders")
+		for i,task in pairs(taskwidget.tasks) do
+			if task:is_due() or task:is_overdue() then
+				--if task:is_now() then
+					----taskwidget.show_task(task,15)
+					--task:show(15)
+				--end
+				task:show(0)
+			end
+		end
+	end)
+	widget:connect_signal('mouse::leave', function () 
+		--print("hide reminders")
+		for i,task in pairs(taskwidget.tasks) do
+			if task:is_due() or task:is_overdue() then
+				task:hide()
+			end
+		end
+	end)
 	--duetask_notification=nil
 	--due_notif_destroy= function ()
 		--if duetask_notification then

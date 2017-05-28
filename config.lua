@@ -205,10 +205,11 @@ config.globalkeys = awful.util.table.join(
 		    local cl = client.focus
 		    local actions = {}
 		    if cl.class == "Firefox" then
-			    local title = cl.name:split(" ")
+			    --local title = strings.split(cl.names," ")
 			    --print(cl.name:gmatch("http%S+"))
 			    local url
-			    for i,k in pairs(title) do
+			    --string.gmatch(example, "%S+")
+			    for k in string.gmatch(cl.name,"%S+") do
 				    if k:find("http") then
 					    url = k
 				    end

@@ -1,5 +1,10 @@
+local module_path = (...):match ("(.+/)[^/]+$") or ""
+local icons_dir    = require("lain.helpers").icons_dir.."cal/white/"
 --local taskwidget = require("widgets.taskwidget")
+local widgetcreator = require("widgets")
+local widgets = widgetcreator
 local json	= require("json")
+local naughty = require("naughty")
 
 local function todec(num)
 	if num < 10 then
@@ -12,6 +17,19 @@ local function totime(str)
 	local hours = math.floor(time/100)+3
 	local minutes = math.floor(time%100)
 	return {hours = hours, minutes = minutes }
+end
+local function tofont(str,size,bold,font,color)
+	local bold = bold
+	if bold then
+		bold = "bold"
+	else
+		bold = ""
+	end
+	local size = size or 15
+	local font = font or "Cantarel"
+	local color = color or "white"
+	local text  = "<span font='"..font.." "..bold.." "..size.."' color='"..color.."'>"..str.."</span>"
+	return text
 end
 local function todate(str)
 	if str and type(str) == "string" then
@@ -90,21 +108,21 @@ local function worker(data,args)
 	function task:is_now()
 		local min1 = now()
 		local plus1 = now()
-		min1.minute = min1.minute - 1
-		plus1.minute = plus1.minute + 1
+		min1.minute = min1.minutes - 1
+		plus1.minute = plus1.minutes + 1
 		if task.due and task.due:greater(min1) and plus1:greater(task.due) then
 			return true
 		end
 		return false
 	end
 	function task:is_due()
-		if task.due and not task:is_waiting() and task.due:greater(today()) then
+		if task.due and not task:is_waiting() and task.due:greater(today()) and task.due:greater(now()) then
 			return true
 		end
 		return false
 	end
 	function task:is_overdue()
-		if task.due and not task:is_waiting() and today():greater(task.due) then
+		if task.due and not task:is_waiting() and now():greater(task.due) then
 			return true
 		end
 		return false
@@ -127,8 +145,15 @@ local function worker(data,args)
 		end
 		return false
 	end
+	function task:hide()
+		local notif_id = task.notif_id
+		if notif_id then
+			naughty.destroy(notif_id)
+		end
+	end
 	function task:show(timeout,args)
 		local args = args or {} 
+		local color = args.color or "white"
 		local title = args.title
 		local description = task.description or ""
 		local tags = task.tags or {}
@@ -149,6 +174,9 @@ local function worker(data,args)
 		local notify_icon = nil
 
 		--local title = description
+		if task:is_overdue() then
+			color = widgets.critical
+		end
 		local strings={}
 		if #description > 1 then
 			description = description:sub(1,1):upper()..description:sub(2,-1)
@@ -158,17 +186,17 @@ local function worker(data,args)
 		end
 		if title then
 			--description = title:upper().." "..description
-			table.insert(strings,tofont(title:upper(),22,true))
+			table.insert(strings,tofont(title:upper(),22,true,nil,color))
 		end
-		table.insert(strings,tofont(description,20,true))
-		table.insert(strings,tofont(tags,15,true))
+		table.insert(strings,tofont(description,20,true,nil,color))
+		table.insert(strings,tofont(tags,15,true,nil,color))
 		if task.due then
 			local date = todate(task.due)
 			table.insert(strings,tofont(date.day.."."..date.month.."."..date.year,10))
 			local today = date.day
 			notify_icon = icons_dir .. today .. ".png"
 			if date.hours and date.minutes then
-				table.insert(strings,tofont(date.hours..":"..date.minutes))
+				table.insert(strings,tofont(todec(date.hours)..":"..todec(date.minutes)))
 			end
 		end
 		--print(table.concat(strings,"\n"))
@@ -190,6 +218,7 @@ local function worker(data,args)
 			width = mouse.screen.geometry.width/4,
 			screen = screennum,
 			bg = theme.bg_focus,
+			--fg = color,
 			--icon = '/usr/share/icons/Faenza/apps/96/x-office-calendar.png',
 			icon = notify_icon,
 			--icon_size = not notify_icon and 50 or nil,
