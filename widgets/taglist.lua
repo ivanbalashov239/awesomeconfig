@@ -487,12 +487,14 @@ end
 
 function taglist.nexttag(args)
 	local args = args or {}
+	local tags = args.tags or taglist:get_tags()
 	local screen = args.screen or capi.mouse.screen
+	local ipairs = args.ipairs or ipairs
 	local nonempty = args.nonempty or true
 	local direction = args.direction or 1
 	local current = false
 	local _return = args._return or false
-	for i,k in ipairs(taglist:get_tags())do
+	for i,k in ipairs(tags)do
 		--print(k.name)
 			if current then
 				if not k.hidden and ((nonempty and #(k:clients())>0) or not nonempty) then
@@ -500,9 +502,17 @@ function taglist.nexttag(args)
 					if _return then
 						return k
 					else
-						sharedtags.viewonly(k,screen)
-						k:view_only()
-						return
+						local not_minimized = false
+						for i,cli in pairs(k:clients()) do
+							if not cli.floating and not cli.minimized then
+								not_minimized = true
+							end
+						end
+						if not_minimized then
+							sharedtags.viewonly(k,screen)
+							k:view_only()
+							return
+						end
 					end
 				end
 			else
@@ -515,42 +525,28 @@ function taglist.nexttag(args)
 end
 function taglist.prevtag(args)
 	local args = args or {}
+	local tags = args.tags or taglist:get_tags()
 	local screen = args.screen or capi.mouse.screen
 	local nonempty = args.nonempty or true
 	local direction = args.direction or 1
-	local current = false
-	local prevtag = nil
 	local _return = args._return or false
-	for i,k in ipairs(taglist:get_tags())do
-		--print(prevtag and prevtag.name or "nil")
-		--print(tostring(i)..tostring(k.name))
-		if not current then
-			if k == screen.selected_tag then
-				--print(k.name.." current")
-				current = true
-			elseif nonempty and #(k:clients())> 0 and not k.hidden then
-				--print("setting prev "..k.name)
-				prevtag = k
-			end
+	-- traversing the whole 'array'
+	local function ripairs(t)
+		idx={}
+		for k,v in pairs(t) do
+			if type(k)=="number" then idx[#idx+1]=k end
 		end
-		--print(prevtag and "prevtag "..prevtag.name or "no prev tag")
-		if current then
-			--k:view_only()
-			if prevtag and not prevtag.hidden and ((nonempty and #(k:clients())>0) or not nonempty ) then
-				--print("switching to "..prevtag.name)
-				if _return then
-					return prevtag
-				else
-					sharedtags.viewonly(prevtag,screen)
-					prevtag:view_only()
-				end
-				break
-			elseif nonempty and #(k:clients())> 0 and not k.hidden then
-				--print("setting prev "..k.name)
-				prevtag = k
-			end
+		table.sort(idx)
+		local function ripairs_it(t,_)
+			if #idx==0 then return nil end
+			k=idx[#idx]
+			idx[#idx]=nil
+			return k,t[k]
 		end
+		return ripairs_it, t, nil
 	end
+	args.ipairs = args.ipairs or ripairs
+	return taglist.nexttag(args)
 end
 function taglist.focus(args)
 	local args = args or {}
@@ -615,13 +611,13 @@ function taglist.focus(args)
 			table.insert(actions,{
 				modal = true,
 				hint = cl.hint,
-				desc = cl.class.." | "..cl.name,
+				desc = cl.class.." | "..cl.name or "",
 				actions = tags
 			})
 		else
 			table.insert(actions,{
 				hint = i,
-				desc = cl.class.." | "..cl.name,
+				desc = cl.class.." | "..cl.name or "",
 				func = function()
 					focus(cl,cl:tags()[1])
 				end
