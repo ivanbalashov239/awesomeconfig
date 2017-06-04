@@ -52,6 +52,7 @@ local newtag	 = require("newtag")
 newtag.init()
 --local quake 	 = require("quake")
 local scratch	 = require("scratch")
+local scratchpad = require("utils.scratchpad")
 --local utf8 	 = require("utf8_simple")
 lain.helpers     = require("lain.helpers")
 local menubar = require("menubar")
@@ -59,7 +60,7 @@ menubar.terminal = "termite"
 menubar.menu_gen.all_menu_dirs = { "/usr/share/applications/", "/usr/local/share/applications", "~/.local/share/applications" }
 local cheeky 	 = require("cheeky")
 --local appsuspender = require("appsuspender")
-local im = require("im")
+--local im = require("im")
 --local task = require("task")
 local capi = {
 	mouse = mouse,
@@ -71,6 +72,10 @@ local capi = {
 
 
 local config = {}
+local dropdownterm  = "termite -r DROPDOWN -e 'tmux attach -t dropdown '"
+local dropdownterm = scratchpad({
+	command = dropdownterm
+})
 config.panel = {}
 config.panel.left = {
 	widgets.spr5px,
@@ -169,9 +174,15 @@ config.globalkeys = awful.util.table.join(
 	    end),
 	    awful.key({ modkey,       }, "q",   function (c) if client.focus then client.focus:kill() end end),
 	    awful.key({ modkey,	          }, "u",      function () 
-		    awful.util.spawn_with_shell("tmux new -d -s dropdown") 
-		    scratch.drop(dropdownterm)
+		    awful.spawn.with_shell("tmux new -d -s dropdown") 
+		    --scratch.drop(dropdownterm)
+		    dropdownterm:toggle()
 	    end), 
+	    --awful.key({ modkey,	          }, "u",      function () 
+		    ----awful.spawn.with_shell("tmux new -d -s dropdown") 
+		    ----scratch.drop(dropdownterm)
+		    --im:toggle()
+	    --end), 
 	    awful.key({ modkey, "Control"  }, "x",      function () exec("/home/ivn/scripts/trackpoint/trackpointkeys.sh switch &") end),
 	    awful.key({ modkey            }, "g",      function () run_or_raise("gvim", { class = "Gvim" }) end),
 	    awful.key({ modkey            }, "Print",  function () exec("screengrab") end),

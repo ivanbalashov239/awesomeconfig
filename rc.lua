@@ -46,7 +46,8 @@ lain.helpers     = require("lain.helpers")
 --menubar.terminal = "termite"
 --menubar.menu_gen.all_menu_dirs = { "/usr/share/applications/", "/usr/local/share/applications", "~/.local/share/applications" }
 --local appsuspender = require("appsuspender")
-local im = require("im")
+--local im = require("im")
+local scratchpad = require("utils.scratchpad")
 --local task = require("task")
 local capi = {
     mouse = mouse,
@@ -142,7 +143,6 @@ apps = {}
 terminal      = "termite"
 --menubar.utils.terminal = terminal -- Set the terminal for applications that require it
 --menubar.menu_gen.all_menu_dirs = { "/usr/share/applications/", "/usr/local/share/applications", "~/.local/share/applications" }
-dropdownterm  = "termite -r DROPDOWN -e 'tmux attach -t dropdown '"
 tmux          = "termite -e tmux"
 termax        = "termite --geometry 1680x1034+0+22"
 htop_cpu      = "termite -e 'htop -s PERCENT_CPU' -r HTOP_CPU"
@@ -221,7 +221,7 @@ local tags = sharedtags({
     { name = "im",
     layout = awful.layout.layouts[1],
     hidden	    = true,
-    mwfact      = 0.15,
+    master_width_factor      = 0.15,
     hint = "i",
     },
     --{ name = "misc", layout = awful.layout.layouts[2] },
@@ -230,9 +230,49 @@ local tags = sharedtags({
     --{ screen = 2, layout = awful.layout.layouts[2] }
 })
 tags["im"].hidden = true
+tags["im"].master_width_factor = 0.15
 tags["all"].hint = "a"
 tags["im"].hint = "i"
 widgets.taglist.tags = tags
+local im = scratchpad({
+	set_geometry = scratchpad.functions.im_geometry,
+	--hide  = scratchpad.functions.place_away,
+	hide  = function(c,old)
+		c:tags({})
+		c.screen = old.screen
+		c:geometry(old.geometry)
+		c.floating = false
+		c:geometry(old.geometry)
+		c:tags({tags["im"]})
+	end,
+	hide_on_unfocus = true,
+	--spawn = function(f)
+		----local new_geometry = set_geometry(capi.client.focus)
+		--awful.util.spawn("env QT_IM_MODULE=xim telegram-desktop",{
+			----floating = true,
+			----hidden = true,
+			----width = new_geometry.width,
+			----height = new_geometry.height,
+			----x = new_geometry.x,
+			----y = new_geometry.y
+
+		--},
+		--function(c)
+			----print("spawn "..command,15)
+			----local new_geometry = set_geometry(capi.client.focus)
+			----c:geometry(new_geometry)
+			--im.client = c
+			----c.hidden = true
+			----c:tags({})
+			--f(c)
+			----c:tags({})
+			----scratch:hide()
+			----scratch:show()
+			----old.tags = {}
+		--end)
+	--end
+
+})
 --tyrannical.tags = {
     --{
 	--name        = tagnames[1], --"Others",                 -- Call the tag "Term"
@@ -952,7 +992,10 @@ globalkeys = awful.util.table.join(config.globalkeys,
 		    --hintsetter:focus({modal_sc = modal_sc}) 
 		    widgets.taglist.focus()
 	    end),
-	    awful.key({ modkey,    }, "i", im),
+	    awful.key({ modkey,    }, "i",
+	    function()
+		    im:toggle()
+	    end),
 	    awful.key({ modkey, "Control" }, "i", 
 	    function ()
 		    local tag = tags["im"]
@@ -1119,7 +1162,8 @@ globalkeys = awful.util.table.join(config.globalkeys,
     { rule = { class = "TelegramDesktop"},
     properties = { tag = tags["im"], ontop = true},
     callback = function(c)
-	    im.lastpidgin = c
+	    --im.lastpidgin = c
+	    im.client = c
 	    local telegramtimer = timer({ timeout = 5 })
 	    local function escape()
 		    if telegramtimer.data.source_id ~= nil then

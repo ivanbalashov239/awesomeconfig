@@ -484,6 +484,7 @@ function taglist.global_bydirection(dir, c, all)
 		--end
 	end
 end    	
+end
 
 function taglist.nexttag(args)
 	local args = args or {}
@@ -509,7 +510,7 @@ function taglist.nexttag(args)
 								capi.client.focus = c
 							end
 						end
-						return
+						--return
 						local not_minimized = false
 						for i,cli in pairs(k:clients()) do
 							if not cli.floating and not cli.minimized then
