@@ -55,15 +55,11 @@ local function worker(args)
 		awful.util.spawn_with_shell("/home/ivn/scripts/saytext.sh  '"..lang.."' '"..text.."' fast >>/dev/null &")
 	end
 
-	mytextclockbuttons = awful.util.table.join(
-	awful.button({ }, 2,saytime),
-	awful.button({ }, 12,saytime)
-	)
 
-	mytextclock    = wibox.widget.textclock( lain.util.markup(widgets.clockgf, widgets.space3 .. "%H:%M" .. lain.util.markup.font("Tamsyn 3", " ")), 15)
+	local mytextclock    = wibox.widget.textclock( lain.util.markup(widgets.clockgf, widgets.space3 .. "%H:%M" .. lain.util.markup.font("Tamsyn 3", " ")), 15)
 	--mytextcalendar = awful.widget.textclock( lain.util.markup(widgets.clockgf, widgets.space3 .. "%a %d %b"))
 
-	clockwidget = widgetcreator(
+	local clockwidget = widgetcreator(
 	{
 		image = beautiful.widget_clock,
 		textboxes = {mytextclock}
@@ -86,6 +82,12 @@ local function worker(args)
 			bg   = widgets.bg
 		}
 	})
+	local mytextclockbuttons = awful.util.table.join(clockwidget:buttons(),
+	awful.button({ }, 2,saytime),
+	awful.button({ }, 12,saytime)
+	)
+	clockwidget:buttons(mytextclockbuttons)
+	--.attach(clockwidget)
 	--lain.widget.calendar.attach(clockwidget)
 	--lain.widget.calendar:attach(calendarwidget, 
 	--{ 
@@ -94,7 +96,6 @@ local function worker(args)
 	--}
 	--)
 	--calendarwidget:buttons(mytextclockbuttons)
-	clockwidget:buttons(mytextclockbuttons)
 
 	return clockwidget
 end

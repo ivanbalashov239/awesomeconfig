@@ -26,7 +26,20 @@ local function worker(args)
 			--bg   = widgets.bg
 		--}
 	--})
-	lain.widget.calendar.attach(calendarwidget)
+	--lain.widget.calendar.attach(calendarwidget)
+	lain.widget.calendar({
+		attach_to = {calendarwidget},
+		notification_preset = {
+			font = widgets.font,
+			fg   = widgets.fg,
+			bg   = widgets.bg
+		}
+	})
+	local mytextcalendarbuttons = awful.util.table.join(calendarwidget:buttons(),
+	awful.button({ }, 2,saytime),
+	awful.button({ }, 12,saytime)
+	)
+	calendarwidget:buttons(mytextcalendarbuttons)
 
 	return calendarwidget
 end

@@ -42,5 +42,7 @@ local function worker(args)
 	cpuwidget:buttons(cpubuttons)
 	return cpuwidget
 end
+function cpu_tmpwidget.menu()
+end
 
 return setmetatable(cpu_tmpwidget, {__call = function(_,...) return worker(...) end})

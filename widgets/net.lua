@@ -16,9 +16,8 @@ local function worker(args)
 	local wireless_interface = args.wireless_interface or "wlp3s0"
 	local wifitextlayout = wibox.layout.fixed.horizontal()
 	local backtext = wibox.container.constraint()
-	print(wired_interface)
 	local net_wireless = net_widgets.wireless({
-		interface="wlp0s18f2u3", 
+		interface=wireless_interface, 
 		widget = false, 
 		indent = 0, 
 		timeout = 10,

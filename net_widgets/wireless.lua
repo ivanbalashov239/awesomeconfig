@@ -5,6 +5,7 @@ local beautiful     = require("beautiful")
 local naughty       = require("naughty")
 local module_path = (...):match ("(.+/)[^/]+$") or ""
 local timer = require("gears").timer
+local lain = require("lain")
 local helpers = require("lain.helpers")
 
 local wireless = {}
@@ -68,9 +69,60 @@ local function worker(args)
 	    end)
     end
 
-    net_update()
-    net_timer:connect_signal("timeout", net_update)
-    net_timer:start()
+    --net_update()
+    --net_timer:connect_signal("timeout", net_update)
+    --net_timer:start()
+    local watch = lain.widget.watch({
+	    timeout = timeout,
+	    stoppable = true,
+	    watch = {widget = widget},
+	    --cmd = { awful.util.shell, "-c", string.format("ls -1dr %s/INBOX/new/*", mailpath) },
+	    cmd = { awful.util.shell, "-c", "awk 'NR==3 {printf \"%3.0f\" ,($3/70)*100}' /proc/net/wireless" },
+	    settings = function()
+		    --widget.connected = false
+		    --if string.match(output, "UP") then
+			    --widget.connected = true
+		    --end
+		    --if widget.connected then
+			    --widget:set_image(ICON_DIR.."wired.png")
+		    --else
+			    --widget:set_image(ICON_DIR.."wired_na.png")
+		    --end
+		    --print(signal_level)
+		    signal_level = tonumber(output)
+		    if signal_level == nil then
+			    connected = false
+			    net_text:set_text(" N/A ")
+			    net_icon:set_image(ICON_DIR.."wireless_na.png")
+		    else
+			    connected = true
+			    net_text:set_text(string.format("%"..indent.."d%%", signal_level))
+			    if signal_level < 25 then
+				    net_icon:set_image(ICON_DIR.."wireless_0.png")
+			    elseif signal_level < 50 then
+				    net_icon:set_image(ICON_DIR.."wireless_1.png")
+			    elseif signal_level < 75 then
+				    net_icon:set_image(ICON_DIR.."wireless_2.png")
+			    else
+				    net_icon:set_image(ICON_DIR.."wireless_3.png")
+			    end
+		    end
+		    if settings then
+			    settings({
+				    signal_level = signal_level,
+				    connected = connected,
+				    ICON_DIR      = ICON_DIR,
+				    interface     = interface,
+				    timeout       = timeout,   
+				    font          = font,
+				    popup_signal  = popup_signal,
+				    onclick       = onclick, 
+				    widget 	  = widget,
+				    indent 	  = indent,	  
+			    })
+		    end
+	    end
+    })
     
     widgets_table["imagebox"]	= net_icon
     widgets_table["textbox"]	= net_text

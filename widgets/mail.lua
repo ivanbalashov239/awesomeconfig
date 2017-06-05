@@ -124,19 +124,23 @@ local function worker(args)
 	local mail_widget3 = getmailwidget({mailbox = "FateGmail", textbox = mail_widget3})
 	--local mail_widget2 = getmailwidget({mailbox = "FateYandex", textbox = mail_widget2 }) 
 	local mail_widget1 = getmailwidget({mailbox = "Personal", textbox = mail_widget1})
-	local mailwidget = widgetcreator({
+	function mailwidget.update()
+		mail_widget3.update()
+		mail_widget1.update()
+	end
+	local widget = widgetcreator({
 		text = "MAIL",
 		textboxes = {mail_widget1, mail_widget3 }, --2, mail_widget3},
 	})
-	mail_widget3:attach(mailwidget)
-	--mail_widget2:attach(mailwidget)
-	mail_widget1:attach(mailwidget)
-	mailwidget:buttons(awful.util.table.join(awful.button({ }, 1,
+	mail_widget3:attach(widget)
+	--mail_widget2:attach(widget)
+	mail_widget1:attach(widget)
+	widget:buttons(awful.util.table.join(awful.button({ }, 1,
 	function ()
 		local timer = timer({ timeout = 1 })
 		timer:connect_signal("timeout", function ()
 			local cm = mutt.." /home/ivn/.mutt/Personal'"
-			run_or_raise(cm, { class = "UXTerm" }) 
+			run_or_raise(cm, { class = "UXTerm" },widgets.mail.update)
 			timer:stop()
 		end)
 		timer:start()
@@ -156,7 +160,7 @@ local function worker(args)
 		local timer = timer({ timeout = 1 })
 		timer:connect_signal("timeout", function ()
 			local cm = mutt.." /home/ivn/.mutt/FateGmail'"
-			run_or_raise(cm, { class = "UXTerm" }) 
+			run_or_raise(cm, { class = "UXTerm" },widgets.mail.update)
 			timer:stop()
 		end)
 		timer:start()
@@ -167,10 +171,10 @@ local function worker(args)
 
 	--widget_mail = wibox.widget.imagebox()
 	--widget_mail:set_image(beautiful.widget_mail)
-	--mailwidget = wibox.widget.background()
-	--mailwidget:set_widget(mail_widget)
-	--mailwidget:set_bgimage(beautiful.widget_display)
-	return mailwidget
+	--widget = wibox.widget.background()
+	--widget:set_widget(mail_widget)
+	--widget:set_bgimage(beautiful.widget_display)
+	return widget
 end
 
 return setmetatable(mailwidget, {__call = function(_,...) return worker(...) end})

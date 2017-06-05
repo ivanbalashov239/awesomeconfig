@@ -5,6 +5,7 @@ local beautiful     = require("beautiful")
 local naughty       = require("naughty")
 local module_path = (...):match ("(.+/)[^/]+$") or ""
 local timer = require("gears").timer
+local lain = require("lain")
 local helpers = require("lain.helpers")
 
 local indicator = {}
@@ -64,28 +65,50 @@ local function worker(args)
     end
 
     widget:set_image(ICON_DIR.."wired_na.png")
-    local function net_update()
-        connected = false
-        for _, i in pairs(interfaces) do
-		helpers.async({ shell, "-c", "ip link show "..i.." | awk 'NR==1 {printf \"%s\", $9}'" }, function(f)
-			state = f
-			if (state == "UP") then
-				connected = true
-			end
-			if connected then
-				widget:set_image(ICON_DIR.."wired.png")
-			else
-				widget:set_image(ICON_DIR.."wired_na.png")
-			end
-		end)
-        end
-    end
+    --local function net_update()
+	    --print("wired_update",10)
+        --connected = false
+        --for _, i in pairs(interfaces) do
+		--print(connected,10)
+		--helpers.async({ shell, "-c", "ip link show "..i.." | awk 'NR==1 {printf \"%s\", $9}'" }, function(f)
+			--state = f
+			----print("async update wired "..state,10)
+			--print(widget)
+			--if (state == "UP") then
+				--connected = true
+			--end
+			--if connected then
+				--widget:set_image(ICON_DIR.."wired.png")
+			--else
+				--widget:set_image(ICON_DIR.."wired_na.png")
+			--end
+		--end)
+        --end
+    --end
 
-    net_update()
+    --net_update()
+    local watch = lain.widget.watch({
+	    timeout = timeout,
+	    stoppable = true,
+	    watch = {widget = widget},
+	    --cmd = { awful.util.shell, "-c", string.format("ls -1dr %s/INBOX/new/*", mailpath) },
+	    cmd = { awful.util.shell, "-c", "ip link show "..interfaces[1].." | awk 'NR==1 {printf \"%s\", $9}'" },
+	    settings = function()
+		    widget.connected = false
+		    if string.match(output, "UP") then
+			    widget.connected = true
+		    end
+		    if widget.connected then
+			    widget:set_image(ICON_DIR.."wired.png")
+		    else
+			    widget:set_image(ICON_DIR.."wired_na.png")
+		    end
+	    end
+    })
 
-    local net_timer = timer({ timeout = timeout })
-    net_timer:connect_signal("timeout", net_update)
-    net_timer:start()
+    --local net_timer = timer({ timeout = timeout })
+    --net_timer:connect_signal("timeout", net_update)
+    --net_timer:start()
 
     local notification = nil
     function widget:hide()

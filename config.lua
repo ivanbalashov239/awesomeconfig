@@ -101,7 +101,9 @@ config.panel.right = {
 	awful.widget.only_on_screen (
 	widgets.mem(),"primary"),
 	host.widgets.mail,
-	widgets.fs(),
+	widgets.fs({
+		--watch = true,
+	}),
 	host.widgets.battery,
 	widgets.calendar(),
 	widgets.time(),
@@ -211,11 +213,14 @@ config.globalkeys = awful.util.table.join(
 		    --bomicontrol("pause")
 	    end),
 	    awful.key({modkey		  }, "F12",      function () exec("systemctl suspend") end),
+	    awful.key({ modkey, "Control"   }, "w",  
+	    widgets.fs.media_files_menu
+    ),
 	    awful.key({ modkey, "Control"   }, "b",  
 	    function () 
 		    local cl = client.focus
 		    local actions = {}
-		    if cl.class == "Firefox" then
+		    if cl and cl.class == "Firefox" then
 			    --local title = strings.split(cl.names," ")
 			    --print(cl.name:gmatch("http%S+"))
 			    local url
@@ -425,7 +430,7 @@ end),
 awful.key({ modkey,           }, "w",      function () mainmenu:show() end),
 awful.key({ modkey, "Control" }, "n",  widgets.pulse.up),
 awful.key({ modkey, "Control" }, "t",  widgets.pulse.down),
-awful.key({ modkey, "Control" }, "m",  widgets.pulse.togglemute),
+awful.key({ modkey, "Control" }, "m",  widgets.pulse.menu),
 awful.key({ modkey,           }, "m",
 modal_sc({
 	name="MAIL",
@@ -434,7 +439,7 @@ modal_sc({
 			hint = "m",
 			func = function()
 				local cm = mutt.." /home/ivn/.mutt/Personal'"
-				run_or_raise(cm, { class = "UXTerm" }) 
+				run_or_raise(cm, { class = "UXTerm" },widgets.mail.update)
 			end,
 			desc = "Personal"
 		},
@@ -442,7 +447,7 @@ modal_sc({
 			hint = "t",
 			func = function()
 				local cm = mutt.." /home/ivn/.mutt/FateGmail'"
-				run_or_raise(cm, { class = "UXTerm" }) 
+				run_or_raise(cm, { class = "UXTerm" },widgets.mail.update)
 			end,
 			desc = "Gmail"
 		},

@@ -8,6 +8,7 @@ config.widgets = {}
 	
 config.widgets.mail = awful.widget.only_on_screen (widgets.mail(),"primary")
 config.wired_interface = "enp5s0"
+config.wireless_interface="wlp0s18f2u3"
 config.autostart = {}
 config.autostart.execute = {
 	"pkill dropbox",
