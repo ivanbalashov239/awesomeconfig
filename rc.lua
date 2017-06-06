@@ -1502,6 +1502,22 @@ end
 					cl:tags({tags["all"]})
 				end
 			end)
+			tag:connect_signal("untagged",function(t,cl)
+				if cl.type == "normal" then
+					local i = 0
+					for _,k in pairs(t:clients()) do
+						if k and k.type == "normal" and not k.floating and not k.fullscreen then
+							i = i+1
+						end
+					end
+					if i == 0 then
+						for _,k in pairs(t:clients()) do
+							k:tags({tags["all"]})
+						end
+						t:delete()
+					end
+				end
+			end)
 			local clients = t:clients()
 			for i,k in ipairs(clients)do
 				if k == c then

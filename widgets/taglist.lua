@@ -592,6 +592,7 @@ function taglist.focus(args)
 	end
 	--debuginfo(hintindex)
 	local focus = function(cl,tag)
+		cl.minimized = false
 		client.focus = cl
 		cl:raise()
 		--awful.tag.viewonly(tag)

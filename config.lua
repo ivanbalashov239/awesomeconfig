@@ -68,6 +68,10 @@ local capi = {
 	screen = screen
 }
 
+local function exec(...)
+	--os.execute(...)
+	awful.spawn(...)
+end
 
 
 
