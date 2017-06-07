@@ -4,6 +4,7 @@ local beautiful = require("beautiful")
 local wibox = require("wibox")
 local lain = require("lain")
 local awful = require("awful")
+local gears      = require("gears")
 local naughty = require("naughty")
 
 local kbddwidget ={}
@@ -73,7 +74,7 @@ local function worker(args)
 		textboxes = {kbdtext}
 		--textboxes = {awful.widget.keyboardlayout:new()}
 	})
-	kbdwidget:buttons(awful.util.table.join(
+	kbdwidget:buttons(gears.table.join(
 	--awful.button({ }, 12, function () run_once("cantata --style gtk+") end),
 	--awful.button({ }, 2, function () run_once("cantata --style gtk+") end),
 	--awful.button({ }, 3, function () mpd_seek_forward()  end),

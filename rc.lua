@@ -475,7 +475,7 @@ mpdwidget =      config.mpdwidget
 -- | Tasklist | --
 
 myiconlist         = {}
-myiconlist.buttons = awful.util.table.join(
+myiconlist.buttons = gears.table.join(
                      awful.button({ }, 1, function (c)
 					      if c == client.focus then
 						  c.minimized = true
@@ -531,7 +531,7 @@ local function matchrules(rules, exclude)
 end
 
 mytasklist         = {}
-mytasklist.buttons = awful.util.table.join(
+mytasklist.buttons = gears.table.join(
                      awful.button({ }, 1, function (c)
                                               if c == client.focus then
                                                   c.minimized = true
@@ -590,7 +590,7 @@ awful.screen.connect_for_each_screen(function(s)
     --mypromptbox[s] = awful.widget.prompt()
     
     s.mylayoutbox = awful.widget.layoutbox(s)
-    s.mylayoutbox:buttons(awful.util.table.join(
+    s.mylayoutbox:buttons(gears.table.join(
                            awful.button({ }, 1, function () awful.layout.inc( 1) end),
                            awful.button({ }, 3, function () awful.layout.inc(-1) end),
                            awful.button({ }, 4, function () awful.layout.inc( 1) end),
@@ -722,7 +722,7 @@ end)
 
 -- | Mouse bindings | --
 
-root.buttons(awful.util.table.join(
+root.buttons(gears.table.join(
     awful.button({ }, 3, function () mainmenu:toggle() end),
     awful.button({modkey, }, 4, awful.tag.viewnext),
     awful.button({modkey, }, 5, awful.tag.viewprev)
@@ -816,7 +816,7 @@ function translator(text_tr)
 	end
 end
 
-globalkeys = awful.util.table.join(config.globalkeys,
+globalkeys = gears.table.join(config.globalkeys,
 
     awful.key({ modkey, "Control"  }, "h", 
 		function ()
@@ -1114,7 +1114,7 @@ globalkeys = awful.util.table.join(config.globalkeys,
 	    --awful.key({ altkey  }, "ISO_Level3_Shift",   widgets.kbdd.set_en)
 	    )
 
-	    clientkeys = awful.util.table.join(config.clientkeys,
+	    clientkeys = gears.table.join(config.clientkeys,
 	    awful.key({ modkey,           }, "d",      function (c) 
 		    --awful.client.movetoscreen(c)
 		    sharedtags.viewonly(o,screen.selected)
@@ -1135,7 +1135,7 @@ globalkeys = awful.util.table.join(config.globalkeys,
 	    )
 
 
-	    clientbuttons = awful.util.table.join(config.clientbuttons,
+	    clientbuttons = gears.table.join(config.clientbuttons,
 	    awful.button({ }, 1, function (c) client.focus = c; c:raise() end),
 	    awful.button({ modkey }, 1, awful.mouse.client.move),
 	    awful.button({ modkey }, 3, awful.mouse.client.resize)
@@ -1170,7 +1170,7 @@ globalkeys = awful.util.table.join(config.globalkeys,
 		   return result
 	   end
 
-	    --awful.rules.rules = awful.util.table.join(config.rules,
+	    --awful.rules.rules = gears.table.join(config.rules,
 	    awful.rules.rules = concat_rules({config.rules,{
 		    { rule = { },
 		    properties = { border_width = beautiful.border_width,
@@ -1582,7 +1582,7 @@ end
 
 		local titlebars_enabled = true
 		if titlebars_enabled and (c.type == "dialog") then  --{ c.type == "normal" or 
-			local buttons = awful.util.table.join(
+			local buttons = gears.table.join(
 			awful.button({ }, 1, function()
 				client.focus = c
 				c:raise()

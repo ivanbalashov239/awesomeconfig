@@ -1,6 +1,7 @@
 local gears      = require("gears")
 timer = gears.timer
 local awful      = require("awful")
+local gears      = require("gears")
 awful.rules      = require("awful.rules")
 local common 	 = require("awful.widget.common")
 local fixed 	 = require("wibox.layout.fixed")
@@ -122,7 +123,7 @@ function run_once(cmd)
 	awful.util.spawn_with_shell("pgrep -u $USER -x " .. findme .. " > /dev/null || (" .. cmd .. ")")
 end
 config.autostart = {}
-config.autostart.execute = awful.util.table.join(host.autostart.execute,{
+config.autostart.execute = gears.table.join(host.autostart.execute,{
 
 	--"pkill compton",
 	--"pkill pidgin; pidgin &",
@@ -144,7 +145,7 @@ local locker = '/home/ivn/scripts/run_slimlock_onstart.sh'
 local xautolock     = "xautolock -locker '"..locker.."' -nowlocker '"..locker.."' -time 10 &"
 local locknow       = "xautolock -locknow &"
 local browser       = "firefox"
-config.autostart.run_once = awful.util.table.join(host.autostart.run_once,{
+config.autostart.run_once = gears.table.join(host.autostart.run_once,{
 
 	--"linconnect-server &",
 	--"kbdd",
@@ -170,7 +171,7 @@ modkey        = "Mod4"
 altgr        = "Mod5"
 altkey        = "Mod1"
 
-config.globalkeys = awful.util.table.join(
+config.globalkeys = gears.table.join(
 	    awful.key({ modkey }, "l",
 	    function ()
 		    awful.prompt.run({ prompt = "Run Lua code: " },
@@ -496,8 +497,8 @@ function ()
 	--end
 end)
 )
-config.clientkeys = awful.util.table.join()
-config.clientbuttons = awful.util.table.join()
+config.clientkeys = gears.table.join()
+config.clientbuttons = gears.table.join()
 
 
 
