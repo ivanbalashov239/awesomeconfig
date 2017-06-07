@@ -30,4 +30,5 @@ config.autostart.run_once = {
 	--"parcellite",
 	"pidgin",
 }
+config.client_specific =true
 return config

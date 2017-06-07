@@ -271,8 +271,11 @@ local function worker(args)
 	end
 	--return awful.widget.taglist(screen, awful.widget.taglist.filter.all, mytaglist.buttons)
 	--local taglist = awful.widget.taglist(screen, awful.widget.taglist.filter.all, mytaglist.buttons, {}, taglist_update)
-	return awful.widget.taglist(screen, awful.widget.taglist.filter.all, mytaglist.buttons, {}, list_update)
-	--return w
+	local tlist = awful.widget.taglist(screen, awful.widget.taglist.filter.all, mytaglist.buttons, {}, list_update)
+	capi.client.connect_signal("property::fullscreen",function()
+		capi.client.emit_signal("focus",capi.client.focus)
+	end)
+	return tlist
 end
 function get_clients_by_geometry(tag)
 	local clients = tag:clients()

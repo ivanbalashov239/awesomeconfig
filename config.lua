@@ -126,7 +126,7 @@ config.autostart.execute = awful.util.table.join(host.autostart.execute,{
 
 	--"pkill compton",
 	--"pkill pidgin; pidgin &",
-	"pkill kbdd; kbdd &",
+	--"pkill kbdd; kbdd &",
 	"setxkbmap 'my(dvp),my(rus)' &",
 	--"setxkbmap 'my(dvp),my(rus)' setxkbmap -option grp:caps_toggle,grp_led:caps -print | xkbcomp - $DISPLAY; xkbcomp $DISPLAY - | egrep -v 'group . = AltGr;' | xkbcomp - $DISPLAY &",
 	--"xkbcomp $HOME/.config/xkb/my $DISPLAY &",
@@ -156,7 +156,7 @@ config.autostart.run_once = awful.util.table.join(host.autostart.run_once,{
 	--"pactl load-module module-loopback source=2 sink=0",
 	xautolock,
 	"perl /usr/share/cantata/scripts/cantata-dynamic start",
-	xkbtimer
+	--xkbtimer
 	--"evolution",
 	--"goldendict --style gtk+",
 })
@@ -509,21 +509,21 @@ config.rules = {
 	--callback = awful.client.setslave },
 	{rule = {role = "DROPDOWN"}, 
 	properties = {opacity = 0.8}},
-	{ rule = { class = "Pavucontrol" },
-	properties = { floating = true, intrusive = true } },
+	--{ rule = { class = "Pavucontrol" },
+	--properties = { floating = true, intrusive = true } },
 
-	{ rule = { class = "veromix" },
-	properties = { floating = true, intrusive = true } },
+	--{ rule = { class = "veromix" },
+	--properties = { floating = true, intrusive = true } },
 
-	{ rule = { name = "Громкость" },
-	properties = { floating = true, intrusive = true } },
+	--{ rule = { name = "Громкость" },
+	--properties = { floating = true, intrusive = true } },
 
-	{ rule = { class = "Vlc" },
-	properties = { floating = true } },
-	{ rule = { role = "HTOP_CPU" },
-	properties = { floating = true, intrusive = true} },
-	{ rule = { role = "HTOP_MEM" },
-	properties = { floating = true, intrusive = true } },
+	--{ rule = { class = "Vlc" },
+	--properties = { floating = true } },
+	--{ rule = { role = "HTOP_CPU" },
+	--properties = { floating = true, intrusive = true} },
+	--{ rule = { role = "HTOP_MEM" },
+	--properties = { floating = true, intrusive = true } },
 
 	{ rule = { class = "Exe"}, properties = {floating = true} },
 	{ rule = { class = "Plugin-container" },
@@ -532,6 +532,7 @@ config.rules = {
 }
 
 
+config.client_specific = {enabled = host.client_specific}
 
 
 return config

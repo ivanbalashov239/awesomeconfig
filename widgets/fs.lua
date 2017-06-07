@@ -6,16 +6,17 @@ local lain = require("lain")
 local vicious = require("vicious")
 local awful = require("awful")
 local naughty = require("naughty")
---local path = require("path")
+local path = require("path")
+local modal_sc = require("modal_sc")      
 
 local fswidget ={}
 fswidget.shortcuts = {}
 local function split(s, delimiter)
-    result = {};
-    for match in (s..delimiter):gmatch("(.-)"..delimiter) do
-        table.insert(result, match);
-    end
-    return result;
+	result = {};
+	for match in (s..delimiter):gmatch("(.-)"..delimiter) do
+		table.insert(result, match);
+	end
+	return result;
 end
 
 local function worker(args)
@@ -36,8 +37,8 @@ local function worker(args)
 				print("updating files")
 				--local f = {}
 				--for line in output:lines() do
-					----text = text.."\n"..line
-					--table.insert(f,line)
+				----text = text.."\n"..line
+				--table.insert(f,line)
 				--end
 				fswidget.files = split(output,"\n")
 				print("finish update files")
@@ -58,7 +59,7 @@ local function worker(args)
 			--local home_used = tonumber(fs_info["/home used_p"]) or 0
 			--widget:set_text(fs_now.used .. "%")
 			widget:set_text(fs_now.available_gb .. "GB")
-            --fs_now.available_gb = fs_info[partition .. " avail_gb"] or "N/A"
+			--fs_now.available_gb = fs_info[partition .. " avail_gb"] or "N/A"
 		end,
 		showpopup = "off"
 	})
@@ -72,104 +73,119 @@ local function worker(args)
 	fswidget:connect_signal('mouse::leave', function () fs_widget.hide() end)
 	--local fsnotification = nil
 	--function fswidget:hide()
-		--if fsnotification ~= nil then
-			--naughty.destroy(fsnotification)
-			--fsnotification = nil
-		--end
+	--if fsnotification ~= nil then
+	--naughty.destroy(fsnotification)
+	--fsnotification = nil
+	--end
 	--end
 
 	--function fswidget:show(t_out)
-		--fswidget:hide()
+	--fswidget:hide()
 
-		--fsnotification = naughty.notify({
-			--preset = fs_notification_preset,
-			--text = text_grabber(),
-			--timeout = t_out,
-			--screen = mouse.screen,
-		--})
+	--fsnotification = naughty.notify({
+	--preset = fs_notification_preset,
+	--text = text_grabber(),
+	--timeout = t_out,
+	--screen = mouse.screen,
+	--})
 	--end
 	--function text_grabber()
-		--f = io.popen("df -H")
-		--text = f:read()
-		--f:close()
-		--f = io.popen("df -H | grep -i '^/dev/' ")
-		--for line in f:lines() do
-			--text = text.."\n"..line
-		--end
-		--f:close()
-		--return text
+	--f = io.popen("df -H")
+	--text = f:read()
+	--f:close()
+	--f = io.popen("df -H | grep -i '^/dev/' ")
+	--for line in f:lines() do
+	--text = text.."\n"..line
+	--end
+	--f:close()
+	--return text
 	--end
 	--fswidget:connect_signal('mouse::enter', function () fswidget:show(0) end)
 	--fswidget:connect_signal('mouse::leave', function () fswidget:hide()  end)
 	return fswidget
 end
 
---function fswidget.media_files_menu(args)
-	--local args = args or {}
-	--local dirs = {}
-	--local index = 0
-	--local function file(name,ignore)
-		----print(name)
-		--if name == "" then
-			--return nil
-		--end
-		--index = index + 1
-		----oldprint(index)
-		--local dir = {}
-		--dir.full = name
-		--dir.children = {}
-		--dir.children.dirs = {}
-		--dir.children.files = {}
-		--dir.parent = ""
-		--dir.name = ""
-		--dir.parent,dir.name = path.splitpath(name)
-		--local parent = nil
-		--if dir.name == ".unwanted" then
-			--return nil
-		--end
-		--if not dirs[dir.parent] and not ignore then 
-			--parent = file(dir.parent)
-		--else
-			--parent = dirs[dir.parent]
-		--end
-		--if not parent then
-			--dir.parent = nil
-		--end
-		----table.insert(dir.parent.children,dir)
-		--if path.isdir(name) then
-			----print(dir.name)
-			--dir._type = "dir" 
-			--dirs[name] = dir
-			--if not ignore and parent then
-				--table.insert(parent.children.dirs,dir)
-			--end
-		--else
-			--dir._type = "file"
-			--if not ignore and parent then
-				--table.insert(parent.children.files,dir)
-			--end
-		--end
-		--return dir
-	--end
+function fswidget.media_files_menu(args)
+	local args = args or {}
+	local launcher = args.launcher or "bomi"
+	local exts  = args.exts or {"avi","mkv","mp4","mpeg","webm"}
+	local function file(pname)
+		local f = {}
+		local pname = pname
+		--print(pname)
+		if pname and  path.exists(pname)then
+			f.path = pname
+			f.name = pname:match( "([^/]+)$" ) or ""
+			if path.isdir(pname) then
+				local actions = {}
+				--for i,k in pairs(path.lsdir(pname)) do
+				--print("_"..pname.."_")
+				pcall(path.each,path.ensure_dir_end(pname), function(P)
+					--print(pname)
+					if not (P == pname ) then
+						--print(P)
+						table.insert(actions,file(P).action)
+					end
+				end,
+				{
+					param = "f";
+					delay = true;
+					--recurse = true;
+				})
+				table.sort(actions,
+				function (a,b)
+					if a and b and a.desc and b.desc then
+						return a.desc < b.desc
+					end
+					return false
+				end)
+				f.action = {
+					modal = true,
+					desc = f.name,
+					actions = actions
+				}
+			elseif f.name and f.path then
+				local ext = path.extension(pname)
+				for _,v in pairs(exts) do
+					if ext  == "."..v then
+						f.action = {
+							desc = f.name,
+							func = function()
+								awful.spawn({launcher,f.path})
+							end
+						}
 
-	--local dir = file(fswidget.dir,true)
-	----dirs[fswidget.dir] = dir
-
-	----print(#fswidget.files)
-	--for _,P in pairs(fswidget.files) do
-		----print(P)
-		--file(P)
-	--end
-	--print(#(dir.children.dirs))
-	--print(#(dir.children.files))
-	----for _,d in pairs(dir.children.dirs) do
-		----print(d.name)
-	----end
-	----param = "fm";   -- request full path and mode
-	----delay = true;   -- use snapshot of directory
-	----recurse = true; -- include subdirs
-	----reverse = true; -- subdirs at first 
-----})
---end
+						break
+					end
+				end
+			end
+		end
+		return f
+	end
+	--path.each(path.ensure_dir_end("/tmp"),
+	--function(P)
+		--print(P)
+	--end,
+	--{
+		--param = "f";
+		--delay = true;
+		----recurse = true;
+	--})
+	awful.spawn.easy_async({"python","/home/ivn/scripts/open_recent_files.py","/home/ivn/Downloads"},function(output,err)
+		local actions = {}
+		for i,k in pairs(split(output,"\n"))do
+			local f = file(k)
+			if f.action then
+				table.insert(actions,f.action)
+				--print(f.name)
+				--print(f.path)
+			end
+		end
+		modal_sc({
+			name = "media files menu",
+			actions = actions
+		})()
+	end)
+end
 
 return setmetatable(fswidget, {__call = function(_,...) return worker(...) end})

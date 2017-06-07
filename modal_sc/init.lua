@@ -25,6 +25,7 @@ local setmetatable = setmetatable
 local naughty      = require("naughty")
 local table        = table
 local tostring     = tostring
+local widgets = require("widgets")
 local capi         = {
     tag            = tag,
     client         = client,
@@ -37,7 +38,7 @@ local capi         = {
 local modal_sc ={}
 modal_sc.notification = nil
 
-modal_sc.hints = "htnsaoeuidjkbmpgclzvw[]{}=&*+()!#" --"jkluiopyhnmfdsatgvcewqzx1234567890"
+modal_sc.hints = "htnsaoeuidjkbmpgclzvw123456789"--[]{}=&*+()!#" --"jkluiopyhnmfdsatgvcewqzx1234567890"
 function modal_sc.hide()
 	if modal_sc.notification then
 		naughty.destroy(modal_sc.notification)
@@ -130,7 +131,11 @@ local function worker(args)
 
 	    return function()
 		    show()
+		    local return_layout = widgets.kbdd.temporary_eng()
 		    capi.keygrabber.run(function (mod, key, event)
+			    --print(mod)
+			    --print(key)
+			    --print(event)
 			    local keyPressed = false
 
 			    if event == "release" then return true end
@@ -147,10 +152,12 @@ local function worker(args)
 			    if actions[key:lower()] then
 				    keygrabber.stop()
 				    actions[key:lower()]()
+				    return_layout()
 				    --show result modal_sc.notification
 				    --show(key:upper(), 2)
 			    else
 				    keygrabber.stop()
+				    return_layout()
 			    end
 			    --hide modal_sc.notification
 

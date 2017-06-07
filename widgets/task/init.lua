@@ -184,8 +184,9 @@ function taskwidget.modal_menu(args)
 			return
 		end
 		local level = level or 0
-		--print(i)
+		--print(item.id,15)
 		if level > 0 or not task_ids[item.uuid] then
+			--print("added",15)
 			local description = ""
 			if level > 0 and not last then
 				description = string.rep(" ",level-1).."⊢"
@@ -249,7 +250,9 @@ function taskwidget.modal_menu(args)
 			end
 		end
 	end
+	local sorted_tasks = {}
 	for i,item in pairs(tasks) do
+		table.insert(sorted_tasks,item)
 		if item.depends then
 			--local number = 0
 			for _,id  in ipairs(item.depends) do 
@@ -267,7 +270,25 @@ function taskwidget.modal_menu(args)
 			end
 		end
 	end
-	for i,item in pairs(tasks) do
+	table.sort(sorted_tasks,function(a,b)
+		--print("sort")
+		if a.due and b.due then
+			return b.due:greater(a.due)
+		elseif a.due and not b.due then
+			return true
+		elseif not a.due and b.due then
+			return false
+		else
+			if a.id and b.id then
+				--print(a.id.." * "..b.id,1)
+				return a.id < b.id
+			end
+			return a.due
+		end
+		return false
+	end)
+	for i,item in pairs(sorted_tasks) do
+		--print(item.id,15)
 		local skip = not filter(item)
 		if not skip then
 			add_item(item)

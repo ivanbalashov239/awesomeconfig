@@ -960,17 +960,51 @@ globalkeys = awful.util.table.join(config.globalkeys,
     end),
     awful.key({ modkey 		  }, "r",
     function ()
-	    awful.prompt.run({ prompt = "Run: ", },
-	    mouse.screen.mypromptbox.widget,
-	    function (com)
-		    local result = awful.spawn(com)
-		    if type(result) == "string" then
-			    mouse.screen.mypromptbox.widget:set_text(result)
-		    end
-		    return true
-	    end,
-	    awful.completion.shell,
-	    awful.util.getdir("cache") .. "/history")
+	    local return_layout = widgets.kbdd.temporary_eng()
+	    awful.prompt.run {
+		    prompt        = '<b>Run: </b>',
+		    --hooks         = hooks,
+		    textbox       = mouse.screen.mypromptbox.widget,
+		    history_path  = awful.util.getdir("cache") .. "/history",
+		    exe_callback = function (com)
+			    --local result = awful.spawn({awful.util.shell,com})
+			    local result = awful.spawn(com)
+			    if type(result) == "string" then
+				    mouse.screen.mypromptbox.widget:set_text(result)
+			    end
+			    return_layout()
+			    return true
+		    end,
+		    hooks = {
+			    -- Apply startup notification properties with Shift-Return.
+			    {{"Shift"  }, "Return", function(command)
+				    awful.screen.focused().mypromptbox:spawn_and_handle_error(
+				    command, {floating=true})
+			    end},
+			    -- Override default behavior of "Return": launch commands prefixed
+			    -- with ":" in a terminal.
+			    {{}, "Return", function(command)
+				    if command:sub(1,1) == ":" then
+					    return terminal .. ' -e ' .. command:sub(2)
+				    end
+				    return command
+			    end}
+		    },
+		    completiion = awful.completion.shell,
+	    }
+
+	    --awful.prompt.run({ prompt = "Run: ", },
+	    --mouse.screen.mypromptbox.widget,
+	    --function (com)
+		    --local result = awful.spawn(com)
+		    --if type(result) == "string" then
+			    --mouse.screen.mypromptbox.widget:set_text(result)
+		    --end
+		    --return_layout()
+		    --return true
+	    --end,
+	    --awful.completion.shell,
+	    --awful.util.getdir("cache") .. "/history")
     end),
     awful.key({ modkey, altgr           }, "d",   function ()  
 	    local s = (capi.mouse.screen + 1) % (#capi.screen + 1)
@@ -1074,9 +1108,10 @@ globalkeys = awful.util.table.join(config.globalkeys,
 	    awful.key({ modkey,  }, "Left",     function() brightnessdec() end),
 	    awful.key({ modkey,  }, "Right",    function() brightnessinc() end),
 	    awful.key({ modkey,altgr  }, "h",   function() brightnessdec() end),
-	    awful.key({ modkey,altgr  }, "s",   function() brightnessinc() end),
-	    awful.key({ altgr  }, "Alt_L",   widgets.kbdd.set_ru),
-	    awful.key({ altkey  }, "ISO_Level3_Shift",   widgets.kbdd.set_en)
+	    awful.key({ modkey,altgr  }, "s",   function() brightnessinc() end)
+	    --awful.key({ altkey  }, "-",   widgets.kbdd.toggle)
+	    --awful.key({ altgr  }, "Alt_L",   widgets.kbdd.set_ru),
+	    --awful.key({ altkey  }, "ISO_Level3_Shift",   widgets.kbdd.set_en)
 	    )
 
 	    clientkeys = awful.util.table.join(config.clientkeys,
@@ -1120,6 +1155,9 @@ globalkeys = awful.util.table.join(config.globalkeys,
 	    root.keys(globalkeys)
 
 	    -- | Rules | --
+	    if config.client_specific.enabled then
+		    widgets.kbdd.enable_client_specific_layouts(config.client_specific)
+	    end
 	    local function concat_rules(tables)
 		   local result = {}
 		   for i,k in pairs(tables) do
@@ -1503,10 +1541,10 @@ end
 				end
 			end)
 			tag:connect_signal("untagged",function(t,cl)
-				if cl.type == "normal" then
+				if cl and cl.type == "normal" and not cl.floating and not cl.fullscreen then
 					local i = 0
 					for _,k in pairs(t:clients()) do
-						if k and k.type == "normal" and not k.floating and not k.fullscreen then
+						if k and k.type == "normal" and not k.floating then
 							i = i+1
 						end
 					end
