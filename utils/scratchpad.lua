@@ -15,6 +15,7 @@ function scratchpad.functions.place_away(c,old)
 	c:geometry(old.geometry)
 	c.floating = old.floating
 	c:geometry(old.geometry)
+	c.ontop = old.ontop
 	c:tags(old.tags)
 end
 function scratchpad.functions.hide_client(c,old)
@@ -26,7 +27,7 @@ function scratchpad.functions.hide_client(c,old)
 	--c:tags(old.tags)
 end
 function scratchpad.functions.im_geometry(c)
-	local screen = c.screen
+	local screen = c and c.screen or capi.mouse.screen
 	local screengeom = screen.workarea
 	local geometry = {}
 
@@ -41,7 +42,7 @@ function scratchpad.functions.im_geometry(c)
 	
 end
 function scratchpad.functions.dropdown_geometry(c)
-	local screen = c.screen
+	local screen = c.screen or capi.mouse.screen
 	local screengeom = screen.workarea
 	local geometry = {}
 
@@ -120,7 +121,7 @@ local function worker(args)
 			return
 		else
 			local focus = capi.client.focus
-			local screen = focus.screen
+			local screen = focus and focus.screen or capi.mouse.screen or capi.screen
 			local client = scratch.client
 			old.geometry = client:geometry()
 			old.screen = client.screen
@@ -133,7 +134,7 @@ local function worker(args)
 			client.hidden = false
 			client.ontop = true
 			client.floating = true
-			client.screen = focus.screen
+			client.screen = screen
 			client:geometry(new_geometry)
 			client:tags({screen.selected_tag})
 			client:geometry(new_geometry)

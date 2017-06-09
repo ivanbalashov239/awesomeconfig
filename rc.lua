@@ -1198,7 +1198,7 @@ globalkeys = gears.table.join(config.globalkeys,
 	    end
     },
     { rule = { class = "TelegramDesktop"},
-    properties = { tag = tags["im"], ontop = true},
+    properties = { tag = tags["im"]},
     callback = function(c)
 	    --im.lastpidgin = c
 	    im.client = c
