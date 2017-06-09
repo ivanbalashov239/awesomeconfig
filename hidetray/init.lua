@@ -66,7 +66,9 @@ function hidetray:attach(args)
             if (mouse.object_under_pointer() and mouse.object_under_pointer().name ) or mouse.screen ~= s then 
                 hidetray:hide(s)
             else
-                hidetray.hidetimer:start()
+                if hidetray.hidetimer.data.source_id == nil then
+                    hidetray.hidetimer:start()
+                end
             end
         end)
     end
@@ -78,7 +80,7 @@ local function worker(args)
     --local backgr = args.background or wconst
     local gettimerscreen = args.focusscreen or function() return mouse.screen end
     if not hidetray.textbox then
-        hidetray.textbox = wibox.widget.textbox()
+        hidetray.textbox = wibox.widget.textbox(0)
     end
     --hidetray.traybufer = args.traybufer or awfwibox({ x = -55, y = -55})
     hidetray.hidetimer = timer({ timeout = args.timeout or 5 })
@@ -97,7 +99,9 @@ local function worker(args)
             hidetray.textbox:set_text(tostring(num_entries))
             --print(num_entries)
             hidetray:show(gettimerscreen())
-            hidetray.hidetimer:start()
+            if hidetray.hidetimer.data.source_id == nil then
+                hidetray.hidetimer:start()
+            end
         end)
     end
     if args.container then

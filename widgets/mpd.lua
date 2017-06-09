@@ -30,6 +30,8 @@ function mpdwidget.skip()
 	end)
 end
 local function worker(args)
+	local args = args or {}
+	local host = args.host
 	-- | MPD | --
 
 	--prev_icon = wibox.widget.imagebox()
@@ -53,6 +55,7 @@ local function worker(args)
 
 	local widget = lain.widget.mpd({
 		--notify = "off",
+		host = host,
 		settings = function ()
 			mpdwidget.mpdwidget.state = mpd_now.state
 			if mpd_now.state == "play" then
