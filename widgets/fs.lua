@@ -107,7 +107,7 @@ end
 
 function fswidget.media_files_menu(args)
 	local args = args or {}
-	local launcher = args.launcher or "bomi"
+	local launcher = args.launcher or "mpv"
 	local exts  = args.exts or {"avi","mkv","mp4","mpeg","webm"}
 	local function file(pname)
 		local f = {}

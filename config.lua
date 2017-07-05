@@ -58,7 +58,14 @@ local scratchpad = require("utils.scratchpad")
 lain.helpers     = require("lain.helpers")
 local menubar = require("menubar")
 menubar.terminal = "termite"
-menubar.menu_gen.all_menu_dirs = { "/usr/share/applications/", "/usr/local/share/applications", "~/.local/share/applications" }
+--menubar.menu_gen.all_menu_dirs = {"~/.local/share/applications" }
+menubar.menu_gen.all_categories = gears.table.join(menubar.menu_gen.all_categories,{
+    other = { app_type = "", name = "wine",
+	    icon_name = "applications-accessories", use = true },
+    wine = { app_type = "wine", name = "wine",
+	    icon_name = "wine", use = true },
+})
+--{ "/usr/share/applications/", "/usr/local/share/applications", 
 local cheeky 	 = require("cheeky")
 --local appsuspender = require("appsuspender")
 --local im = require("im")
@@ -157,7 +164,7 @@ config.autostart.run_once = gears.table.join(host.autostart.run_once,{
 	--"pactl load-module module-loopback source=2 sink=0",
 	xautolock,
 	"perl /usr/share/cantata/scripts/cantata-dynamic start",
-	--xkbtimer
+	xkbtimer
 	--"evolution",
 	--"goldendict --style gtk+",
 })
@@ -416,9 +423,25 @@ end),
 
 awful.key({ modkey,           }, "Tab",
 function ()
-	awful.client.focus.history.previous()
-	if client.focus then
-		client.focus:raise()
+	local cl = capi.client.focus
+	local scr = cl and cl.screen or 1
+	local last = awful.client.focus.history.get(scr,2)
+	local list = awful.client.focus.history.list
+	if list and #list > 1 then
+		--awful.client.focus.history.previous()
+		local last =list[2] 
+		if last then
+			capi.client.focus = last
+			last:raise()
+			if #last:tags() > 0 then
+				if last.last_tag then
+					last.last_tag:view_only()
+				else
+					last:tags()[1]:view_only()
+				end
+			end
+			capi.client.focus = last
+		end
 	end
 end),
 awful.key({ modkey }, "Escape", awful.tag.history.restore),
@@ -501,6 +524,14 @@ config.clientkeys = gears.table.join()
 config.clientbuttons = gears.table.join()
 
 
+tag.connect_signal("property::selected",function(t)
+	if t.selected then
+		for _,c in pairs(t:clients()) do
+			c.last_tag = t
+		end
+	end
+
+end)
 
 config.rules = {
 	--{ rule = { class = "Pidgin", role = "buddy_list"},

@@ -620,17 +620,18 @@ function taglist.focus(args)
 				)
 			end
 		end
+		local name = cl.name or ""
 		if #tags > 1 then
 			table.insert(actions,{
 				modal = true,
 				hint = cl.hint,
-				desc = cl.class.." | "..cl.name or "",
+				desc = cl.class.." | "..(cl.name or ""),
 				actions = tags
 			})
 		else
 			table.insert(actions,{
 				hint = i,
-				desc = cl.class.." | "..cl.name or "",
+				desc = cl.class.." | "..(cl.name or ""),
 				func = function()
 					focus(cl,cl:tags()[1])
 				end

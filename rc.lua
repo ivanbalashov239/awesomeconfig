@@ -966,6 +966,7 @@ globalkeys = gears.table.join(config.globalkeys,
 		    --hooks         = hooks,
 		    textbox       = mouse.screen.mypromptbox.widget,
 		    history_path  = awful.util.getdir("cache") .. "/history",
+		    completion_callback = awful.completion.shell,
 		    exe_callback = function (com)
 			    --local result = awful.spawn({awful.util.shell,com})
 			    local result = awful.spawn(com)
@@ -977,6 +978,18 @@ globalkeys = gears.table.join(config.globalkeys,
 		    end,
 		    hooks = {
 			    -- Apply startup notification properties with Shift-Return.
+			    {{altgr  }, "n", function(command)
+				    print("n")
+				    return nil
+				    --awful.screen.focused().mypromptbox:spawn_and_handle_error(
+				    --command, {floating=true})
+			    end},
+			    {{altgr  }, "t", function(command)
+				    print("t")
+				    return nil
+				    --awful.screen.focused().mypromptbox:spawn_and_handle_error(
+				    --command, {floating=true})
+			    end},
 			    {{"Shift"  }, "Return", function(command)
 				    awful.screen.focused().mypromptbox:spawn_and_handle_error(
 				    command, {floating=true})
@@ -990,7 +1003,6 @@ globalkeys = gears.table.join(config.globalkeys,
 				    return command
 			    end}
 		    },
-		    completiion = awful.completion.shell,
 	    }
 
 	    --awful.prompt.run({ prompt = "Run: ", },
@@ -1250,7 +1262,8 @@ globalkeys = gears.table.join(config.globalkeys,
 		    c:kill()
 	    end)
     end},
-	{ rule = { class = "bomi"},
+	--{ rule = { class = "bomi"},
+	{ rule = { class = "mpv"},
 	properties = { opacity = 0.8, switchtotag = false, no_autofocus = true, floating = true, ontop = true, sticky = false  },
 	callback = function(c)
 
@@ -1290,15 +1303,15 @@ globalkeys = gears.table.join(config.globalkeys,
 		--local scrgeom = capi.screen[capi.mouse.screen].geometry
 		--local clgeom  = c:geometry({width = scrgeom.width/5, height = scrgeom.height/5})
 		--local clgeom  = c:geometry({x = scrgeom.x + scrgeom.width - clgeom.width, y = scrgeom.y + scrgeom.height - clgeom.height}) 
-		local oldgeom = nil
+		--local c.oldgeom = nil
 		c:connect_signal("tagged",function(c,t)
 			if t then
 				if #(t:clients()) == 1 then
 					c.opacity = 1
 					c.floating = false 
-					c.ontop = false
+					--c.ontop = false
 					c.sticky = false
-					oldgeom = c:geometry()
+					c.oldgeom = c:geometry()
 				end
 			end
 		end)
@@ -1307,13 +1320,15 @@ globalkeys = gears.table.join(config.globalkeys,
 				if #(t:clients()) == 0 then
 					c.opacity = 0.8
 					c.floating = true
-				c.ontop = false
+					--c.ontop = false
 					--c.ontop = true
 					c.sticky = true
-					c:geometry(oldgeom)
-					oldgeom = nil
+					c.oldgeom = c:geometry(c.oldgeom)
 				end
 			end
+		end)
+		c:connect_signal("property:geometry",function(c)
+			c.oldgeom = c:geometry()
 		end)
 		c:connect_signal("property::fullscreen",function(c)
 			if c.fullscreen then
@@ -1321,15 +1336,23 @@ globalkeys = gears.table.join(config.globalkeys,
 				c.floating = false 
 				c.ontop = false
 				--c.sticky = false
-				oldgeom = c:geometry()
+				--if c:geometry() then
+					--c.oldgeom = c:geometry()
+				--end
+				--print(c.oldgeom)
 			else
 				c.opacity = 0.8
 				c.floating = true
-				c.ontop = false
-				--c.ontop = true
+				--c.ontop = false
+				c.ontop = true
 				c.sticky = true
-				c:geometry(oldgeom)
-				oldgeom = nil
+				--geomfunc()
+				if c.oldgeom then
+					c:geometry(c.oldgeom)
+				else
+					geomfunc()
+				end
+				c.oldgeom = c:geometry()
 			end
 		end)
 		dbus.request_name("session", "org.mpris.MediaPlayer2")
@@ -1634,6 +1657,10 @@ end
 		{
 			class="Firefox",
 			type="utility"
+		},
+		{
+			class="Wine",
+			type="dialog"
 		}
 	}
 	mousetimer = timer({ timeout = 0.1 })
@@ -1649,6 +1676,9 @@ end
 		mousetimer:start()
 	end
 	client.connect_signal("focus", function(c) 
+		--print(c.class,10)
+		--print(c.type,10)
+		--print(c.modal,10)
 		local screengeom = capi.screen[mouse.screen].workarea
 		for _,s in pairs(unfocusable) do
 			local continue=true

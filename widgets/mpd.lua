@@ -242,7 +242,8 @@ function mpdwidget.seek_backward()
 	mpdwidget.update()
 end
 function mpdwidget.mpriscontrol(str)
-	local command = "dbus-send --print-reply --session --dest=org.mpris.MediaPlayer2.bomi /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player."
+	--local command = "dbus-send --print-reply --session --dest=org.mpris.MediaPlayer2.bomi /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player."
+	local command = "mpris2controller "
 	if str == "play" then
 		command = command.."Play"
 	elseif str == "pause" then
