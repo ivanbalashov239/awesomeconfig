@@ -189,9 +189,9 @@ function taskwidget.modal_menu(args)
 			--print("added",15)
 			local description = ""
 			if level > 0 and not last then
-				description = string.rep(" ",level-1).."⊢"
+				description = string.rep(" ",level-1+2).."⊢"
 			elseif last then
-				description = string.rep(" ",level-1).."∟"
+				description = string.rep(" ",level-1+2).."∟"
 				--description = string.rep(" ",level)
 			end
 			if item:is_started() then
@@ -217,12 +217,16 @@ function taskwidget.modal_menu(args)
 				due = "|"..date..time
 			end
 			local color = "white"
-			if item:is_waiting() or item:is_overdue() then
+			if item:is_waiting() then
+				color = widgets.task_waiting
+			elseif item:is_overdue() then
 				color = widgets.critical
+			elseif item.due then
+				color = widgets.green
 			end
 
 			table.insert(actions,{
-				desc="<span color='"..color.."'>"..description..item.id..string.rep(" ",(2-math.floor(tonumber(item.id)/10)))..item["description"].."|"..tags..due.."</span>",
+				desc="<span color='"..color.."'>"..description..item.id..string.rep(" ",(3-math.floor(tostring(item.id):len())))..item["description"].."|"..tags..due.."</span>",
 			--text  = "<span color='"..widgets.fg.."'>"..dues.." </span>".."<span color='"..widgets.critical.."'>"..overdues.."</span>"
 				modal = true,
 				actions = taskwidget.modal_actions(item),
@@ -347,7 +351,7 @@ function taskwidget.modal_actions(item)
 		desc = "DONE",
 		func = function()
 			--os.execute("task "..task.id.." done")
-			awful.util.spawn_with_shell("task "..item.id.." done")
+			awful.util.spawn_with_shell("task uuid:"..item.uuid.." done")
 		end,
 	})
 	table.insert(actions,{

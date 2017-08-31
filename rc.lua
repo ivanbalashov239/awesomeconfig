@@ -48,6 +48,8 @@ lain.helpers     = require("lain.helpers")
 --local appsuspender = require("appsuspender")
 --local im = require("im")
 local scratchpad = require("utils.scratchpad")
+local fullscreen = require("utils.fullscreen")
+fullscreen()
 --local task = require("task")
 local capi = {
     mouse = mouse,
@@ -611,7 +613,7 @@ awful.screen.connect_for_each_screen(function(s)
 
     -- mytaglist[s] = sharedtags.taglist(s, awful.widget.taglist.filter.all, mytaglist.buttons)
 
-    s.mytasklist = awful.widget.tasklist(s, matchrules({{class = "Pidgin"},{class="TelegramDesktop"}}, false), mytasklist.buttons)
+    s.mytasklist = awful.widget.tasklist(s, matchrules({{class = "Pidgin", role = "conversation"},{class="TelegramDesktop"}}, false), mytasklist.buttons)
     --s.mytasklist = awful.widget.tasklist(s, awful.widget.tasklist.filter.alltags, mytasklist.buttons)
     --s.mytasklist = awful.widget.tasklist(s, awful.widget.tasklist.filter.alltags, mytasklist.buttons)
     --s.mytasklist= widgets.tasklist({
@@ -698,7 +700,17 @@ awful.screen.connect_for_each_screen(function(s)
             --mylauncher,
             s.mytaglist,
         },
-	s.mytasklist, -- Middle widget
+	{ -- Centr widgets
+		layout = wibox.layout.align.horizontal,
+		nil,
+		centr_layout,
+		{
+			layout = wibox.layout.fixed.horizontal,
+			s.mytasklist, -- Middle widget
+
+
+		},
+	},
         { -- Right widgets
             layout = wibox.layout.fixed.horizontal,
             s.mypromptbox,
@@ -1251,7 +1263,7 @@ globalkeys = gears.table.join(config.globalkeys,
     end
     },
     { rule = { class = "Pidgin", role = "buddy_list"},
-    properties = { tag = tags["im"], switchtotag = false, no_autofocus = true }},
+    properties = { tag = tags["im"], switchtotag = false, no_autofocus = true, urgent = false }},
     { rule = { class = "Pidgin", role = "conversation"},
     properties = { tag = tags["im"], switchtotag = false, no_autofocus = true },
     callback = awful.client.setslave },
@@ -1264,7 +1276,7 @@ globalkeys = gears.table.join(config.globalkeys,
     end},
 	--{ rule = { class = "bomi"},
 	{ rule = { class = "mpv"},
-	properties = { opacity = 0.8, switchtotag = false, no_autofocus = true, floating = true, ontop = true, sticky = false  },
+	properties = { opacity = 0.8, switchtotag = false, no_autofocus = true, floating = true, sticky = false  },
 	callback = function(c)
 
 		local function set_geometry(c,s)
@@ -1310,7 +1322,7 @@ globalkeys = gears.table.join(config.globalkeys,
 					c.opacity = 1
 					c.floating = false 
 					--c.ontop = false
-					c.sticky = false
+					--c.sticky = false
 					c.oldgeom = c:geometry()
 				end
 			end
@@ -1322,7 +1334,7 @@ globalkeys = gears.table.join(config.globalkeys,
 					c.floating = true
 					--c.ontop = false
 					--c.ontop = true
-					c.sticky = true
+					--c.sticky = true
 					c.oldgeom = c:geometry(c.oldgeom)
 				end
 			end
@@ -1334,7 +1346,7 @@ globalkeys = gears.table.join(config.globalkeys,
 			if c.fullscreen then
 				c.opacity = 1
 				c.floating = false 
-				c.ontop = false
+				--c.ontop = false
 				--c.sticky = false
 				--if c:geometry() then
 					--c.oldgeom = c:geometry()
@@ -1344,7 +1356,7 @@ globalkeys = gears.table.join(config.globalkeys,
 				c.opacity = 0.8
 				c.floating = true
 				--c.ontop = false
-				c.ontop = true
+				--c.ontop = true
 				c.sticky = true
 				--geomfunc()
 				if c.oldgeom then

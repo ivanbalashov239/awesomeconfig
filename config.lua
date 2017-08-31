@@ -9,6 +9,7 @@ require("awful.autofocus")
 -- | Theme | --
 
 local theme = "pro-dark"
+HOME = os.getenv("HOME")
 local beautiful  = require("beautiful")
 beautiful.init(os.getenv("HOME") .. "/.config/awesome/themes/" .. theme .. "/theme.lua")
 --                   require("sharetags")
@@ -95,6 +96,7 @@ config.panel.left = {
 }
 config.panel.middle = {
 	--widgets.tasklist()
+	widgets.title_widget()
 }
 config.panel.right = {
 	widgets.kbdd(),
@@ -129,9 +131,13 @@ function run_once(cmd)
 	end
 	awful.util.spawn_with_shell("pgrep -u $USER -x " .. findme .. " > /dev/null || (" .. cmd .. ")")
 end
+local locker = '/home/ivn/scripts/run_slimlock_onstart.sh'
+local xautolock     = "xautolock -locker '"..locker.."' -nowlocker '"..locker.."' -time 10 &"
+local locknow       = "xautolock -locknow &"
 config.autostart = {}
 config.autostart.execute = gears.table.join(host.autostart.execute,{
 
+	"pkill xautolock && "..xautolock,
 	--"pkill compton",
 	--"pkill pidgin; pidgin &",
 	--"pkill kbdd; kbdd &",
@@ -148,9 +154,6 @@ local xkbtimer = gears.timer({ timeout = 2000 })
 xkbtimer:connect_signal("timeout", function ()
 	awful.util.spawn_with_shell("xkbcomp $DISPLAY - | egrep -v 'group . = AltGr;' | xkbcomp - $DISPLAY")
 end)
-local locker = '/home/ivn/scripts/run_slimlock_onstart.sh'
-local xautolock     = "xautolock -locker '"..locker.."' -nowlocker '"..locker.."' -time 10 &"
-local locknow       = "xautolock -locknow &"
 local browser       = "firefox"
 config.autostart.run_once = gears.table.join(host.autostart.run_once,{
 
@@ -162,7 +165,7 @@ config.autostart.run_once = gears.table.join(host.autostart.run_once,{
 	--"telegram-desktop",
 	"compton --config /home/ivn/.config/compton.conf -b &",
 	--"pactl load-module module-loopback source=2 sink=0",
-	xautolock,
+	--xautolock,
 	"perl /usr/share/cantata/scripts/cantata-dynamic start",
 	xkbtimer
 	--"evolution",
@@ -225,9 +228,12 @@ config.globalkeys = gears.table.join(
 		    --bomicontrol("pause")
 	    end),
 	    awful.key({modkey		  }, "F12",      function () exec("systemctl suspend") end),
-	    awful.key({ modkey, "Control"   }, "w",  
-	    widgets.fs.media_files_menu
-    ),
+	    awful.key({ modkey, "Control"   }, "w",  function()
+		    widgets.fs.media_files_menu({
+			    launcher = "/home/ivn/Downloads/umpv"
+		    })
+	    end
+	    ),
 	    awful.key({ modkey, "Control"   }, "b",  
 	    function () 
 		    local cl = client.focus
@@ -247,7 +253,7 @@ config.globalkeys = gears.table.join(
 					    hint = "b",
 					    desc = "Open in player",
 					    func = function()
-						    os.execute('/usr/bin/bomi --wake --open "'..url..'" &')
+						    os.execute(HOME..'/Downloads/umpv "'..url..'" &')
 					    end,
 				    })
 			    end
@@ -348,6 +354,17 @@ config.globalkeys = gears.table.join(
 	    end),
 	    awful.key({ modkey,    }, "o",  function()
 		    widgets.taskwidget.modal_menu()
+	    end
+	    ),
+	    awful.key({ modkey, "Shift" }, "o",  function()
+		    widgets.taskwidget.modal_menu({
+			    filter = function(task)
+				    if task:is_waiting() then
+					    return true
+				    end
+				    return false
+			    end
+		    })
 	    end
 	    ),
 	    awful.key({ modkey,    }, "e",

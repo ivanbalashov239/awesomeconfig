@@ -23,7 +23,7 @@ function kbddwidget.set_en()
 end
 function kbddwidget.toggle()
 	awesome.xkb_set_layout_group(math.fmod(awesome.xkb_get_layout_group()+1,2))
-	 --math.fmod(x,y)
+	--math.fmod(x,y)
 	--local command = "dbus-send --dest=ru.gentoo.KbddService /ru/gentoo/KbddService ru.gentoo.kbdd.prev_layout"
 	----print("ALTGR")
 	--os.execute(command)
@@ -37,25 +37,35 @@ local function worker(args)
 		[1] = "RU" 
 	}
 	local kbdtext = wibox.widget.textbox(kbdstrings[0])
+	--kbdtext.n = 0
 	--dbus.request_name("session", "ru.gentoo.kbdd")
 	--dbus.add_match("session", "interface='ru.gentoo.kbdd',member='layoutChanged'")
 	--dbus.connect_signal("ru.gentoo.kbdd", function(...)
-		--local data = {...}
-		--local layout = data[2]
-		--kbdtext:set_markup(kbdstrings[layout])
-		--local text ='<span font="Cantarel 50">'..kbdstrings[layout].."</span>"
-		--naughty.destroy(kbddnotify)
-		--kbddnotify = naughty.notify({
-			--text = text,
-			----icon = "/home/ivn/Загрузки/KFaenzafordark/apps/48/time-admin2.png",
-			--timeout = 2,
-			--screen = mouse.screen or 2,
-			--position = "bottom_right",
-		--})
+	--local data = {...}
+	--local layout = data[2]
+	--kbdtext:set_markup(kbdstrings[layout])
+	--local text ='<span font="Cantarel 50">'..kbdstrings[layout].."</span>"
+	--naughty.destroy(kbddnotify)
+	--kbddnotify = naughty.notify({
+	--text = text,
+	----icon = "/home/ivn/Загрузки/KFaenzafordark/apps/48/time-admin2.png",
+	--timeout = 2,
+	--screen = mouse.screen or 2,
+	--position = "bottom_right",
+	--})
 	--end
 	--)
 	awesome.connect_signal("xkb::group_changed",function(layout)
+		--print(awesome.xkb_get_layout_group())
+		local layout = awesome.xkb_get_layout_group()
+		--if not layout then
+			--layout = kbdtext.n + 1
+			--if layout > 1 then
+				--layout = 0
+			--end
+		--end
 		kbdtext:set_markup(kbdstrings[layout])
+		--kbdtext.n = layout
 		local text ='<span font="Cantarel 50">'..kbdstrings[layout].."</span>"
 		naughty.destroy(kbddnotify)
 		kbddnotify = naughty.notify({

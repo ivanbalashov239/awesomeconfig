@@ -136,6 +136,9 @@ local function worker(args)
 			    --print(mod)
 			    --print(key)
 			    --print(event)
+			    if key == " " then
+				    key = "Space"
+			    end
 			    local keyPressed = false
 
 			    if event == "release" then return true end

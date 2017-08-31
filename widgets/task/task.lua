@@ -245,6 +245,13 @@ local function worker(data,args)
 	--if not task.id and task.uuid and taskwidget.uuids[task.uuid] then
 	--task.id = taskwidget.tasks[task.uuid]
 	--end
+	--if task.description then
+		--print("_"..task.description.."_",5)
+		--if string.sub(task.description,1,1) == " " then
+			--print("task "..task.id)
+			--task.description = string.sub(task.description,2,task.description:len())
+		--end
+	--end
 	if task.depends and type(task.depends) == "string" then
 		local deps = {}
 		for w in (task.depends .. ","):gmatch("([^,]*),") do 

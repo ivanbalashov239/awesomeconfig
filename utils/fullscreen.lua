@@ -3,6 +3,7 @@ local pairs = pairs
 local awful = require("awful")
 local setmetatable = setmetatable
 local fullscreen = {}
+local widgets = require("widgets")
 
 local function timemute()
 	awful.spawn.with_shell("rm /tmp/timemute>/dev/null || touch /tmp/timemute")
@@ -57,7 +58,8 @@ local function remove_client(tabl, c)
 		if #tabl == 0 then
 			awful.spawn("xset s off")
 			awful.spawn("xset -dpms")
-			os.execute("xautolock -enable")
+			--print("xautolock -enable",15)
+			awful.spawn("xautolock -enable")
 
 			if checkclass(c.class) then
 				timemute()
@@ -77,7 +79,8 @@ local function worker(args)
 				awful.spawn("xset s off")
 				awful.spawn("xset -dpms")
 				--naughty.suspend()
-				os.execute("xautolock -disable")
+				--print("xautolock -disable",15)
+				awful.spawn("xautolock -disable")
 				if checkclass(c.class) then
 					widgets.mpd.pauseif()
 					timemute()

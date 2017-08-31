@@ -107,6 +107,7 @@ end
 
 function fswidget.media_files_menu(args)
 	local args = args or {}
+	local directory = args.dir or os.getenv("HOME").."/Downloads"
 	local launcher = args.launcher or "mpv"
 	local exts  = args.exts or {"avi","mkv","mp4","mpeg","webm"}
 	local function file(pname)
@@ -162,6 +163,11 @@ function fswidget.media_files_menu(args)
 		end
 		return f
 	end
+	local function file_exists(file)
+		local f = io.open(file, "rb")
+		if f then f:close() end
+		return f ~= nil
+	end
 	--path.each(path.ensure_dir_end("/tmp"),
 	--function(P)
 		--print(P)
@@ -171,8 +177,76 @@ function fswidget.media_files_menu(args)
 		--delay = true;
 		----recurse = true;
 	--})
-	awful.spawn.easy_async({"python","/home/ivn/scripts/open_recent_files.py","/home/ivn/Downloads"},function(output,err)
+	awful.spawn.easy_async({"python","/home/ivn/scripts/open_recent_files.py",directory},function(output,err)
 		local actions = {}
+		local names = {}
+		local seen_lines = {}
+		local function last_seen()
+			local length = 25
+			local actions = {}
+			local used = {}
+			local lines = {}
+			local file = os.getenv("HOME").."/.config/mpv/openedlist"
+			if not file_exists(file) then return {} end
+			for line in io.lines(file) do 
+				lines[#lines + 1] = line
+			end
+			local start = 1
+			if #lines > length then
+				start = #lines - length
+			end
+			for i = #lines, start, -1 do
+				value = lines[i]
+				if not used[value] then
+					seen_lines[#seen_lines + 1] = value
+					if value:match("https://.*") or value:match("http://") then
+						--print(value,10)
+						print(HOME.."/scripts/url_to_title.sh \""..value.."\"",10)
+						awful.spawn.easy_async({HOME.."/scripts/url_to_title.sh ",'"'..value..'"'},function(output,err)
+							print(output)
+							local name = ""
+							for line in f:lines() do
+								name = name..line
+							end
+							print(value.." "..name,10)
+							names[value] = name
+						end)
+						--name = 
+					else
+						names[value] = value:match( "([^/]+)$" ) or ""
+					end
+					used[value] = true
+				end
+			end
+		end
+		last_seen()
+		table.insert(actions,{
+			hint = "Space",
+			desc = "last seen",
+			--modal = true,
+			--actions = last_seen()
+			func = function()
+				local actions = {}
+				for i,k in ipairs(seen_lines) do
+					local name = names[k] or k
+					--name = string.gsub(name,"&amp;","AND")
+					name = string.gsub(name,"&","\\amp")
+					local value = k
+					table.insert(actions,{
+						desc = name,
+						func = function()
+							--print("value "..value,10)
+							--print(launcher.." "..value,10)
+							awful.spawn({launcher,value})
+						end
+					})
+				end
+				modal_sc({
+					actions=actions,
+					desc = "last opened files"
+				})()
+			end
+		})
 		for i,k in pairs(split(output,"\n"))do
 			local f = file(k)
 			if f.action then

@@ -352,7 +352,9 @@ function pulsewidget.menu()
 			})
 		end
 		local sinks_modal = {}
+		local sinks_n = 0
 		for _,cl in pairs(sinks) do
+			sinks_n = sinks_n + 1
 			--print(cl.description)
 			local muted = ""
 			if cl.muted then
@@ -368,31 +370,51 @@ function pulsewidget.menu()
 				actions = sink_actions(cl)
 			})
 		end
-		modal_sc({
-			name = "pulse",
-			actions = {
-				{
-					modal = true,
-					hint = "c",
-					desc = "clients",
-					actions = clients_modal,
-				},
-				{
-					modal = true,
-					hint = "d",
-					desc = "outputs",
-					actions = sinks_modal,
-				},
-				{
-					--modal = true,
-					hint = "m",
-					desc = "mute",
+		local actions = {
+			{
+				modal = true,
+				hint = "c",
+				desc = "clients",
+				actions = clients_modal,
+			},
+			{
+				modal = true,
+				hint = "d",
+				desc = "outputs",
+				actions = sinks_modal,
+			},
+			{
+				--modal = true,
+				hint = "m",
+				desc = "mute",
+				--actions = sinks_modal,
+				func = function()
+					pulsewidget.togglemute()
+				end,
+			},
+		}
+		if sinks_n == 2 then
+			table.insert(actions,{
+					hint = "s",
+					desc = "switch",
 					--actions = sinks_modal,
 					func = function()
-						pulsewidget.togglemute()
+						for _,cl in pairs(sinks) do
+							if not (tonumber(pulsewidget.pulse.device) == cl.index )then
+								cl:default()
+								for _,c in pairs(clients) do
+									c:move(cl.index)
+								end
+								return
+							end
+						end
+
 					end,
-				},
-			}
+			})
+		end
+		modal_sc({
+			name = "pulse",
+			actions = actions
 		})()
 		pulsewidget.update()
 	end)
