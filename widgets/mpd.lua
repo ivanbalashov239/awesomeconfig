@@ -137,7 +137,7 @@ local function worker(args)
 			--print(k)
 			--end
 			widget.startpos = startpos + 1
-			widget.widget:set_markup(markup.font("Tamsyn 7", nowtext))
+			widget.widget:set_markup(markup.font("Tamsyn 7 mono", nowtext))
 			--print(nowtext)
 		end
 	end

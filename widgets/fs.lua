@@ -34,14 +34,14 @@ local function worker(args)
 			stoppable = true,
 			cmd = { awful.util.shell, "-c", cmd },
 			settings = function()
-				print("updating files")
+				--print("updating files")
 				--local f = {}
 				--for line in output:lines() do
 				----text = text.."\n"..line
 				--table.insert(f,line)
 				--end
 				fswidget.files = split(output,"\n")
-				print("finish update files")
+				--print("finish update files")
 			end
 		})
 		--files_watch.update()
@@ -184,80 +184,40 @@ function fswidget.media_files_menu(args)
 		local function last_seen()
 			local length = 25
 			local actions = {}
-			local used = {}
-			local lines = {}
-			local file = os.getenv("HOME").."/.config/mpv/openedlist"
-			if not file_exists(file) then return {} end
-			for line in io.lines(file) do 
-				lines[#lines + 1] = line
-			end
-			local start = 1
-			if #lines > length then
-				start = #lines - length
-			end
-			for i = #lines, start, -1 do
-				value = lines[i]
-				if not used[value] then
-					seen_lines[#seen_lines + 1] = value
-					if value:match("https://.*") or value:match("http://") then
-						--print(value,10)
-						print(HOME.."/scripts/url_to_title.sh \""..value.."\"",10)
-						awful.spawn.easy_async({HOME.."/scripts/url_to_title.sh ",'"'..value..'"'},function(output,err)
-							print(output)
-							local name = ""
-							for line in f:lines() do
-								name = name..line
-							end
-							print(value.." "..name,10)
-							names[value] = name
-						end)
-						--name = 
-					else
-						names[value] = value:match( "([^/]+)$" ) or ""
+			local cmd =HOME..'/scripts/last_seen_to_list.py' 
+			local file = assert(io.popen(cmd, 'r'))
+			local out = file:read('*all')
+			file:close()
+			for _,l in pairs(split(out,"\n")) do
+				l = split(l," ;; ")
+				local name = l[2]
+				local value = l[1]
+				table.insert(actions,{
+					desc = name,
+					func = function()
+						awful.spawn({launcher,value})
 					end
-					used[value] = true
-				end
+				})
 			end
+			return actions
+
 		end
-		last_seen()
 		table.insert(actions,{
 			hint = "Space",
 			desc = "last seen",
-			--modal = true,
-			--actions = last_seen()
-			func = function()
-				local actions = {}
-				for i,k in ipairs(seen_lines) do
-					local name = names[k] or k
-					--name = string.gsub(name,"&amp;","AND")
-					name = string.gsub(name,"&","\\amp")
-					local value = k
-					table.insert(actions,{
-						desc = name,
-						func = function()
-							--print("value "..value,10)
-							--print(launcher.." "..value,10)
-							awful.spawn({launcher,value})
-						end
-					})
-				end
-				modal_sc({
-					actions=actions,
-					desc = "last opened files"
-				})()
-			end
+			modal = true,
+			actions = last_seen()
 		})
 		for i,k in pairs(split(output,"\n"))do
 			local f = file(k)
 			if f.action then
 				table.insert(actions,f.action)
-				--print(f.name)
-				--print(f.path)
 			end
 		end
 		modal_sc({
 			name = "media files menu",
-			actions = actions
+			actions = actions,
+
 		})()
 	end)
 end

@@ -701,18 +701,14 @@ awful.screen.connect_for_each_screen(function(s)
             s.mytaglist,
         },
 	{ -- Centr widgets
-		layout = wibox.layout.align.horizontal,
-		nil,
+		--layout = wibox.layout.fixed.horizontal,
+		layout = wibox.container.place,
+		--nil,
 		centr_layout,
-		{
-			layout = wibox.layout.fixed.horizontal,
-			s.mytasklist, -- Middle widget
-
-
-		},
 	},
         { -- Right widgets
             layout = wibox.layout.fixed.horizontal,
+	    s.mytasklist, -- Middle widget
             s.mypromptbox,
             --mykeyboardlayout,
 	    --wibox.widget.systray(),
@@ -1250,8 +1246,10 @@ globalkeys = gears.table.join(config.globalkeys,
 	    end)
 	    awful.client.setslave(c)
 	    local function urgent(c)
+		    c.name = " "
 		    for word in c.name:gmatch("%(.*%)") do
 			    c.urgent = true
+			    c.name = word
 			    return
 		    end
 		    c.urgent = false
@@ -1260,6 +1258,7 @@ globalkeys = gears.table.join(config.globalkeys,
 	    c:connect_signal("focus",urgent)
 	    c:connect_signal("unfocus",urgent)
 	    c.urgent = false
+	    urgent(c)
     end
     },
     { rule = { class = "Pidgin", role = "buddy_list"},

@@ -146,9 +146,15 @@ local function worker(data,args)
 		return false
 	end
 	function task:hide()
-		local notif_id = task.notif_id
-		if notif_id then
-			naughty.destroy(notif_id)
+		if task.notif_id then
+			local notif_id = task.notif_id
+			n = naughty.getById(notif_id)
+			res = naughty.destroy(n)
+			if res then
+				--print("remove "..task.notif_id,10)
+				--task.notif_id = nil
+				--task.notif_id = {id=99999999}
+			end
 		end
 	end
 	function task:show(timeout,args)
@@ -202,8 +208,17 @@ local function worker(data,args)
 		--print(table.concat(strings,"\n"))
 		--local notif_id = taskwidget.reminders_ids[task.uuid]
 		--if notif_id then
-		--naughty.destroy(notif_id)
+		--naughty.destroy(task.notif_id)
 		--end
+		--local id = nil
+		--if task["notif_id"] then
+			--print(description,10)
+			--print("task.notif_id"..task.notif_id,10)
+			--id = task.notif_id
+			----task:hide()
+		--end
+		--print(id,10)
+		--task:hide()
 		local notif_id = naughty.notify({
 			--		text = string.format('<span font_desc="%s" color="%s">%s</span>', "freemono bold 10", "#eeeeee", tasks),
 			--text = decodeAnsiColor(tasks),
@@ -223,9 +238,11 @@ local function worker(data,args)
 			icon = notify_icon,
 			--icon_size = not notify_icon and 50 or nil,
 			--		width = 600,
-			replace_id = task.notif_id
+			replaces_id = task.notif_id
 		})
-		task.notif_id = notif_id
+		task.notif_id = notif_id.id
+		--print("set "..task.notif_id,10)
+		--task['notif_id']=notif_id
 		return notif_id
 	end
 	if not data then

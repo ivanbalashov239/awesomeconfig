@@ -132,12 +132,12 @@ function run_once(cmd)
 	awful.util.spawn_with_shell("pgrep -u $USER -x " .. findme .. " > /dev/null || (" .. cmd .. ")")
 end
 local locker = '/home/ivn/scripts/run_slimlock_onstart.sh'
-local xautolock     = "xautolock -locker '"..locker.."' -nowlocker '"..locker.."' -time 10 &"
+local xautolock     = "xautolock -detectsleep -locker '"..locker.."' -nowlocker '"..locker.."' -time 1 &"
 local locknow       = "xautolock -locknow &"
 config.autostart = {}
 config.autostart.execute = gears.table.join(host.autostart.execute,{
 
-	"pkill xautolock && "..xautolock,
+	--"pkill xautolock ;"..xautolock,
 	--"pkill compton",
 	--"pkill pidgin; pidgin &",
 	--"pkill kbdd; kbdd &",

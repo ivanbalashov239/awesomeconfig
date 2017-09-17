@@ -48,6 +48,7 @@ end
 
 local function worker(args)
     local args = args or {}
+    local on_end = args.on_end or function() end
     local name = args.name
     local hints = args.hints or modal_sc.hints
     local actions_def = args.actions or {}
@@ -84,6 +85,7 @@ local function worker(args)
 			    if not k.name then
 				    k["name"]=k.desc
 			    end
+			    k["back"] = args
 			    worker(k)()
 		    end
 	    end
@@ -143,6 +145,29 @@ local function worker(args)
 
 			    if event == "release" then return true end
 			    if key == "ISO_Level3_Shift" then
+				    --print("altgr")
+				    --print(mod)
+				    return true
+			    end
+			    if key== "Escape" then
+				    modal_sc.hide()
+				    keygrabber.stop()
+				    --return_layout()
+				    on_end()
+				    return_layout()
+				    return
+			    end
+			    if key== "BackSpace" then
+				    --print("backspace",10)
+				    modal_sc.hide()
+				    keygrabber.stop()
+				    return_layout()
+				    --return_layout()
+				    if args.back then
+					    worker(args.back)()
+				    else
+					    on_end()
+				    end
 				    return true
 			    end
 
@@ -151,16 +176,18 @@ local function worker(args)
 					    keyPressed = false
 				    end
 			    end
-			    modal_sc.hide()
 			    if actions[key:lower()] then
+				    modal_sc.hide()
 				    keygrabber.stop()
-				    actions[key:lower()]()
 				    return_layout()
+				    actions[key:lower()]()
+				    on_end()
 				    --show result modal_sc.notification
 				    --show(key:upper(), 2)
-			    else
-				    keygrabber.stop()
-				    return_layout()
+			    --else
+				    --keygrabber.stop()
+				    --return_layout()
+				    --on_end()
 			    end
 			    --hide modal_sc.notification
 

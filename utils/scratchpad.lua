@@ -165,6 +165,7 @@ local function worker(args)
 		end
 	end
 	function scratch:toggle()
+		--print(scratch.client)
 		if not scratch.client or not scratch.client.valid then
 			spawn(
 			function()

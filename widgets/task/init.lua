@@ -66,6 +66,9 @@ function(...)
 		table.insert(taskwidget.afterupdate,function()
 			local newtask = taskwidget.tasks[uuid]
 			local t = newtask or oldtask
+			--print(t.notif_id)
+			--print(oldtask.notif_id)
+			t.notif_id = oldtask.notif_id
 			if t then
 				t:show(timeout, {title = title})
 			end
@@ -77,6 +80,10 @@ function(...)
 	--taskwidget.watch.updatewidget(taskwidget.watch.widget)
 end
 )
+local function taskupdate()
+	os.execute('/bin/dbus-send --session --dest=org.naquadah.awesome.task / org.naquadah.awesome.task.taskUpdate string:"update"')
+	--print("taskupdate",10)
+end
 local function todec(num)
 	if num < 10 then
 		return "0"..num
@@ -302,6 +309,7 @@ function taskwidget.modal_menu(args)
 		--font="Terminus bold ",
 		name="taskwarrior",
 		actions=actions,
+		on_end=taskupdate,
 	})()
 end
 function taskwidget.modal_actions(item)

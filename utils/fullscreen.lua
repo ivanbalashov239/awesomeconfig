@@ -59,7 +59,13 @@ local function remove_client(tabl, c)
 			awful.spawn("xset s off")
 			awful.spawn("xset -dpms")
 			--print("xautolock -enable",15)
-			awful.spawn("xautolock -enable")
+			--awful.spawn("xautolock -enable")
+			--print("not fullscreen",10)
+			awful.spawn.easy_async({"/bin/xautolock","-enable"},function(output,err)
+				if err and not err == "" then
+					print(err)
+				end
+			end)
 
 			if checkclass(c.class) then
 				timemute()
@@ -80,7 +86,13 @@ local function worker(args)
 				awful.spawn("xset -dpms")
 				--naughty.suspend()
 				--print("xautolock -disable",15)
-				awful.spawn("xautolock -disable")
+				--awful.spawn("xautolock -disable")
+				--print("fullscreen",10)
+				awful.spawn.easy_async({"/bin/xautolock","-disable"},function(output,err)
+					if err and not err == "" then
+						print(err)
+					end
+				end)
 				if checkclass(c.class) then
 					widgets.mpd.pauseif()
 					timemute()

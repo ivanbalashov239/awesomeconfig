@@ -621,17 +621,18 @@ function taglist.focus(args)
 			end
 		end
 		local name = cl.name or ""
+		name  = name:gsub("https?://[^ ]*","")
 		if #tags > 1 then
 			table.insert(actions,{
 				modal = true,
 				hint = cl.hint,
-				desc = cl.class.." | "..(cl.name or ""),
+				desc = cl.class.." | "..name,
 				actions = tags
 			})
 		else
 			table.insert(actions,{
 				hint = i,
-				desc = cl.class.." | "..(cl.name or ""),
+				desc = cl.class.." | "..name,
 				func = function()
 					focus(cl,cl:tags()[1])
 				end
@@ -665,9 +666,11 @@ function taglist.newtag(args)
 		actions = {}
 		for i,k in pairs(hintindex) do
 			--print(k.hint)
+			local name = k.name or ""
+			name  = name:gsub("https?://[^ ]*","")
 			table.insert(actions,{
 				hint = i,
-				desc = k.class.." | "..k.name,
+				desc = k.class.." | "..name,
 				func = function()
 					if marked[i] then
 						marked[i] = nil
