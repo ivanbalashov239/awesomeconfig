@@ -4,6 +4,11 @@ local wibox = require("wibox")
 local lain = require("lain")
 local awful = require("awful")
 local naughty = require("naughty")
+local rork = require("rork")      
+local gears      = require("gears")
+timer = gears.timer
+local run_or_raise = rork.run_or_raise
+local run_or_kill = rork.run_or_kill
 
 local mailwidget ={}
 mailwidget.shortcuts = {}
@@ -54,24 +59,30 @@ local function worker(args)
 			local cm = mutt.." /home/ivn/.mutt/"..args.mailbox.."'"
 			run_or_raise(cm, { class = "UXTerm" }) 
 		end
-		args.textbox = lain.widgets.maildir({
-			mailpath = "/home/ivn/Mail/"..args.mailbox,
+		local mailpath = "/home/ivn/Mail/"..args.mailbox
+		local mymaildir = lain.widget.watch({
+			timeout = 10,
+			stoppable = true,
+			cmd = { awful.util.shell, "-c", string.format("ls -1dr %s/INBOX/new/*", mailpath) },
 			settings = function()
-				args.textbox:set_text(total) --newmail)
-				args.total = total
-				args.newmail = newmail
-				if total > 0 then
-					args.textbox:show(args.notiftimeout or 10)
-					--mailnotif({
-					--title = args.mailbox,
-					--text = newmail,
-					--timeout = args.notiftimeout or 10,
-					--})
+				local inbox_now = { digest = 0 }
+
+				for dir in output:gmatch(".-/(%w+)/new") do
+					inbox_now[dir] = 0
+					for i in output:gmatch(dir) do
+						inbox_now[dir] = inbox_now[dir] + 1
+					end
+					inbox_now.digest = inbox_now[dir]
 				end
-			end,
-			ignore_boxes = ignoremail,
-			timeout = args.timertimeout or 30,
+				widget:set_text(inbox_now.digest)
+				args.total = inbox_now.digest
+				args.newmail = newmail
+				if inbox_now.digest > 0 then
+					args.textbox:show(args.notiftimeout or 10)
+				end
+			end
 		})
+		args.textbox = mymaildir.widget
 		local mail_notify = nil
 		function args.textbox:hide()
 			if mail_notify ~= nil then
@@ -83,7 +94,7 @@ local function worker(args)
 			args.textbox:hide()
 			mail_notify = mailnotif({
 				title = args.mailbox,
-				text = args.newmail ~= "" and args.newmail or args.total,
+				text = args.textbox.text,
 				icon = "/home/ivn/Mail/"..args.mailbox..".png",
 				timeout = t_out,
 				run = run,
@@ -96,7 +107,7 @@ local function worker(args)
 		local mailbuttons = awful.util.table.join(awful.button({ }, 1,
 		run
 		))
-		args.textbox:buttons(mailbuttons)
+		--args.textbox:buttons(mailbuttons)
 		args.textbox:set_text("0")
 		local timer = timer({ timeout = 1 })
 		timer:connect_signal("timeout", function ()
@@ -113,39 +124,43 @@ local function worker(args)
 	local mail_widget3 = getmailwidget({mailbox = "FateGmail", textbox = mail_widget3})
 	--local mail_widget2 = getmailwidget({mailbox = "FateYandex", textbox = mail_widget2 }) 
 	local mail_widget1 = getmailwidget({mailbox = "Personal", textbox = mail_widget1})
-	local mailwidget = widgetcreator({
+	function mailwidget.update()
+		mail_widget3.update()
+		mail_widget1.update()
+	end
+	local widget = widgetcreator({
 		text = "MAIL",
 		textboxes = {mail_widget1, mail_widget3 }, --2, mail_widget3},
 	})
-	mail_widget3:attach(mailwidget)
-	--mail_widget2:attach(mailwidget)
-	mail_widget1:attach(mailwidget)
-	mailwidget:buttons(awful.util.table.join(awful.button({ }, 1,
+	mail_widget3:attach(widget)
+	--mail_widget2:attach(widget)
+	mail_widget1:attach(widget)
+	widget:buttons(awful.util.table.join(awful.button({ }, 1,
 	function ()
 		local timer = timer({ timeout = 1 })
 		timer:connect_signal("timeout", function ()
 			local cm = mutt.." /home/ivn/.mutt/Personal'"
-			run_or_raise(cm, { class = "UXTerm" }) 
+			run_or_raise(cm, { class = "UXTerm" },widgets.mail.update)
 			timer:stop()
 		end)
 		timer:start()
 	end),
-	awful.button({ }, 2,
-	function ()
-		local timer = timer({ timeout = 1 })
-		timer:connect_signal("timeout", function ()
-			local cm = mutt.." /home/ivn/.mutt/FateYandex'"
-			run_or_raise(cm, { class = "UXTerm" }) 
-			timer:stop()
-		end)
-		timer:start()
-	end),
+	--awful.button({ }, 2,
+	--function ()
+		--local timer = timer({ timeout = 1 })
+		--timer:connect_signal("timeout", function ()
+			--local cm = mutt.." /home/ivn/.mutt/FateYandex'"
+			--run_or_raise(cm, { class = "UXTerm" }) 
+			--timer:stop()
+		--end)
+		--timer:start()
+	--end),
 	awful.button({ }, 3,
 	function ()
 		local timer = timer({ timeout = 1 })
 		timer:connect_signal("timeout", function ()
 			local cm = mutt.." /home/ivn/.mutt/FateGmail'"
-			run_or_raise(cm, { class = "UXTerm" }) 
+			run_or_raise(cm, { class = "UXTerm" },widgets.mail.update)
 			timer:stop()
 		end)
 		timer:start()
@@ -156,10 +171,10 @@ local function worker(args)
 
 	--widget_mail = wibox.widget.imagebox()
 	--widget_mail:set_image(beautiful.widget_mail)
-	--mailwidget = wibox.widget.background()
-	--mailwidget:set_widget(mail_widget)
-	--mailwidget:set_bgimage(beautiful.widget_display)
-	return mailwidget
+	--widget = wibox.widget.background()
+	--widget:set_widget(mail_widget)
+	--widget:set_bgimage(beautiful.widget_display)
+	return widget
 end
 
 return setmetatable(mailwidget, {__call = function(_,...) return worker(...) end})

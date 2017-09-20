@@ -5,9 +5,12 @@ local read_pipe = require("lain.helpers").read_pipe
 local ansiDecode = require("task.ansiDecode")
 local wibox         = require("wibox")
 local awful         = require("awful")
+local shell        = require("awful.util").shell
 local beautiful     = require("beautiful")
 local naughty       = require("naughty")
 local json	= require("json")
+local timer = require("gears").timer
+local helpers = require("lain.helpers")
 dbus.request_name("session", "org.naquadah.awesome.task")
 dbus.add_match("session", "interface='org.naquadah.awesome.task',member='taskUpdate'")
 dbus.connect_signal("org.naquadah.awesome.task",
@@ -175,31 +178,33 @@ end
 
 -- duetasks widget
 function task.refresh_duetasks()
-	local tasks = awful.util.pread("task "..task.due.." | sed '/./!d;1d;2d;3d;$d'")
-	duetasks = task.explode("\n", tasks)
-	duetasks_ids = {}
-	for i,k in pairs(duetasks) do
-		if k == ""then
-			duetasks[i]=nil
-		else
-			local item = task.explode(" ",k)
-			--print(item[1])
-			if item[1] and not (item[1] == "") and item[1]:gmatch('%d+')then
-				table.insert(duetasks_ids,item[1])
-				--duetasks_ids[item[1]]=item
+	helpers.async({ shell, "-c", "task "..task.due.." | sed '/./!d;1d;2d;3d;$d'" }, function(f)
+		local tasks = f
+		duetasks = task.explode("\n", tasks)
+		duetasks_ids = {}
+		for i,k in pairs(duetasks) do
+			if k == ""then
+				duetasks[i]=nil
+			else
+				local item = task.explode(" ",k)
+				--print(item[1])
+				if item[1] and not (item[1] == "") and item[1]:gmatch('%d+')then
+					table.insert(duetasks_ids,item[1])
+					--duetasks_ids[item[1]]=item
+				end
 			end
 		end
-	end
-	task:set_text(#duetasks_ids)
-	task.start_reminders()
-	--print(#duetasks)
-	--if #duetasks >= 4 then
+		task:set_text(#duetasks_ids)
+		task.start_reminders()
+		--print(#duetasks)
+		--if #duetasks >= 4 then
 		--duepointer = 4
-	--else
+		--else
 		----duetasks = {""}
 		--duepointer = 1
-	--end
-	--print(duetasks[duepointer])
+		--end
+		--print(duetasks[duepointer])
+	end)
 end
 
 function task.get_duetask()

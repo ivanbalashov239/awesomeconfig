@@ -1,9 +1,7 @@
-hst = io.popen("uname -n")
-hostname = hst:read()
-hst:close()
---local config = require(hostname)
 local gears      = require("gears")
+timer = gears.timer
 local awful      = require("awful")
+local gears      = require("gears")
 awful.rules      = require("awful.rules")
 local common 	 = require("awful.widget.common")
 local fixed 	 = require("wibox.layout.fixed")
@@ -11,20 +9,25 @@ require("awful.autofocus")
 -- | Theme | --
 
 local theme = "pro-dark"
+HOME = os.getenv("HOME")
 local beautiful  = require("beautiful")
 beautiful.init(os.getenv("HOME") .. "/.config/awesome/themes/" .. theme .. "/theme.lua")
 --                   require("sharetags")
-local hintsetter  = require("hintsetter")
-hintsetter.init()
-local hints 	 = require("hints")
-hints.init()
-local tyrannical = require("tyrannical")
-local apw 	 = require("apw/widget")
+--local hintsetter  = require("hintsetter")
+--hintsetter.init()
+--local hints 	 = require("hints")
+--hints.init()
+--local tyrannical = require("tyrannical")
+--local apw 	 = require("apw/widget")
+hst = io.popen("uname -n")
+hostname = hst:read()
+hst:close()
+local host = require(hostname) or {}
 local wibox      = require("wibox")
 local vicious    = require("vicious")
 local naughty    = require("naughty") --"notifybar")
 local hidetray	 = require("hidetray")
-local systray	 = require("systray")
+--local systray	 = require("systray")
 local lain       = require("lain")
 local read_pipe    = require("lain.helpers").read_pipe
 local net_widgets = require("net_widgets")
@@ -35,7 +38,8 @@ local run_or_kill = rork.run_or_kill
 local modal_sc = require("modal_sc")      
 
 local widgets = require("widgets")
-local json = require('cjson')
+widgets.taskwidget = require("widgets.task")
+--local json = require('cjson')
 
 --local timew = require("client_timew")
 --timew()
@@ -50,38 +54,41 @@ local newtag	 = require("newtag")
 newtag.init()
 --local quake 	 = require("quake")
 local scratch	 = require("scratch")
-local utf8 	 = require("utf8_simple")
+local scratchpad = require("utils.scratchpad")
+--local utf8 	 = require("utf8_simple")
 lain.helpers     = require("lain.helpers")
 local menubar = require("menubar")
 menubar.terminal = "termite"
-menubar.menu_gen.all_menu_dirs = { "/usr/share/applications/", "/usr/local/share/applications", "~/.local/share/applications" }
+--menubar.menu_gen.all_menu_dirs = {"~/.local/share/applications" }
+menubar.menu_gen.all_categories = gears.table.join(menubar.menu_gen.all_categories,{
+    other = { app_type = "", name = "wine",
+	    icon_name = "applications-accessories", use = true },
+    wine = { app_type = "wine", name = "wine",
+	    icon_name = "wine", use = true },
+})
+--{ "/usr/share/applications/", "/usr/local/share/applications", 
 local cheeky 	 = require("cheeky")
-local appsuspender = require("appsuspender")
-local im = require("im")
-local task = require("task")
+--local appsuspender = require("appsuspender")
+--local im = require("im")
+--local task = require("task")
 local capi = {
 	mouse = mouse,
 	client = client,
 	screen = screen
 }
 
+local function exec(...)
+	--os.execute(...)
+	awful.spawn(...)
+end
 
 
 
 local config = {}
---config.musicwidget = widgets.mpd()
---config.pulsewidget = widgets.pulse()
---config.kbdwidget = widgets.kbdd()
---config.mailwidget = widgets.mail()
---config.cpuwidget = widgets.cpu_tmp()
---config.memwidget = widgets.mem()
---config.fswidget = widgets.fs()
---config.taskwidget = widgets.taskwidget()
---config.netwidget = widgets.net()
---config.weatherwidget = widgets.weather()
---config.clockwidget = widgets.time()
---config.calendarwidget = widgets.calendar()
-
+local dropdownterm  = "termite -r DROPDOWN -e 'tmux attach -t dropdown '"
+local dropdownterm = scratchpad({
+	command = dropdownterm
+})
 config.panel = {}
 config.panel.left = {
 	widgets.spr5px,
@@ -89,18 +96,29 @@ config.panel.left = {
 }
 config.panel.middle = {
 	--widgets.tasklist()
+	widgets.title_widget()
 }
 config.panel.right = {
 	widgets.kbdd(),
 	widgets.mpd(),
 	widgets.taskwidget(),
 	widgets.weather(),
-	widgets.net(),
+	widgets.net({
+		wired_interface = host.wired_interface,
+		wireless_interface = host.wired_interface,
+	}),
 	widgets.pulse(),
-	widgets.cpu_tmp(),
-	widgets.mem(),
-	widgets.mail(),
-	widgets.fs(),
+	awful.widget.only_on_screen (
+	widgets.cpu_tmp({
+		tempfile = host.cpu_tmpfile,
+	}),"primary"),
+	awful.widget.only_on_screen (
+	widgets.mem(),"primary"),
+	host.widgets.mail,
+	widgets.fs({
+		--watch = true,
+	}),
+	host.widgets.battery,
 	widgets.calendar(),
 	widgets.time(),
 	widgets.spr
@@ -113,56 +131,46 @@ function run_once(cmd)
 	end
 	awful.util.spawn_with_shell("pgrep -u $USER -x " .. findme .. " > /dev/null || (" .. cmd .. ")")
 end
+local locker = '/home/ivn/scripts/run_slimlock_onstart.sh'
+local xautolock     = "xautolock -detectsleep -locker '"..locker.."' -nowlocker '"..locker.."' -time 1 &"
+local locknow       = "xautolock -locknow &"
 config.autostart = {}
-config.autostart.execute = {
+config.autostart.execute = gears.table.join(host.autostart.execute,{
+
+	--"pkill xautolock ;"..xautolock,
 	--"pkill compton",
 	--"pkill pidgin; pidgin &",
-	"pkill kbdd; kbdd &",
-	"pkill xcape",
+	--"pkill kbdd; kbdd &",
 	"setxkbmap 'my(dvp),my(rus)' &",
 	--"setxkbmap 'my(dvp),my(rus)' setxkbmap -option grp:caps_toggle,grp_led:caps -print | xkbcomp - $DISPLAY; xkbcomp $DISPLAY - | egrep -v 'group . = AltGr;' | xkbcomp - $DISPLAY &",
 	--"xkbcomp $HOME/.config/xkb/my $DISPLAY &",
 	"/home/ivn/scripts/trackpoint/trackpointkeys.sh normalmode &",
-	"xset s off",
-	"xset -dpms",
 	"xset m 1/2 4",
-	"pkill dropbox",
-	--"dropbox &",
-	"xinput disable 'SynPS/2 Synaptics TouchPad'",
 	"xrdb -merge ~/.Xresources &",
-	'xcape -t 1000 -e "Control_L=Tab;ISO_Level3_Shift=Multi_key"',
-	"xkbcomp $DISPLAY - | egrep -v 'group . = AltGr;' | xkbcomp - $DISPLAY"
-}
-local xkbtimer = timer({ timeout = 2000 })
+	'pkill xcape; xcape -t 1000 -e "Control_L=Tab;ISO_Level3_Shift=Multi_key"',
+	"xkbcomp $DISPLAY - | egrep -v 'group . = AltGr;' | xkbcomp - $DISPLAY"}
+)
+local xkbtimer = gears.timer({ timeout = 2000 })
 xkbtimer:connect_signal("timeout", function ()
 	awful.util.spawn_with_shell("xkbcomp $DISPLAY - | egrep -v 'group . = AltGr;' | xkbcomp - $DISPLAY")
 end)
-config.autostart.run_once = {
-	"linconnect-server &",
+local browser       = "firefox"
+config.autostart.run_once = gears.table.join(host.autostart.run_once,{
+
+	--"linconnect-server &",
 	--"kbdd",
 	"mpd /home/ivn/.config/mpd/mpd.conf",
 	--"mpdscribble",
-	"udiskie --tray &",
-	--"nm-applet",
-	--"pa-applet",
-	"qbittorrent --style=gtk+",
-	"redshiftgui",
-	--"indicator-kdeconnect",
-	"dropbox",
-	--"thunderbird",
-	--"parcellite",
-	"pidgin",
 	"env QT_IM_MODULE=xim telegram-desktop",
 	--"telegram-desktop",
 	"compton --config /home/ivn/.config/compton.conf -b &",
 	--"pactl load-module module-loopback source=2 sink=0",
-	xautolock,
-	browser,
+	--xautolock,
 	"perl /usr/share/cantata/scripts/cantata-dynamic start",
 	xkbtimer
 	--"evolution",
 	--"goldendict --style gtk+",
-}
+})
 
 
 config.mpdwidget = widgets.mpd.mpdwidget
@@ -173,19 +181,25 @@ modkey        = "Mod4"
 altgr        = "Mod5"
 altkey        = "Mod1"
 
-config.globalkeys = awful.util.table.join(
+config.globalkeys = gears.table.join(
 	    awful.key({ modkey }, "l",
 	    function ()
 		    awful.prompt.run({ prompt = "Run Lua code: " },
-		    mypromptbox[mouse.screen].widget,
+		    mouse.screen.mypromptbox.widget,
 		    awful.util.eval, nil,
 		    awful.util.getdir("cache") .. "/history_eval")
 	    end),
 	    awful.key({ modkey,       }, "q",   function (c) if client.focus then client.focus:kill() end end),
 	    awful.key({ modkey,	          }, "u",      function () 
-		    awful.util.spawn_with_shell("tmux new -d -s dropdown") 
-		    scratch.drop(dropdownterm)
+		    awful.spawn.with_shell("tmux new -d -s dropdown") 
+		    --scratch.drop(dropdownterm)
+		    dropdownterm:toggle()
 	    end), 
+	    --awful.key({ modkey,	          }, "u",      function () 
+		    ----awful.spawn.with_shell("tmux new -d -s dropdown") 
+		    ----scratch.drop(dropdownterm)
+		    --im:toggle()
+	    --end), 
 	    awful.key({ modkey, "Control"  }, "x",      function () exec("/home/ivn/scripts/trackpoint/trackpointkeys.sh switch &") end),
 	    awful.key({ modkey            }, "g",      function () run_or_raise("gvim", { class = "Gvim" }) end),
 	    awful.key({ modkey            }, "Print",  function () exec("screengrab") end),
@@ -202,27 +216,34 @@ config.globalkeys = awful.util.table.join(
 	    --awful.key({ modkey            }, "\\",     function () exec("sublime_text") end),
 	    awful.key({ modkey            }, "$",      function () exec("gcolor2") end),
 	    awful.key({ modkey            }, "`",      function () exec("xwinmosaic") end),
-	    awful.key({ }, "XF86AudioRaiseVolume",  apw.up),
-	    awful.key({ }, "XF86AudioLowerVolume",  apw.down),
-	    awful.key({ }, "XF86AudioMute",         apw.togglemute),
+	    awful.key({ }, "XF86AudioRaiseVolume",  widgets.pulse.up),
+	    awful.key({ }, "XF86AudioLowerVolume",  widgets.pulse.down),
+	    awful.key({ }, "XF86AudioMute",         widgets.pulse.togglemute),
 	    awful.key({ }, "XF86Sleep",         function () exec("systemctl suspend") end),
 	    awful.key({ }, "XF86Explorer",      function () exec("systemctl suspend") end),
 	    awful.key({ }, "XF86PowerOff",      
 	    function ()
-		    exec("systemctl suspend")
+		    os.execute("systemctl suspend")
 		    --exec(locknow)
 		    --bomicontrol("pause")
 	    end),
 	    awful.key({modkey		  }, "F12",      function () exec("systemctl suspend") end),
+	    awful.key({ modkey, "Control"   }, "w",  function()
+		    widgets.fs.media_files_menu({
+			    launcher = "/home/ivn/Downloads/umpv"
+		    })
+	    end
+	    ),
 	    awful.key({ modkey, "Control"   }, "b",  
 	    function () 
 		    local cl = client.focus
 		    local actions = {}
-		    if cl.class == "Firefox" then
-			    local title = cl.name:split(" ")
+		    if cl and cl.class == "Firefox" then
+			    --local title = strings.split(cl.names," ")
 			    --print(cl.name:gmatch("http%S+"))
 			    local url
-			    for i,k in pairs(title) do
+			    --string.gmatch(example, "%S+")
+			    for k in string.gmatch(cl.name,"%S+") do
 				    if k:find("http") then
 					    url = k
 				    end
@@ -232,7 +253,7 @@ config.globalkeys = awful.util.table.join(
 					    hint = "b",
 					    desc = "Open in player",
 					    func = function()
-						    os.execute('/usr/bin/bomi --wake --open "'..url..'" &')
+						    os.execute(HOME..'/Downloads/umpv "'..url..'" &')
 					    end,
 				    })
 			    end
@@ -331,8 +352,20 @@ config.globalkeys = awful.util.table.join(
 			    is_excluded=true
 		    }) 
 	    end),
-	    awful.key({ modkey,    }, "o",  
-	    task.done_modify(modal_sc)
+	    awful.key({ modkey,    }, "o",  function()
+		    widgets.taskwidget.modal_menu()
+	    end
+	    ),
+	    awful.key({ modkey, "Shift" }, "o",  function()
+		    widgets.taskwidget.modal_menu({
+			    filter = function(task)
+				    if task:is_waiting() then
+					    return true
+				    end
+				    return false
+			    end
+		    })
+	    end
 	    ),
 	    awful.key({ modkey,    }, "e",
 	    modal_sc({
@@ -345,7 +378,7 @@ config.globalkeys = awful.util.table.join(
 					    awful.util.spawn("/home/ivn/scripts/dusi_zenity.sh reply")
 					    local rutimer = timer({ timeout = 0.5 })
 					    rutimer:connect_signal("timeout", function ()
-						    set_ru()
+						    kbddwidget.set_ru()
 						    rutimer:stop()
 					    end)
 					    rutimer:start()
@@ -358,7 +391,7 @@ config.globalkeys = awful.util.table.join(
 					    awful.util.spawn("/home/ivn/scripts/dusi_zenity.sh")
 					    local rutimer = timer({ timeout = 0.5 })
 					    rutimer:connect_signal("timeout", function ()
-						    set_ru()
+						    kbddwidget.set_ru()
 						    rutimer:stop()
 					    end)
 					    rutimer:start()
@@ -407,14 +440,30 @@ end),
 
 awful.key({ modkey,           }, "Tab",
 function ()
-	awful.client.focus.history.previous()
-	if client.focus then
-		client.focus:raise()
+	local cl = capi.client.focus
+	local scr = cl and cl.screen or 1
+	local last = awful.client.focus.history.get(scr,2)
+	local list = awful.client.focus.history.list
+	if list and #list > 1 then
+		--awful.client.focus.history.previous()
+		local last =list[2] 
+		if last then
+			capi.client.focus = last
+			last:raise()
+			if #last:tags() > 0 then
+				if last.last_tag then
+					last.last_tag:view_only()
+				else
+					last:tags()[1]:view_only()
+				end
+			end
+			capi.client.focus = last
+		end
 	end
 end),
 awful.key({ modkey }, "Escape", awful.tag.history.restore),
-awful.key({ modkey }, "j", function () lain.util.tag_view_nonempty(-1) end),
-awful.key({ modkey }, "k", function () lain.util.tag_view_nonempty(1) end),
+awful.key({ modkey }, "j", function () widgets.taglist.prevtag({}) end),
+awful.key({ modkey }, "k", function () widgets.taglist.nexttag({}) end),
 
 awful.key({ modkey, "Shift" }, "j",   awful.tag.viewprev       ),
 awful.key({ modkey, "Shift" }, "k",  awful.tag.viewnext       ),
@@ -422,11 +471,11 @@ awful.key({ modkey, altgr }, "t",
 function ()
 	awful.util.spawn("/home/ivn/scripts/translate_zenity.sh")
 end),
-awful.key({ modkey,           }, "z",      function () task:toggle() end),
+--awful.key({ modkey,           }, "z",      function () task:toggle() end),
 awful.key({ modkey,           }, "w",      function () mainmenu:show() end),
-awful.key({ modkey, "Control" }, "n",  apw.up),
-awful.key({ modkey, "Control" }, "t",  apw.down),
-awful.key({ modkey, "Control" }, "m",  apw.togglemute),
+awful.key({ modkey, "Control" }, "n",  widgets.pulse.up),
+awful.key({ modkey, "Control" }, "t",  widgets.pulse.down),
+awful.key({ modkey, "Control" }, "m",  widgets.pulse.menu),
 awful.key({ modkey,           }, "m",
 modal_sc({
 	name="MAIL",
@@ -435,7 +484,7 @@ modal_sc({
 			hint = "m",
 			func = function()
 				local cm = mutt.." /home/ivn/.mutt/Personal'"
-				run_or_raise(cm, { class = "UXTerm" }) 
+				run_or_raise(cm, { class = "UXTerm" },widgets.mail.update)
 			end,
 			desc = "Personal"
 		},
@@ -443,7 +492,7 @@ modal_sc({
 			hint = "t",
 			func = function()
 				local cm = mutt.." /home/ivn/.mutt/FateGmail'"
-				run_or_raise(cm, { class = "UXTerm" }) 
+				run_or_raise(cm, { class = "UXTerm" },widgets.mail.update)
 			end,
 			desc = "Gmail"
 		},
@@ -488,63 +537,51 @@ function ()
 	--end
 end)
 )
-config.clientkeys = awful.util.table.join()
-config.clientbuttons = awful.util.table.join()
+config.clientkeys = gears.table.join()
+config.clientbuttons = gears.table.join()
 
 
+tag.connect_signal("property::selected",function(t)
+	if t.selected then
+		for _,c in pairs(t:clients()) do
+			c.last_tag = t
+		end
+	end
+
+end)
 
 config.rules = {
-	{ rule = { class = "Pidgin", role = "buddy_list"},
-	properties = { tag = awful.tag.gettags(1)[2], switchtotag = false, no_autofocus = true }},
-	{ rule = { class = "Pidgin", role = "conversation"},
-	properties = { tag = awful.tag.gettags(1)[2], switchtotag = false, no_autofocus = true },
-	callback = awful.client.setslave },
+	--{ rule = { class = "Pidgin", role = "buddy_list"},
+	--properties = { tag = awful.tag.gettags(1)[2], switchtotag = false, no_autofocus = true }},
+	--{ rule = { class = "Pidgin", role = "conversation"},
+	--properties = { tag = awful.tag.gettags(1)[2], switchtotag = false, no_autofocus = true },
+	--callback = awful.client.setslave },
 	{rule = {role = "DROPDOWN"}, 
 	properties = {opacity = 0.8}},
-	{ rule = { class = "Pavucontrol" },
-	properties = { floating = true, intrusive = true } },
+	--{ rule = { class = "Pavucontrol" },
+	--properties = { floating = true, intrusive = true } },
 
-	{ rule = { class = "veromix" },
-	properties = { floating = true, intrusive = true } },
+	--{ rule = { class = "veromix" },
+	--properties = { floating = true, intrusive = true } },
 
-	{ rule = { name = "Громкость" },
-	properties = { floating = true, intrusive = true } },
+	--{ rule = { name = "Громкость" },
+	--properties = { floating = true, intrusive = true } },
 
-	{ rule = { class = "Vlc" },
-	properties = { floating = true } },
-	{ rule = { role = "HTOP_CPU" },
-	properties = { floating = true, intrusive = true} },
-	{ rule = { role = "HTOP_MEM" },
-	properties = { floating = true, intrusive = true } },
+	--{ rule = { class = "Vlc" },
+	--properties = { floating = true } },
+	--{ rule = { role = "HTOP_CPU" },
+	--properties = { floating = true, intrusive = true} },
+	--{ rule = { role = "HTOP_MEM" },
+	--properties = { floating = true, intrusive = true } },
 
 	{ rule = { class = "Exe"}, properties = {floating = true} },
 	{ rule = { class = "Plugin-container" },
 	properties = { floating = true, focus = true} },
-	{ rule = { class = "bomi"},
-	properties = { opacity = 0.8, switchtotag = false, no_autofocus = true, floating = true, ontop = true, sticky = true  },
-	callback = function(c)
-
-		local scrgeom = capi.screen[capi.mouse.screen].geometry
-		local clgeom  = c:geometry({width = scrgeom.width/5, height = scrgeom.height/5})
-		local clgeom  = c:geometry({x = scrgeom.x + scrgeom.width - clgeom.width, y = scrgeom.y + scrgeom.height - clgeom.height}) 
-		c:connect_signal("property::fullscreen",function(c)
-			if c.fullscreen then
-				c.opacity = 1
-				c.floating = false 
-				c.ontop = false
-				c.sticky = false
-			else
-				c.opacity = 0.8
-				c.floating = true
-				--c.ontop = true
-				c.sticky = true
-			end
-		end)
-	end}
 
 }
 
 
+config.client_specific = {enabled = host.client_specific}
 
 
 return config

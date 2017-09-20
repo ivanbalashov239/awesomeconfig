@@ -44,7 +44,7 @@ local function worker(args)
 	end),
 	awful.button({ }, 3, function ()
 		if instance then
-			instance:hide()
+			intance:hide()
 			instance = nil
 		else
 			instance = awful.menu.clients({
@@ -60,7 +60,7 @@ local function worker(args)
 		awful.client.focus.byidx(-1)
 		if client.focus then client.focus:raise() end
 	end))
-    	return awful.widget.tasklist(s, matchrules({{class = "Pidgin"},{class="TelegramDesktop"}}, false), mytasklist.buttons)
+    	return awful.widget.tasklist(screen, matchrules({{class = "Pidgin"},{class="TelegramDesktop"}}, false), mytasklist.buttons)
 
 end
 

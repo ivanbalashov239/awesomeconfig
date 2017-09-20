@@ -3,14 +3,19 @@ local beautiful = require("beautiful")
 local wibox = require("wibox")
 local lain = require("lain")
 local awful = require("awful")
+local naughty = require("naughty")
 
 local batterywidget ={}
 batterywidget.shortcuts = {}
 
 local function worker(args)
+	local args = args or {}
+	local battery = args.bat or "BAT1"
+
 	local baticon = wibox.widget.imagebox(beautiful.widget_battery)
-	local batwidget = lain.widgets.bat({
-		battery = "BAT1",
+	local batwidget = lain.widget.bat({
+		timeout = 10,
+		battery = battery,
 		settings = function()
 			if bat_now.status == "Charging" then
 				baticon:set_image(beautiful.widget_ac)
@@ -25,13 +30,13 @@ local function worker(args)
 			else
 				baticon:set_image(beautiful.widget_battery)
 			end
-			widget:set_markup(" " .. bat_now.perc .. "% ")
+			widget:set_markup(bat_now.perc .. "%")
 		end
 	})
 	local batterywidget = widgetcreator(
 	{
 		widgets = {baticon},
-		textboxes = {batwidget}
+		textboxes = {batwidget.widget}
 	})
 	local function battery_time_grabber()
 		f = io.popen("acpi -b | awk '{print $5}' | awk -F \":\" '{print $1\":\"$2 }'")
@@ -51,6 +56,7 @@ local function worker(args)
 		end
 	end
 	function batwidget:show(t_out)
+		batwidget.update()
 		batwidget:hide()
 		battery_notify = naughty.notify({
 			preset = fs_notification_preset,

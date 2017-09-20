@@ -1,15 +1,37 @@
 local widgetcreator = require("widgets")
+local widgets = widgetcreator
 local beautiful = require("beautiful")
 local wibox = require("wibox")
 local lain = require("lain")
 local awful = require("awful")
 local utf8 	 = require("utf8_simple")
-local read_pipe    = require("lain.helpers").read_pipe
+local timer = require("gears").timer
 
 local mpdwidget ={}
 mpdwidget.shortcuts = {}
-
+function mpdwidget.skip()
+	lain.helpers.async('python3 /home/ivn/scripts/rate_current_mpd_song.py get rating', function(f)
+		local cur_rate = f
+		if tonumber(cur_rate) then
+			cur_rate = math.floor(cur_rate)
+		else
+			cur_rate = nil
+		end
+		if cur_rate then
+			if cur_rate > 1 and cur_rate < 6 then
+				mpdwidget.next()
+			elseif cur_rate == 1 and skip_unrated then
+				mpdwidget.next()
+			end
+		elseif mpdwidget.skip_unrated then
+			--os.execute("python3 /home/ivn/scripts/rate_current_mpd_song.py set rating 1")
+			mpdwidget.next()
+		end
+	end)
+end
 local function worker(args)
+	local args = args or {}
+	local host = args.host
 	-- | MPD | --
 
 	--prev_icon = wibox.widget.imagebox()
@@ -27,34 +49,20 @@ local function worker(args)
 	local mpd_sepr = wibox.widget.imagebox()
 	mpd_sepr:set_image(beautiful.mpd_sepr)
 	local mpd_skip_timer = timer({timeout=0.5})
-	mpd_skip_timer:connect_signal("timeout", function ()
-		local cur_rate = read_pipe('python3 /home/ivn/scripts/rate_current_mpd_song.py get rating')
-		if tonumber(cur_rate) then
-			cur_rate = math.floor(cur_rate)
-		else
-			cur_rate = nil
-		end
-		if cur_rate then
-			if cur_rate > 1 and cur_rate < 6 then
-				mpdwidget.next()
-			elseif cur_rate == 1 and skip_unrated then
-				mpdwidget.next()
-			end
-		elseif skip_unrated then
-			--os.execute("python3 /home/ivn/scripts/rate_current_mpd_song.py set rating 1")
-			mpdwidget.next()
-		end
-	end)
+	mpd_skip_timer:connect_signal("timeout",mpdwidget.skip)
 	--mpd_skip_timer:start()
+	mpdwidget.mpdwidget = wibox.widget.textbox()
 
-	local widget = lain.widgets.mpd({
+	local widget = lain.widget.mpd({
 		--notify = "off",
+		host = host,
 		settings = function ()
 			mpdwidget.mpdwidget.state = mpd_now.state
 			if mpd_now.state == "play" then
 				--print(mpd_now.title)
-				mpd_skip_timer:emit_signal("timeout")
-				mpdwidget.mpdwidget:set_markup(" Title loading ")
+				--mpd_skip_timer:emit_signal("timeout")
+				mpdwidget.skip()
+				widget:set_markup(" Title loading ")
 				mpd_now.artist = string.gsub(mpd_now.artist,"&quot;","'")
 				mpd_now.title = string.gsub(mpd_now.title,"&quot;","'")
 				mpd_now.artist = string.gsub(mpd_now.artist,"&amp;","and")
@@ -67,41 +75,41 @@ local function worker(args)
 				titlesub = utf8.sub(mpd_now.title:upper():gsub("&.-;", string.lower), 0, 12)
 				nowplayingtext = mpd_now.artist .. "-" .. mpd_now.title .. " "
 				mpdwidget.mpdwidget.nowplaying = nowplayingtext
-				nowtext = markup.font("Tamsyn 3", " ")
-				.. markup.font("tamsyn 7",
+				nowtext = lain.util.markup.font("Tamsyn 3", " ")
+				.. lain.util.markup.font("tamsyn 7",
 				artistsub
 				.. "—" ..
 				titlesub)
-				.. markup.font("Tamsyn 2", " ")
+				.. lain.util.markup.font("Tamsyn 2", " ")
 
 				--nowplayingtext = mpd_now.artist.." "..mpd_now.title
 				--nowplayingtext = utf8.sub(nowplayingtext, 0, 35)
 				--nowplayingtext = string.reverse(nowplayingtext)
 				--print(nowplayingtext)
-				mpdwidget.mpdwidget:set_markup(nowtext)
+				widget:set_markup(nowtext)
 
 				--play_pause_icon:set_image(beautiful.mpd_pause)
 				mpd_sepl:set_image(beautiful.mpd_sepl)
 				mpd_sepr:set_image(beautiful.mpd_sepr)
 			elseif mpd_now.state == "pause" then
-				mpdwidget.mpdwidget:set_markup(markup.font("Tamsyn 4", "") ..
+				widget:set_markup( lain.util.markup.font("Tamsyn 4", "") ..
 				markup.font("Tamsyn 7", "MPD PAUSED") ..
 				markup.font("Tamsyn 10", ""))
 				--play_pause_icon:set_image(beautiful.mpd_play)
 				mpd_sepl:set_image(beautiful.mpd_sepl)
 				mpd_sepr:set_image(beautiful.mpd_sepr)
-			else
-				mpdwidget.mpdwidget:set_markup("")
-				--play_pause_icon:set_image(beautiful.mpd_play)
-				mpd_sepl:set_image(nil)
-				mpd_sepr:set_image(nil)
+			--else
+				--mpdwidget.mpdwidget:set_text("")
+				----play_pause_icon:set_image(beautiful.mpd_play)
+				--mpd_sepl:set_image(nil)
+				--mpd_sepr:set_image(nil)
 			end
 		end
 	})
-	mpdwidget.update = widget.update
 	mpdwidget.mpdwidget = widget
+	mpdwidget.update = widget.update
 	mpdwidget.mpdwidget.state = ""
-	print(mpdwidget.mpdwidget.state)
+	--print(mpdwidget.mpdwidget.state)
 	widget.nextchar = function()
 		if mpd_now.state == "play" then
 			--widget.nowplaying = "123456789abcdefghijklmnoprst"
@@ -129,7 +137,7 @@ local function worker(args)
 			--print(k)
 			--end
 			widget.startpos = startpos + 1
-			widget.widget:set_markup(markup.font("Tamsyn 7", nowtext))
+			widget.widget:set_markup(markup.font("Tamsyn 7 mono", nowtext))
 			--print(nowtext)
 		end
 	end
@@ -138,7 +146,7 @@ local function worker(args)
 
 	musicwidget = widgetcreator(
 	{
-		textboxes = {widget}
+		textboxes = {widget.widget}
 	})
 	musicwidget:buttons(awful.util.table.join(
 	awful.button({ }, 12, function () run_once("cantata") end),
@@ -232,6 +240,34 @@ end
 function mpdwidget.seek_backward()
 	awful.util.spawn_with_shell("mpc seek -00:00:10 &")
 	mpdwidget.update()
+end
+function mpdwidget.mpriscontrol(str)
+	--local command = "dbus-send --print-reply --session --dest=org.mpris.MediaPlayer2.bomi /org/mpris/MediaPlayer2 org.mpris.MediaPlayer2.Player."
+	local command = "mpris2controller "
+	if str == "play" then
+		command = command.."Play"
+	elseif str == "pause" then
+		command = command.."Pause"
+	elseif str == "next" then
+		command = command.."Next"
+	elseif str == "prev" then
+		command = command.."Prev"
+	elseif str == "play_pause" then
+		command = command.."PlayPause"
+	end
+	command = command.." &"
+	os.execute(command)
+	--awful.spawn.with_shell(command)
+end
+mpdwidget.lastmpdstatus = "N/A"
+function mpdwidget.playif()
+	if mpdwidget.lastmpdstatus and mpdwidget.lastmpdstatus == "play" then
+		mpdwidget.play()
+	end
+end
+function mpdwidget.pauseif()
+	mpdwidget.lastmpdstatus = mpdwidget.mpdwidget.state
+	mpdwidget.pause()
 end
 
 return setmetatable(mpdwidget, {__call = function(_,...) return worker(...) end})

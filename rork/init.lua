@@ -6,7 +6,7 @@ rork = {}
 -- If such a client can be found, pop to first tag where it is visible, and give it focus
 -- @param cmd the command to execute
 -- @param properties a table of properties to match against clients.  Possible entries: any properties of the client object
-function rork.run_or_raise(cmd, properties)
+function rork.run_or_raise(cmd, properties,callback)
    local clients = client.get()
    local focused = awful.client.next(0)
    local findex = 0
@@ -42,7 +42,8 @@ function rork.run_or_raise(cmd, properties)
       c:raise()
       return
    end
-   awful.util.spawn(cmd)
+   --awful.util.spawn(cmd)
+   awful.spawn(cmd,{},callback)
  
 end
 -- | run or kill | --
