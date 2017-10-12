@@ -3,9 +3,11 @@ local widgets = widgetcreator
 local beautiful = require("beautiful")
 local wibox = require("wibox")
 local lain = require("lain")
+local helpers      = lain.helpers
 local awful = require("awful")
 local utf8 	 = require("utf8_simple")
 local timer = require("gears").timer
+local naughty    = require("naughty")
 
 local mpdwidget ={}
 mpdwidget.shortcuts = {}
@@ -44,10 +46,10 @@ local function worker(args)
 	--pause_icon:set_image(beautiful.mpd_pause)
 	--play_pause_icon = wibox.widget.imagebox()
 	--play_pause_icon:set_image(beautiful.mpd_play)
-	local mpd_sepl = wibox.widget.imagebox()
-	mpd_sepl:set_image(beautiful.mpd_sepl)
-	local mpd_sepr = wibox.widget.imagebox()
-	mpd_sepr:set_image(beautiful.mpd_sepr)
+	--local mpd_sepl = wibox.widget.imagebox()
+	--mpd_sepl:set_image(beautiful.mpd_sepl)
+	--local mpd_sepr = wibox.widget.imagebox()
+	--mpd_sepr:set_image(beautiful.mpd_sepr)
 	local mpd_skip_timer = timer({timeout=0.5})
 	mpd_skip_timer:connect_signal("timeout",mpdwidget.skip)
 	--mpd_skip_timer:start()
@@ -73,32 +75,37 @@ local function worker(args)
 				mpd_now.title = mpd_now.title:upper():gsub("&.-;", string.lower)
 				artistsub = utf8.sub(mpd_now.artist:upper():gsub("&.-;", string.lower), 0, 7)
 				titlesub = utf8.sub(mpd_now.title:upper():gsub("&.-;", string.lower), 0, 12)
-				nowplayingtext = mpd_now.artist .. "-" .. mpd_now.title .. " "
-				mpdwidget.mpdwidget.nowplaying = nowplayingtext
-				nowtext = lain.util.markup.font("Tamsyn 3", " ")
-				.. lain.util.markup.font("tamsyn 7",
-				artistsub
-				.. "—" ..
-				titlesub)
-				.. lain.util.markup.font("Tamsyn 2", " ")
+				local nowplayingtext = mpd_now.artist .. "—" .. mpd_now.title
+				local nowplayingsub = artistsub.. "—" ..titlesub
+				local nowplaying = nowplayingsub
+				if mpdwidget.mpdwidget.scrolling then
+					nowplaying = nowplayingtext
+				end
+				--print(nowplaying)
+				--mpdwidget.mpdwidget.nowplaying = nowplayingtext
+				--local nowtext = lain.util.markup.font("Tamsyn 3", " ")
+				--.. lain.util.markup.font("tamsyn "..widgets.text_size,nowplaying)
+				--.. lain.util.markup.font("Tamsyn 2", " ")
 
 				--nowplayingtext = mpd_now.artist.." "..mpd_now.title
 				--nowplayingtext = utf8.sub(nowplayingtext, 0, 35)
 				--nowplayingtext = string.reverse(nowplayingtext)
 				--print(nowplayingtext)
-				widget:set_markup(nowtext)
+				--widget:set_markup(nowtext)
+				widgets.set_markup(widget,nowplaying)
 
 				--play_pause_icon:set_image(beautiful.mpd_pause)
-				mpd_sepl:set_image(beautiful.mpd_sepl)
-				mpd_sepr:set_image(beautiful.mpd_sepr)
+				--mpd_sepl:set_image(beautiful.mpd_sepl)
+				--mpd_sepr:set_image(beautiful.mpd_sepr)
 			elseif mpd_now.state == "pause" then
-				widget:set_markup( lain.util.markup.font("Tamsyn 4", "") ..
-				markup.font("Tamsyn 7", "MPD PAUSED") ..
-				markup.font("Tamsyn 10", ""))
+				widgets.set_markup(widget,"MPD PAUSED")
+				--widget:set_markup( lain.util.markup.font("Tamsyn 4", "") ..
+				--markup.font("Tamsyn 9", "MPD PAUSED") ..
+				--markup.font("Tamsyn 10", ""))
 				--play_pause_icon:set_image(beautiful.mpd_play)
-				mpd_sepl:set_image(beautiful.mpd_sepl)
-				mpd_sepr:set_image(beautiful.mpd_sepr)
-			--else
+				--mpd_sepl:set_image(beautiful.mpd_sepl)
+				--mpd_sepr:set_image(beautiful.mpd_sepr)
+				--else
 				--mpdwidget.mpdwidget:set_text("")
 				----play_pause_icon:set_image(beautiful.mpd_play)
 				--mpd_sepl:set_image(nil)
@@ -110,43 +117,21 @@ local function worker(args)
 	mpdwidget.update = widget.update
 	mpdwidget.mpdwidget.state = ""
 	--print(mpdwidget.mpdwidget.state)
-	widget.nextchar = function()
-		if mpd_now.state == "play" then
-			--widget.nowplaying = "123456789abcdefghijklmnoprst"
-			text = mpdwidget.mpdwidget.nowplaying.."|"
-			--text = string.gsub(widget.nowplaying,"&apos;","'")
-			mpdlength = utf8.len(text)
-			startpos = math.fmod(widget.startpos, mpdlength)
-			if startpos == 0 then startpos = mpdlength end
-			length   = widget.length or 20
-			--print("start:"..startpos)
-			--print("length:"..length)
-			--print("mpdlength:"..mpdlength)
-			nowtext = text
-			--print(mpdlength)
-			--print(length)
-			if not (mpdlength < length) then
-				if ((startpos + length - 1) > mpdlength) then
-					--print("problem")
-					nowtext = utf8.sub(text, startpos) .. utf8.sub(text,1, math.abs(mpdlength-startpos+1-length))
-				else
-					nowtext = utf8.sub(text, startpos, startpos+length-1)
-				end
-			end
-			--for k,v in pairs(widget) do
-			--print(k)
-			--end
-			widget.startpos = startpos + 1
-			widget.widget:set_markup(markup.font("Tamsyn 7 mono", nowtext))
-			--print(nowtext)
-		end
-	end
 
 
 
+	local scroll = wibox.widget {
+		layout = wibox.container.scroll.horizontal,
+		max_size = 200,
+		--extra_space = 100,
+		expand = true,
+		step_function = wibox.container.scroll.step_functions.waiting_nonlinear_back_and_forth,
+		speed = 50,
+		widget.widget,
+	}
 	musicwidget = widgetcreator(
 	{
-		textboxes = {widget.widget}
+		textboxes = {scroll}
 	})
 	musicwidget:buttons(awful.util.table.join(
 	awful.button({ }, 12, function () run_once("cantata") end),
@@ -157,88 +142,58 @@ local function worker(args)
 	awful.button({"Ctrl" }, 3, function () mpdwidget.play_pause() end),
 	awful.button({"Ctrl" }, 2, function () mpdwidget.next() end)
 	))
-	local runinglinetimer = timer({ timeout = 0.2 })
-	runinglinetimer:connect_signal("timeout", function ()
-		widget.nextchar()
-	end)
+	scroll:pause()
 
 	musicwidget:connect_signal("mouse::enter",
 	function () 
-		if lain.helpers.timer_table["mpd"] then
-			lain.helpers.timer_table["mpd"]:stop()
-		end
-		widget.length = 20
-		widget.startpos = 1
-		runinglinetimer:start()
+		scroll:continue()
+		widget.scrolling = true
+		helpers.set_map("current mpd track", "")
+		widget.update()
 	end)
 	musicwidget:connect_signal("mouse::leave",
 	function () 
-		runinglinetimer:stop()
+		scroll:reset_scrolling()
+		scroll:pause()
+		widget.scrolling = false
 		widget.update()
-		if lain.helpers.timer_table["mpd"] then
-			lain.helpers.timer_table["mpd"]:start()
+		if widget and widget.id then
+			naughty.destroy(naughty.getById(widget.id),true)
 		end
 	end)
-
-	--prev_icon:buttons(awful.util.table.join(
-	--awful.button({}, 1, function () mpd_prev() end),
-	--awful.button({ }, 4, function () mpd_seek_forward()  end),
-	--awful.button({ }, 5, function () mpd_seek_backward() end),
-	--awful.button({ }, 3, function () mpd_seek_backward() end)
-
-	--))
-	--next_icon:buttons(awful.util.table.join(
-	--awful.button({}, 1, function () mpd_next() end),
-	--awful.button({ }, 3, function () mpd_seek_forward()  end),
-	--awful.button({ }, 4, function () mpd_seek_forward()  end),
-	--awful.button({ }, 5, function () mpd_seek_backward() end)
-
-	--))
-	--stop_icon:buttons(awful.util.table.join(
-	--awful.button({}, 1, function () mpd_stop() end),
-	--awful.button({ }, 4, function () mpd_seek_forward()  end),
-	--awful.button({ }, 5, function () mpd_seek_backward() end)
-
-	--))
-	--play_pause_icon:buttons(awful.util.table.join(
-	--awful.button({}, 1, function () mpd_play_pause() end),
-	--awful.button({ }, 4, function () mpd_seek_forward()  end),
-	--awful.button({ }, 5, function () mpd_seek_backward() end)
-
-	--))
 	return musicwidget
 end
 function mpdwidget.prev()
-	awful.util.spawn_with_shell("mpc prev & ")
+	awful.spawn.with_shell("mpc prev & ")
 	mpdwidget.update()
 end
 function mpdwidget.next()
-	awful.util.spawn_with_shell("mpc next & ")
+	awful.spawn.with_shell("mpc next & ")
 	mpdwidget.update()
 end
 function mpdwidget.stop()
 	--play_pause_icon:set_image(beautiful.play)
-	awful.util.spawn_with_shell("mpc stop & ")
+	awful.spawn.with_shell("mpc stop & ")
 	mpdwidget.update()
 end
 function mpdwidget.play_pause()
-	awful.util.spawn_with_shell("mpc toggle & ")
+	awful.spawn.with_shell("mpc toggle & ")
 	mpdwidget.update()
 end
 function mpdwidget.play()
-	awful.util.spawn_with_shell("mpc play & ")
+	awful.spawn.with_shell("mpc play & ")
 	mpdwidget.update()
 end
 function mpdwidget.pause()
-	awful.util.spawn_with_shell("mpc pause & ")
+	awful.spawn.with_shell("mpc pause & ")
 	mpdwidget.update()
 end
 function mpdwidget.seek_forward()
-	awful.util.spawn_with_shell("mpc seek +00:00:10 &")
+	awful.spawn.with_shell("mpc seek +00:00:10 &")
 	mpdwidget.update()
 end
 function mpdwidget.seek_backward()
-	awful.util.spawn_with_shell("mpc seek -00:00:10 &")
+	awful.spawn.with_shell("mpc seek -00:00:10 &")
 	mpdwidget.update()
 end
 function mpdwidget.mpriscontrol(str)

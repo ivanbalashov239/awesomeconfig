@@ -10,7 +10,7 @@ local calendarwidget ={}
 calendarwidget.shortcuts = {}
 
 local function worker(args)
-	local mytextcalendar = wibox.widget.textclock( lain.util.markup(widgets.clockgf, widgets.space3 .. "%a %d %b"))
+	local mytextcalendar = wibox.widget.textclock( lain.util.markup(widgets.clockgf, widgets.set_markup(nil,"%a %d %b")))
 
 	local calendarwidget = widgetcreator(
 	{ 
@@ -26,7 +26,20 @@ local function worker(args)
 			--bg   = widgets.bg
 		--}
 	--})
-	lain.widget.calendar.attach(calendarwidget)
+	lain.widget.calendar({
+		attach_to = {calendarwidget},
+		notification_preset = {
+			font = "Terminus bold 15",
+			fg   = widgets.fg,
+			bg   = widgets.bg
+		}
+	})
+	--lain.widget.calendar.attach(calendarwidget)
+	calendarwidget:connect_signal('mouse::enter', function () 
+		print("calendar",5)
+		lain.widget.calendar.show(0)
+	end)
+	calendarwidget:connect_signal('mouse::leave', function () lain.widget.calendar.hide() end)
 	--lain.widget.calendar({
 		--attach_to = {calendarwidget},
 		--notification_preset = {

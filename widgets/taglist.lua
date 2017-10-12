@@ -1,6 +1,7 @@
 local widgetcreator = require("widgets")
 local beautiful = require("beautiful")
 local wibox = require("wibox")
+local gears = require("gears")
 local lain = require("lain")
 local awful = require("awful")
 local modal_sc = require("modal_sc")      
@@ -300,7 +301,7 @@ function taglist.get_tasklist_update(tag,screen)
 	return function (w, buttons, label, data, objects)
 		-- update the widgets, creating them if needed
 		w:reset()
-		local clients =get_clients_by_geometry(tag)
+		local clients = get_clients_by_geometry(tag)
 		--print(type(clients))
 		--print("update tasklist")
 		for i, o in ipairs(clients) do
@@ -415,7 +416,8 @@ function taglist.bydirection(dir, c, all)
 	if sel then
 		--local tag = awful.tag.selected(sel.screen)
 		local tag = sel.screen.selected_tag
-		local id = awful.tag.getidx(tag)
+		--local id = awful.tag.getidx(tag)
+		local id = tag.id
 		--if id  == 1 then
 		local cltbl = awful.client.visible(sel.screen)
 		local geomtbl = {}
@@ -423,7 +425,7 @@ function taglist.bydirection(dir, c, all)
 			geomtbl[i] = cl:geometry()
 		end
 
-		local target = awful.util.get_rectangle_in_direction(dir, geomtbl, sel:geometry())
+		local target = gears.geometry.rectangle.get_in_direction(dir, geomtbl, sel:geometry())
 
 		-- If we found a client to focus, then do it.
 		if target then
@@ -742,22 +744,45 @@ function taglist.togglefromtag(client,tag)
 	local client = client or capi.client.focus
 	local tag = tag or taglist.tags["all"]
 	local tags = client:tags()
+	--local clients = tag:clients()
+	local base = nil
 	for i,k in ipairs(tags)do
-		print(k.hint)
-		if check_tag(k) then
-			print("toggle tag")
-			--table.remove(tags,i)
-			if #tags ~= 1 then
-				--client:tags({tag})
-			--else
-				k:clients({})
-				--client:tags(tags)
-			end
-			return
+		if k.hint and client.hint and k.hint:lower() == client.hint:lower() then
+			base = k
+			break
 		end
 	end
-	table.insert(tags,tag)
-	client:tags(tags)
+	if base then
+		if #tags > 1 then
+			base:clients({})
+		end
+	else
+		--taglist.get_tags()["all"]:clients({client})
+		for i,k in pairs(taglist.tags)do
+			if #k:clients() == 0 then
+				k:clients({client})
+				break
+			end
+		end
+	end
+	--for i,k in ipairs(tags)do
+		--print(k.hint)
+		--if check_tag(k) then
+			--print("toggle tag")
+			----table.remove(tags,i)
+			--if #tags ~= 1 then
+				----client:tags({tag})
+			----else
+				--k:clients({})
+				----client:tags(tags)
+			--else
+				--client:tags({tag})
+			--end
+			--return
+		--end
+	--end
+	--table.insert(tags,tag)
+	--client:tags(tags)
 end
 
 return setmetatable(taglist, {__call = function(_,...) return worker(...) end})

@@ -1,5 +1,6 @@
 local module_path = (...):match ("(.+/)[^/]+$") or ""
 local icons_dir    = require("lain.helpers").icons_dir.."cal/white/"
+local awful = require("awful")
 --local taskwidget = require("widgets.taskwidget")
 local widgetcreator = require("widgets")
 local widgets = widgetcreator
@@ -62,13 +63,17 @@ local function todate(str)
 		return str:plus(a,-1)
 	end
 	function str:greater(b)
+		local function print_date(a,t)
+			local t = t or 15
+			local h  = ":"
+			print(a.hours..h..a.minutes,t)
+		end
 		if str and b then
-			if type(a) == "string" then
-				a = todate(a)
-			end
+			--print_date(str)
 			if type(b) == "string" then
 				b = todate(b)
 			end
+			--print_date(b)
 			if str.year > b.year then 
 			elseif str.year == b.year and str.month > b.month then
 			elseif str.year == b.year and str.month == b.month and str.day > b.day then
@@ -79,6 +84,14 @@ local function todate(str)
 			end
 			return true
 		end
+	end
+	function str:equal(b)
+		if str and b then
+			if str.year == b.year and str.month == b.month and str.day == b.day and str.hours == b.hours and str.minutes == b.minutes then
+				return true
+			end
+		end
+		return false
 	end
 	return str
 end
@@ -108,15 +121,19 @@ local function worker(data,args)
 	function task:is_now()
 		local min1 = now()
 		local plus1 = now()
-		min1.minute = min1.minutes - 1
-		plus1.minute = plus1.minutes + 1
+		min1.minutes = min1.minutes - 1
+		plus1.minutes = plus1.minutes + 1
+		--print("is_now")
+		--print(min1.minutes)
+		--print(plus1.minutes)
+		--print(task.due.minutes)
 		if task.due and task.due:greater(min1) and plus1:greater(task.due) then
 			return true
 		end
 		return false
 	end
 	function task:is_due()
-		if task.due and not task:is_waiting() and task.due:greater(today()) and task.due:greater(now()) then
+		if task.due and not task:is_waiting() and task.due:greater(today()) and (task.due:greater(now()) or task.due:equal(now())) then
 			return true
 		end
 		return false
@@ -133,6 +150,14 @@ local function worker(data,args)
 		end
 		return false
 	end
+	function task:say()
+		local lang = "en"
+		--if string.match(task.description,"[a-zA-Z0-9)(+-'´\",.!? ]*") == task.description then
+		if #string.match(task.description,"[а-яА-Я]*")>0 then
+			lang ="ru"
+		end
+		awful.spawn.with_shell("~/scripts/saytext.sh '"..lang.."' '"..task.description:gsub("'","´").."' fast &")
+	end
 	function task:is_completed()
 		if task.status == "completed" then
 			return true
@@ -147,9 +172,9 @@ local function worker(data,args)
 	end
 	function task:hide()
 		if task.notif_id then
-			local notif_id = task.notif_id
-			n = naughty.getById(notif_id)
-			res = naughty.destroy(n)
+			--local notif_id = task.notif_id
+			--n = naughty.getById(notif_id)
+			res = naughty.destroy(task.notif_id)
 			if res then
 				--print("remove "..task.notif_id,10)
 				--task.notif_id = nil
@@ -238,9 +263,21 @@ local function worker(data,args)
 			icon = notify_icon,
 			--icon_size = not notify_icon and 50 or nil,
 			--		width = 600,
-			replaces_id = task.notif_id
+			run = function()
+				task:say()
+			end,
+			--actions = {
+				--DONE = function()
+					--print("test")
+					----task:say()
+				--end,
+				--START = function()
+					--print("start")
+				--end,
+			--},
+			replaces_id = task.notif_id and task.notif_id.id
 		})
-		task.notif_id = notif_id.id
+		task.notif_id = notif_id
 		--print("set "..task.notif_id,10)
 		--task['notif_id']=notif_id
 		return notif_id

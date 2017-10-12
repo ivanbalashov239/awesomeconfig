@@ -87,7 +87,8 @@ end
 local config = {}
 local dropdownterm  = "termite -r DROPDOWN -e 'tmux attach -t dropdown '"
 local dropdownterm = scratchpad({
-	command = dropdownterm
+	command = dropdownterm,
+	opacity = 0.8,
 })
 config.panel = {}
 config.panel.left = {
@@ -556,8 +557,6 @@ config.rules = {
 	--{ rule = { class = "Pidgin", role = "conversation"},
 	--properties = { tag = awful.tag.gettags(1)[2], switchtotag = false, no_autofocus = true },
 	--callback = awful.client.setslave },
-	{rule = {role = "DROPDOWN"}, 
-	properties = {opacity = 0.8}},
 	--{ rule = { class = "Pavucontrol" },
 	--properties = { floating = true, intrusive = true } },
 

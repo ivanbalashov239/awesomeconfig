@@ -14,8 +14,7 @@ local hintsetter  = require("hintsetter")
 hintsetter.init({
 charorder = "aoeuidhtnspyfgcrlqjkxbwvz1234567890"
 })
-local hints 	 = require("hints")
-hints.init()
+local hints 	 = require("utils.hints")
 --local tyrannical = require("tyrannical")
 local sharedtags = require("sharedtags")
 --local apw 	 = require("apw/widget")
@@ -239,6 +238,7 @@ widgets.taglist.tags = tags
 local im = scratchpad({
 	set_geometry = scratchpad.functions.im_geometry,
 	--hide  = scratchpad.functions.place_away,
+	opacity = 0.8,
 	hide  = function(c,old)
 		c:tags({})
 		c.screen = old.screen
@@ -246,6 +246,7 @@ local im = scratchpad({
 		c.floating = false
 		c:geometry(old.geometry)
 		c:tags({tags["im"]})
+		c.opacity = old.opacity or 1
 	end,
 	hide_on_unfocus = true,
 	--spawn = function(f)
@@ -624,7 +625,7 @@ awful.screen.connect_for_each_screen(function(s)
 
     --tasklist.new(screen, filter, buttons, style, update_function, base_widget)
     --mywibox[s] = awful.wibox({ position = "top", screen = s, height = "22" })
-    s.mywibox = awful.wibar({ position = "top", screen = s, height = "22", bgimage = beautiful.panel})
+    s.mywibox = awful.wibar({ type = "dock", position = "top", screen = s, height = "22", bgimage = beautiful.panel})
 
     -- Add widgets to the wibox
     --if s == 2 then
@@ -799,11 +800,14 @@ function translator(text_tr)
 	--local text_tr = lain.helpers.first_line("/tmp/translate")
 	--print("-"..text_tr.."-"..#text_tr,2)
 	if text_tr and #text_tr > 0 then
+		--local text_tr = text_tr:gsub("'", "\\'")
+		local lang = "en:ru"
 		--print(text_tr)
-		local lang ="ru:en"
 		--print(string.match(text,"[a-zA-Z0-9,.!? ]*"))
-		if string.match(text_tr,"[a-zA-Z0-9,.!? ]*") ==text_tr then
-			lang ="en:ru"
+		--if string.match(text_tr,"[a-zA-Z0-9,.!? ]*") ==text_tr then
+		if #string.match(text_tr,"[а-яА-Я]*")>0 then
+			lang = "ru:en"
+		else
 			awful.spawn.with_shell("~/scripts/saytext.sh 'en' '"..text_tr.."' fast &")
 		end
 		local handle = io.popen("trans -no-ansi "..lang.." '"..text_tr.."'")
@@ -984,20 +988,51 @@ globalkeys = gears.table.join(config.globalkeys,
 			    return_layout()
 			    return true
 		    end,
+		    keypressed_callback = function(mods,key,command)
+			    local altgr = "ISO_Level3_Shift"
+			    mouse.screen.mypromptbox.widget[key] = true
+			    if mouse.screen.mypromptbox.widget[altgr] then
+				    if key == "t" then
+					    root.fake_input("key_press", 66)
+					    root.fake_input("key_release", 66)
+					    root.fake_input("key_press", 116)
+				    elseif key == "n" then
+					    root.fake_input("key_press", 66)
+					    root.fake_input("key_release", 66)
+					    root.fake_input("key_press", 111)
+				    elseif key == "h" then
+					    root.fake_input("key_press", 66)
+					    root.fake_input("key_release", 66)
+					    root.fake_input("key_press", 113)
+				    elseif key == "s" then
+					    root.fake_input("key_press", 66)
+					    root.fake_input("key_release", 66)
+					    root.fake_input("key_press", 114)
+				    end
+			    end
+		    end,
+		    keyreleased_callback = function(mods,key,command)
+			    local altgr = "ISO_Level3_Shift"
+			    if mouse.screen.mypromptbox.widget[altgr] then
+				    if key == "t" then
+					    --root.fake_input("key_press", 66)
+					    --root.fake_input("key_release", 66)
+					    --root.fake_input("key_press", 116)
+					    root.fake_input("key_release", 116)
+				    elseif key == "n" then
+					    --root.fake_input("key_press", 66)
+					    --root.fake_input("key_release", 66)
+					    --root.fake_input("key_press", 111)
+					    root.fake_input("key_release", 111)
+				    elseif key == "h" then
+					    root.fake_input("key_release", 113)
+				    elseif key == "s" then
+					    root.fake_input("key_release", 114)
+				    end
+			    end
+			    mouse.screen.mypromptbox.widget[key] = nil
+		    end,
 		    hooks = {
-			    -- Apply startup notification properties with Shift-Return.
-			    {{altgr  }, "n", function(command)
-				    print("n")
-				    return nil
-				    --awful.screen.focused().mypromptbox:spawn_and_handle_error(
-				    --command, {floating=true})
-			    end},
-			    {{altgr  }, "t", function(command)
-				    print("t")
-				    return nil
-				    --awful.screen.focused().mypromptbox:spawn_and_handle_error(
-				    --command, {floating=true})
-			    end},
 			    {{"Shift"  }, "Return", function(command)
 				    awful.screen.focused().mypromptbox:spawn_and_handle_error(
 				    command, {floating=true})
@@ -1054,7 +1089,7 @@ globalkeys = gears.table.join(config.globalkeys,
 	    function ()
 		    local tag = tags["im"]
 		    awful.tag.viewonly(tag)
-		    hints.focus(1)
+		    hints.focus()
 	    end),
 	    awful.key({ modkey, "Shift" }, "b",  
 	    function () 
@@ -1080,9 +1115,6 @@ globalkeys = gears.table.join(config.globalkeys,
 		    --is_excluded=true,
 		    --screen = {capi.mouse.screen}
 		    --}) 
-	    end),
-	    awful.key({ modkey            }, "@",      function ()
-		    widgets.taglist.togglefromtag()
 	    end),
 	    awful.key({ modkey            }, "x",      function ()
 		    local cf = client.focus
@@ -1140,6 +1172,9 @@ globalkeys = gears.table.join(config.globalkeys,
 		    sharedtags.viewonly(o,screen.selected)
 		    client.focus = c
 		    c:raise()
+	    end),
+	    awful.key({ modkey            }, "@",      function (c)
+		    widgets.taglist.togglefromtag(c)
 	    end),
 	    awful.key({ modkey,           }, "q",      function (c) c:kill()                         end),
 	    awful.key({ modkey,           }, "-",
@@ -1208,6 +1243,131 @@ globalkeys = gears.table.join(config.globalkeys,
 			    end
 		    end
 	    },
+	    {rule = {},
+	    callback = function(c)
+		    if c.type == "normal" then
+			    c.borders = {}
+			    size = 0.1
+			    c.top = awful.titlebar(c,{
+				    position = "top",
+				    size = size,
+			    })
+			    c.left = awful.titlebar(c,{
+				    position = "left",
+				    size = size,
+			    })
+			    c.right = awful.titlebar(c,{
+				    position = "right",
+				    size = size,
+			    })
+			    c.bottom = awful.titlebar(c,{
+				    position = "bottom",
+				    size = size,
+			    })
+			    local function show(t)
+				    if t then
+					    awful.titlebar.show(c,t)
+				    else
+					    show("top")
+					    show("bottom")
+					    show("left")
+					    show("right")
+				    end
+			    end
+			    local function hide(t)
+				    --print("hide")
+				    if t then
+					    awful.titlebar.hide(c,t)
+				    else
+					    hide("top")
+					    hide("bottom")
+					    hide("left")
+					    hide("right")
+				    end
+			    end
+			    hide()
+			    local function refresh(c)
+				    if c.fullscreen or c.floating or c.maximized then
+					    hide()
+					    return
+				    end
+				    local geom = c:geometry()
+				    geom.x1 = geom.x
+				    geom.y1 = geom.y
+				    geom.x2 = geom.x + geom.width
+				    geom.y2 = geom.y + geom.height
+				    local scr = c.screen.geometry
+				    if scr.y == 0 then
+					    local panel = c.screen.padding.top or beautiful.panel_size or 22
+					    scr.y = scr.y + panel
+					    scr.height = scr.height - panel
+				    end
+				    scr.x1 = scr.x
+				    scr.y1 = scr.y
+				    scr.x2 = scr.x + scr.width
+				    scr.y2 = scr.y + scr.height
+
+				    --print(geom.x1.." "..scr.x1)
+				    --print(geom.y1.." "..scr.y1)
+				    --print(geom.x2.." "..scr.x2)
+				    --print(geom.y2.." "..scr.y2)
+
+				    if geom.x1 == scr.x1 then
+					    hide("left")
+				    else
+					    --print("left"..geom.x1.." "..scr.x1,5)
+					    show("left")
+				    end
+
+				    if geom.y1 <= scr.y1 then
+					    hide("top")
+				    else
+					    --print("top"..geom.y1.." "..scr.y1,5)
+					    show("top")
+				    end
+
+				    if geom.y2 == scr.y2 then
+					    hide("bottom")
+				    else
+					    show("bottom")
+					    --print(geom.y)
+					    --print(geom.height)
+					    --print(scr.y)
+					    --print(scr.height)
+				    end
+				    --print("bottom "..geom.y2.." "..scr.y2,5)
+
+
+				    if geom.x2 == scr.x2 then
+					    hide("right")
+				    else
+					    --if c.class == "Gvim" then
+						    --print("right "..c.class.." "..geom.x2.." "..scr.x2,5)
+					    --end
+					    show("right")
+				    end
+
+			    end
+			    --refresh(c)
+			    c.refresh_size = true
+			    c:connect_signal("property::position",refresh)
+			    c:connect_signal("property::size",function(c)
+				    if c.refresh_size then
+					    --print("size")
+					    c.refresh_size = false
+					    refresh(c)
+					    c.refresh_size = true
+				    end
+			    end)
+			    c:connect_signal("property::fullscreen",refresh)
+			    c:connect_signal("tagged",refresh)
+			    c:connect_signal("focus",refresh)
+			    c:connect_signal("unfocus",refresh)
+			    --c:connect_signal("request::titlebars",refresh)
+
+		    end
+	    end
+    },
 	    { rule = { class = "Pidgin", role = "conversation"},
 	    callback = function(c)
 		    if not (c.name == "Dusi") then
@@ -1218,7 +1378,7 @@ globalkeys = gears.table.join(config.globalkeys,
 	    end
     },
     { rule = { class = "TelegramDesktop"},
-    properties = { tag = tags["im"]},
+    properties = { urgent = false, tag = tags["im"]},
     callback = function(c)
 	    --im.lastpidgin = c
 	    im.client = c
@@ -1246,19 +1406,32 @@ globalkeys = gears.table.join(config.globalkeys,
 	    end)
 	    awful.client.setslave(c)
 	    local function urgent(c)
-		    c.name = " "
+		    c.urgent = false
 		    for word in c.name:gmatch("%(.*%)") do
+			    --print("Telegram urgent: "..c.name,10)
 			    c.urgent = true
 			    c.name = word
 			    return
 		    end
-		    c.urgent = false
+		    c.name = " "
 	    end
+	    c:connect_signal("property::urgent",function(c)
+		    --print("urgent")
+		    if c and c.urgent then
+			    for word in c.name:gmatch("%(.*%)") do
+				    --print("urgent")
+				    return
+			    end
+			    c.urgent = false
+		    end
+	    end)
+	    urgent(c)
 	    c:connect_signal("property::name",urgent)
 	    c:connect_signal("focus",urgent)
 	    c:connect_signal("unfocus",urgent)
 	    c.urgent = false
-	    urgent(c)
+	    --c:emit_signal("focus")
+	    --c:emit_signal("unfocus")
     end
     },
     { rule = { class = "Pidgin", role = "buddy_list"},
@@ -1267,7 +1440,7 @@ globalkeys = gears.table.join(config.globalkeys,
     properties = { tag = tags["im"], switchtotag = false, no_autofocus = true },
     callback = awful.client.setslave },
     {rule = {role = "DROPDOWN"}, 
-    properties = {opacity = 0.8},
+    --properties = {opacity = 0.8},
     callback = function(c)
 	    awesome.connect_signal("exit",function()
 		    c:kill()

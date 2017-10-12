@@ -56,7 +56,7 @@ local function worker(args)
 	end
 
 
-	local mytextclock    = wibox.widget.textclock( lain.util.markup(widgets.clockgf, widgets.space3 .. "%H:%M" .. lain.util.markup.font("Tamsyn 3", " ")), 15)
+	local mytextclock    = wibox.widget.textclock( lain.util.markup(widgets.clockgf, widgets.set_markup(nil,"%H:%M")), 15)
 	--mytextcalendar = awful.widget.textclock( lain.util.markup(widgets.clockgf, widgets.space3 .. "%a %d %b"))
 
 	local clockwidget = widgetcreator(
@@ -77,7 +77,7 @@ local function worker(args)
 	lain.widget.calendar({
 		attach_to = {clockwidget},
 		notification_preset = {
-			font = widgets.font,
+			font = "Terminus bold 15",
 			fg   = widgets.fg,
 			bg   = widgets.bg
 		}

@@ -17,6 +17,7 @@ function scratchpad.functions.place_away(c,old)
 	c:geometry(old.geometry)
 	c.ontop = old.ontop
 	c:tags(old.tags)
+	c.opacity = old.opacity
 end
 function scratchpad.functions.hide_client(c,old)
 	c:tags({})
@@ -56,6 +57,7 @@ function scratchpad.functions.dropdown_geometry(c)
 end
 local function worker(args)
 	local args = args or {}
+	local opacity = args.opacity or 1
 	local hide_on_unfocus = args.hide_on_unfocus or false
 	local scratch = {}
 	scratch.client = args.client
@@ -129,12 +131,14 @@ local function worker(args)
 			old.floating = client.floating
 			old.hidden = client.hidden
 			old.ontop = client.ontop
+			old.opacity = client.opacity
 			local new_geometry = set_geometry(focus)
 			client:tags({})
 			client.hidden = false
 			client.ontop = true
 			client.floating = true
 			client.screen = screen
+			client.opacity=opacity
 			client:geometry(new_geometry)
 			client:tags({screen.selected_tag})
 			client:geometry(new_geometry)

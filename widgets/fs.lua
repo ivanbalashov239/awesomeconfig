@@ -51,14 +51,15 @@ local function worker(args)
 	--vicious.register(fs_widget, vicious.widgets.fs, widgets.vspace1 .. "${/ avail_gb}GB" .. widgets.vspace1, 2)
 	local fs_widget = lain.widget.fs({
 		notification_preset = {
-			font = widgets.font,
+			font = "Terminus 15",
 			fg   = widgets.fg,
 			bg   = widgets.bg
 		},
 		settings  = function()
+			--print(output)
 			--local home_used = tonumber(fs_info["/home used_p"]) or 0
 			--widget:set_text(fs_now.used .. "%")
-			widget:set_text(fs_now.available_gb .. "GB")
+			widgets.set_markup(widget,fs_now.available_gb .. "GB")
 			--fs_now.available_gb = fs_info[partition .. " avail_gb"] or "N/A"
 		end,
 		showpopup = "off"

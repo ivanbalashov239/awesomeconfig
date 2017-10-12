@@ -1,4 +1,5 @@
 local widgetcreator = require("widgets")
+local widgets = widgetcreator
 local beautiful = require("beautiful")
 local wibox = require("wibox")
 local lain = require("lain")
@@ -74,7 +75,8 @@ local function worker(args)
 					end
 					inbox_now.digest = inbox_now[dir]
 				end
-				widget:set_text(inbox_now.digest)
+				--widget:set_text(inbox_now.digest)
+				widgets.set_markup(widget,inbox_now.digest)
 				args.total = inbox_now.digest
 				args.newmail = newmail
 				if inbox_now.digest > 0 then
@@ -108,7 +110,8 @@ local function worker(args)
 		run
 		))
 		--args.textbox:buttons(mailbuttons)
-		args.textbox:set_text("0")
+		--args.textbox:set_text("0")
+		widgets.set_markup(args.textbox,0)
 		local timer = timer({ timeout = 1 })
 		timer:connect_signal("timeout", function ()
 			if lain.helpers and lain.helpers.timer_table and lain.helpers.timer_table["/home/ivn/Mail/"..args.mailbox] then

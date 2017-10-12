@@ -22,31 +22,24 @@ local function worker(args)
 			--textboxes = {layout}
 			textboxes = {title}
 		})
-		
-		client.connect_signal("focus",function(c)
-			local name = c.name or c.class
-			--local str = "https://thisisarandomsite.com/some_dir/src/blah/blah/7fd34a0945b036685bbd6cc2583a5c30.jpg"
-			--print(name:match( "(http*)" ))
-			name  = name:gsub("https?://[^ ]*","")
-			if not name:lower():match(c.class:lower()) then
-				name = name.." — "..c.class
-			end
-
-			title:set_text(name)
-		end)
-		client.connect_signal("property::name",function(c)
-			if c == client.focus then
-				local name = c.name or c.class
+		local function set_title(c)
+			if c then
+				local name = c.name or c.class or ""
+				local class = c.class or ""
 				--local str = "https://thisisarandomsite.com/some_dir/src/blah/blah/7fd34a0945b036685bbd6cc2583a5c30.jpg"
 				--print(name:match( "(http*)" ))
 				name  = name:gsub("https?://[^ ]*","")
-				if not name:lower():match(c.class:lower()) then
+				if not name:lower():match(class:lower()) then
 					name = name.." — "..c.class
 				end
 
-				title:set_text(name)
+				--title:set_text(name)
+				widgets.set_markup(title,name)
 			end
-		end)
+		end
+		
+		client.connect_signal("focus",set_title)
+		client.connect_signal("property::name",set_title)
 		titlewidget.widget = title_widget
 		return title_widget
 	end

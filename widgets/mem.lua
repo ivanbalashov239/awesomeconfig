@@ -25,8 +25,10 @@ local function worker(args)
 		timeout = 15,
 		settings = function()
 			local perc = math.ceil(mem_now.used/mem_now.total*100, 0, 3)
-			memp_widget:set_markup(widgets.space3 .. perc .. "%" .. lain.util.markup.font("Tamsyn 4", " "))
-			widget:set_markup(widgets.space3 .. mem_now.used .. "MB" .. lain.util.markup.font("Tamsyn 4", " "))
+			--memp_widget:set_markup(widgets.space3 .. perc .. "%" .. lain.util.markup.font("Tamsyn 4", " "))
+			--widget:set_markup(widgets.space3 .. mem_now.used .. "MB" .. lain.util.markup.font("Tamsyn 4", " "))
+			widgets.set_markup(memp_widget,perc .. "%")
+			widgets.set_markup(widget,mem_now.used .. "MB")
 		end
 	})
 	--local memwidget = wibox.widget.background()

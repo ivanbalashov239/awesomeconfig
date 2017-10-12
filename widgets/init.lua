@@ -12,10 +12,12 @@ widgets.spr5px = wibox.widget.imagebox()
 widgets.spr5px:set_image(beautiful.spr5px)
 widgets.bg = beautiful.bg_normal
 widgets.fg = beautiful.fg_normal
+widgets.text_size = 9
+widgets.font = "Tamsyn"
 widgets.critical = "#bd6873"
 widgets.task_waiting = "#A57F83"
 widgets.green = "#24B224"
-widgets.font = "Terminus 10"
+--widgets.font = "Terminus 10"
 
 
 widgets.space3 = lain.util.markup.font("Terminus 3", " ")
@@ -24,6 +26,18 @@ widgets.vspace1 = '<span font="Terminus 3"> </span>'
 widgets.vspace2 = '<span font="Terminus 3">  </span>'
 widgets.clockgf = beautiful.clockgf
 
+function widgets.set_markup(widget,text,args)
+	local args = args or {}
+	local font = args.font or widgets.font 
+	local text_size = args.text_size or widgets.text_size
+	local bold = args.bold or "normal"
+	local text = lain.util.markup.font(font.." "..math.floor(text_size/2.5), " ")..'<span font="'..font.." "..text_size..'" weight="'..bold..'">'..text..'</span>'.. lain.util.markup.font(font.." "..math.floor(text_size/2.5), " ")
+	if widget then
+		widget:set_markup(text)
+	else
+		return text
+	end
+end
 
 widgets.display = wibox.widget.imagebox()
 widgets.display:set_image(beautiful.widget_display)
@@ -44,7 +58,8 @@ local function worker(args)
 	end
 	if args.text then
 		local widget_text = wibox.widget.textbox()
-		widget_text:set_markup( lain.util.markup.font("Terminus 4", " ")..'<span font="Terminus 10" weight="bold">'..args.text..'</span>'.. lain.util.markup.font("Terminus 4", " "))
+		--widget_text:set_markup( lain.util.markup.font("Terminus 4", " ")..'<span font="Terminus 10" weight="bold">'..args.text..'</span>'.. lain.util.markup.font("Terminus 4", " "))
+		widgets.set_markup(widget_text,args.text,{font="Terminus",text_size=10,bold="bold"})
 		layout:add(widget_text)
 	end
 	if args.widgets then

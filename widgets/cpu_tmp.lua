@@ -18,7 +18,8 @@ local function worker(args)
 
 	local cpu_widget = lain.widget.cpu({
 		settings = function()
-			widget:set_markup(widgets.space3 .. cpu_now.usage .. "%" .. lain.util.markup.font("Tamsyn 4", " "))
+			--widget:set_markup(widgets.space3 .. cpu_now.usage .. "%" .. lain.util.markup.font("Tamsyn 4", " "))
+			widgets.set_markup(widget,cpu_now.usage .. "%")
 		end
 	})
 
@@ -28,7 +29,8 @@ local function worker(args)
 	local tmp_widget = lain.widget.temp({
 		tempfile = tempfile,
 		settings = function()
-			widget:set_markup(widgets.space3 .. coretemp_now .. "°C" .. lain.util.markup.font("Tamsyn 4", " "))
+			--widget:set_markup(widgets.space3 .. coretemp_now .. "°C" .. lain.util.markup.font("Tamsyn 4", " "))
+			widgets.set_markup(widget,coretemp_now .. "°C")
 		end
 	})
 

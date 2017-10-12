@@ -12,6 +12,7 @@ theme.icons      = os.getenv("HOME") .. "/.config/awesome/themes/pro-dark/icons/
 theme.icon_theme = "Faenza"
 theme.wallpaper  = os.getenv("HOME") .. "/.config/awesome/themes/pro-dark/wallpapers/pro-dark-shadow.png"
 theme.panel      = theme.icons .. "panel/panel.png"
+theme.panel_size = 22
 theme.font       = "Terminus 9"
 theme.panel_color= "#343434" 
 

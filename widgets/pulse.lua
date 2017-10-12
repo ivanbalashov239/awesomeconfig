@@ -1,4 +1,5 @@
 local widgetcreator = require("widgets")
+local widgets = widgetcreator
 local beautiful = require("beautiful")
 local wibox = require("wibox")
 local lain = require("lain")
@@ -52,7 +53,8 @@ local function worker(args)
 				markup = "#cc0000"
 			end
 
-			widget:set_markup(lain.util.markup(markup, vlevel))
+			--widget:set_markup(lain.util.markup(markup, vlevel))
+			widgets.set_markup(widget,vlevel,{font="Tamsyn"})
 		end
 	})
 	pulsebar = lain.widget.pulsebar({

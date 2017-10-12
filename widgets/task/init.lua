@@ -21,6 +21,7 @@ taskwidget.shortcuts = {}
 taskwidget.tasks = {}
 taskwidget.reminders = {}
 taskwidget.afterupdate = {}
+taskwidget.notify = true
 dbus.request_name("session", "org.naquadah.awesome.task")
 dbus.add_match("session", "interface='org.naquadah.awesome.task',member='taskUpdate'")
 dbus.connect_signal("org.naquadah.awesome.task",
@@ -69,7 +70,7 @@ function(...)
 			--print(t.notif_id)
 			--print(oldtask.notif_id)
 			t.notif_id = oldtask.notif_id
-			if t then
+			if t and taskwidget.notify then
 				t:show(timeout, {title = title})
 			end
 		end)
@@ -90,6 +91,9 @@ local function todec(num)
 	end
 	return num
 end
+local function firstToUpper(str)
+    return (str:gsub("^%l", string.upper))
+end
 
 local function table_size(tab)
 	local n = 0
@@ -97,6 +101,10 @@ local function table_size(tab)
 		n = n + 1
 	end
 	return n
+end
+local function spawn(...)
+	awful.util.spawn_with_shell(...)
+	taskwidget.watch.update()
 end
 local function prompt(str)
 	--task:show(0)
@@ -107,7 +115,7 @@ local function prompt(str)
 			--task:hide()
 			if result then
 				--os.execute("task "..result)
-				awful.util.spawn_with_shell("task "..result)
+				spawn("task "..result)
 				return true
 			end
 			return false
@@ -119,6 +127,7 @@ local function prompt(str)
 	)
 end
 function taskwidget.update_tasks(tasks)
+	--print("update")
 	if tasks then
 		--taskwidget.tasks = {}
 		--taskwidget.due = {}
@@ -137,10 +146,26 @@ function taskwidget.update_tasks(tasks)
 				t = task(t)
 				if t and t.uuid then
 					local oldtask = taskwidget.tasks[t.uuid]
+					if oldtask then
+						t.notif_id = oldtask.notif_id
+					end
 					if oldtask and not t.id and oldtask.id then
 						t.id = oldtask.id
 					end
+					if taskwidget.notify then
+						if oldtask and (oldtask.status or t.status) then
+							--print("status",5)
+							if not oldtask.status or not t.status or not (oldtask.status == t.status) then
+								t:show(15)
+							end
+							if not (oldtask:is_overdue() == t:is_overdue()) then
+								t:show(15)
+								t:say()
+							end
+						end
+					end
 					--tasks[i] = t
+					--
 					--print(t.uuid)
 					--updated[t.uuid] = true
 					updated[t.uuid] = t
@@ -154,15 +179,28 @@ function taskwidget.update_tasks(tasks)
 				--taskwidget.tasks[t.uuid] = nil
 			--end
 		--end
+		if taskwidget.modal then
+			taskwidget.modal_menu(taskwidget.modal)
+		end
 	end
 end
 function taskwidget:get_tasks()
 	return taskwidget.tasks
 end
+function taskwidget:toggle()
+	taskwidget.notify = not taskwidget.notify
+	if taskwidget.notify then
+		taskwidget.imagebox:set_image(taskwidget.images.def)
+	else
+		taskwidget.imagebox:set_image(taskwidget.images.red)
+	end
+end
 function taskwidget.modal_menu(args)
 	taskwidget.watch.update()
 	local args = args or {}
 	local tasks = args.tasks or taskwidget:get_tasks()
+	local show_projects = args.projects or "yes"
+	local ret_actions = args.ret_actions
 	local filter = args.filter or function(task)
 		if task:is_waiting() then
 			return false
@@ -183,6 +221,20 @@ function taskwidget.modal_menu(args)
 		func = function()
 			--mouse.screen.mypromptbox(" add ") 
 			prompt(" add ")
+		end,
+	})
+	local notif_desc = ""
+	if taskwidget.notify then
+		notif_desc = " Disable Notification"
+	else
+		notif_desc = " Enable Notification"
+	end
+	table.insert(actions,{
+		hint = "@",
+		desc = notif_desc,
+		--modal = true,
+		func = function()
+			taskwidget:toggle()
 		end,
 	})
 	local task_ids = {}
@@ -262,8 +314,17 @@ function taskwidget.modal_menu(args)
 		end
 	end
 	local sorted_tasks = {}
+	local projects = {}
 	for i,item in pairs(tasks) do
 		table.insert(sorted_tasks,item)
+		if item.project and show_projects == "yes" then
+			if projects[item.project] then
+				table.insert(projects[item.project],item)
+			else
+				projects[item.project] = {item}
+			end
+			task_ids[item.uuid] = true
+		end
 		if item.depends then
 			--local number = 0
 			for _,id  in ipairs(item.depends) do 
@@ -305,12 +366,52 @@ function taskwidget.modal_menu(args)
 			add_item(item)
 		end
 	end
-	modal_sc({
-		--font="Terminus bold ",
-		name="taskwarrior",
-		actions=actions,
-		on_end=taskupdate,
-	})()
+	for project, tasks in pairs(projects) do
+
+		local active_tasks = {}
+		for _,item in pairs(tasks) do
+			local skip = not filter(item)
+			if not skip then
+				table.insert(active_tasks,item)
+			end
+		end
+		if #active_tasks > 0 then
+			local args = args
+			args.filter = function(task)
+				if task.project and task.project == project then
+					return true
+				else
+					return false
+				end
+			end
+			args.projects = "no"
+			args.ret_actions = true
+			local acts = taskwidget.modal_menu(args)
+			table.insert(actions,{
+				desc=firstToUpper(project),
+				modal = true,
+				actions = acts,
+
+			})
+		end
+		for _,item in pairs(active_tasks) do
+			add_item(item,1)
+		end
+	end
+	if ret_actions then
+		return actions
+	else
+		taskwidget.modal = args
+		modal_sc.update({
+			--font="Terminus bold ",
+			name="taskwarrior",
+			actions=actions,
+			on_end=function()
+				taskwidget.modal=false
+				taskwidget.watch.update()
+			end,
+		})()
+	end
 end
 function taskwidget.modal_actions(item)
 	--print("actions")
@@ -321,7 +422,7 @@ function taskwidget.modal_actions(item)
 			hint = "s",
 			desc = "STOP",
 			func = function()
-				awful.util.spawn_with_shell("task "..item.id.." stop")
+				spawn("task "..item.id.." stop")
 			end,
 		})
 	else
@@ -329,7 +430,7 @@ function taskwidget.modal_actions(item)
 			hint = "s",
 			desc = "START",
 			func = function()
-				awful.util.spawn_with_shell("task "..item.id.." start")
+				spawn("task "..item.id.." start")
 			end,
 		})
 	end
@@ -358,8 +459,8 @@ function taskwidget.modal_actions(item)
 		hint = "d",
 		desc = "DONE",
 		func = function()
-			--os.execute("task "..task.id.." done")
-			awful.util.spawn_with_shell("task uuid:"..item.uuid.." done")
+			--spawn("task "..task.id.." done")
+			spawn("task uuid:"..item.uuid.." done")
 		end,
 	})
 	table.insert(actions,{
@@ -371,8 +472,8 @@ function taskwidget.modal_actions(item)
 				desc="YES",
 				hint = "y",
 				func = function()
-					--os.execute("task "..task.id.." done")
-					awful.util.spawn_with_shell("echo 'yes' | task "..item.id.." delete")
+					--spawn("task "..task.id.." done")
+					spawn("echo 'yes' | task "..item.id.." delete")
 					taskwidget.tasks[item.id] = nil
 				end,
 			},
@@ -388,77 +489,85 @@ function taskwidget.modal_actions(item)
 				{
 					desc="15M",
 					func = function()
-						os.execute("task "..item.id.." modify wait:now+15M")
-						--awful.util.spawn_with_shell("echo 'yes' | task "..task.id.." delete")
+						spawn("task "..item.id.." modify wait:now+15M")
+						--spawn("echo 'yes' | task "..task.id.." delete")
 					end,
 				},
 				{
 					desc="30M",
 					func = function()
-						os.execute("task "..item.id.." modify wait:now+30M")
-						--awful.util.spawn_with_shell("echo 'yes' | task "..task.id.." delete")
+						spawn("task "..item.id.." modify wait:now+30M")
+						--spawn("echo 'yes' | task "..task.id.." delete")
 					end,
 				},
 				{
 					desc="1H",
 					func = function()
-						os.execute("task "..item.id.." modify wait:now+1h")
-						--awful.util.spawn_with_shell("echo 'yes' | task "..task.id.." delete")
+						spawn("task "..item.id.." modify wait:now+1h")
+						--spawn("echo 'yes' | task "..task.id.." delete")
 					end,
 				},
 				{
 					desc="2H",
 					func = function()
-						os.execute("task "..item.id.." modify wait:now+2h")
-						--awful.util.spawn_with_shell("echo 'yes' | task "..task.id.." delete")
+						spawn("task "..item.id.." modify wait:now+2h")
+						--spawn("echo 'yes' | task "..task.id.." delete")
 					end,
 				},
 				{
 					desc="5H",
 					func = function()
-						os.execute("task "..item.id.." modify wait:now+5h")
-						--awful.util.spawn_with_shell("echo 'yes' | item "..item.id.." delete")
+						spawn("task "..item.id.." modify wait:now+5h")
+						--spawn("echo 'yes' | item "..item.id.." delete")
 					end,
 				},
 				{
 					desc="8H",
 					func = function()
-						os.execute("task "..item.id.." modify wait:now+8h")
-						--awful.util.spawn_with_shell("echo 'yes' | item "..item.id.." delete")
+						spawn("task "..item.id.." modify wait:now+8h")
+						--spawn("echo 'yes' | item "..item.id.." delete")
 					end,
 				},
 				{
 					desc="12H",
 					func = function()
-						os.execute("task "..item.id.." modify wait:now+12h")
-						--awful.util.spawn_with_shell("echo 'yes' | item "..item.id.." delete")
+						spawn("task "..item.id.." modify wait:now+12h")
+						--spawn("echo 'yes' | item "..item.id.." delete")
 					end,
 				},
 				{
 					desc="1d",
 					func = function()
-						os.execute("task "..item.id.." modify wait:now+24h")
-						--awful.util.spawn_with_shell("echo 'yes' | item "..item.id.." delete")
+						spawn("task "..item.id.." modify wait:now+24h")
+						--spawn("echo 'yes' | item "..item.id.." delete")
 					end,
 				},
 				{
 					desc="1.5d",
 					func = function()
-						os.execute("task "..item.id.." modify wait:now+36h")
-						--awful.util.spawn_with_shell("echo 'yes' | item "..item.id.." delete")
+						spawn("task "..item.id.." modify wait:now+36h")
+						--spawn("echo 'yes' | item "..item.id.." delete")
 					end,
 				},
 				{
 					desc="2d",
 					func = function()
-						os.execute("task "..item.id.." modify wait:now+48h")
-						--awful.util.spawn_with_shell("echo 'yes' | item "..item.id.." delete")
+						spawn("task "..item.id.." modify wait:now+48h")
+						--spawn("echo 'yes' | item "..item.id.." delete")
 					end,
 				},
 
 			}
 		})
 	end
+	table.insert(actions,{
+		hint = "h",
+		desc = "SHOW",
+		--modal = true,
+		func = function()
+			item:show(5)
+		end,
+	})
 	return actions
 end
 function taskwidget.remind()
@@ -478,9 +587,13 @@ local function worker(args)
 	--due 		= args.due or task.due
 	local settings	= args.settings
 	taskwidget.imagebox = taskwidget.imagebox or args.imagebox or wibox.widget.imagebox()
-	local images	= args.images or {def="tasksmall.png"}
-	taskwidget.imagebox:set_image(ICON_DIR..images.def)
-	local timeout	= args.timeout or 1000
+	local images	= args.images or {def="tasksmall.png",red="tasksmall-red.png"}
+	taskwidget.images = {}
+	for i,k in pairs(images) do
+		taskwidget.images[i]=ICON_DIR..k
+	end
+	taskwidget.imagebox:set_image(taskwidget.images.def)
+	local timeout	= args.timeout or 60
 
 	taskwidget.reminders.overdue = timer({ timeout = 600 })
 	taskwidget.reminders.overdue:connect_signal("timeout",function()
@@ -489,28 +602,32 @@ local function worker(args)
 			if task:is_overdue() then
 				n = n + 1
 				--taskwidget.show_task(task,15)
-				task:show(15)
+				--
+				if taskwidget.notify then
+					task:show(15)
+				end
 			end
 		end
 		if n == 0 then
 			taskwidget.reminders.overdue:stop()
 		end
 	end)
-	taskwidget.reminders.due = timer({ timeout = 30 })
+	taskwidget.reminders.due = timer({ timeout = 60 })
 	taskwidget.reminders.due:connect_signal("timeout",function()
 		--print("due reminder")
 		local n = 0
 		for i,task in pairs(taskwidget.tasks) do
 			n = n + 1
 			if task:is_due() then
+				--print("due")
 				if task:is_now() then
 					--taskwidget.show_task(task,15)
-					local lang = ru
-					if string.match(task.description,"[a-zA-Z0-9,.!? ]*") ==text_tr then
-						lang ="en"
+					--print("now")
+					if taskwidget.notify then
+						task:say()
+						task:show(15)
+						taskwidget.watch.update()
 					end
-					awful.spawn.with_shell("~/scripts/saytext.sh '"..lang.."' '"..task.description:gsub("'","´").."' fast &")
-					task:show(15)
 				end
 			end
 		end
@@ -562,7 +679,8 @@ local function worker(args)
 		end
 		--print("module_path "..module_path)
 		--print("text widget")
-		widget:set_markup(text)
+		--widget:set_markup(text)
+		widgets.set_markup(widget,text)
 		--tb:set_markup('<span font="Terminus 10" weight="bold">'..textlabel..'</span>')
 		--widget:set_text(table_size(taskwidget.due))
 	end

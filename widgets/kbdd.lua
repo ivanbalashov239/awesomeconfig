@@ -36,7 +36,8 @@ local function worker(args)
 		[0] = "EN",
 		[1] = "RU" 
 	}
-	local kbdtext = wibox.widget.textbox(kbdstrings[0])
+	local kbdtext = wibox.widget.textbox()
+	widgets.set_markup(kbdtext,kbdstrings[0])
 	--kbdtext.n = 0
 	--dbus.request_name("session", "ru.gentoo.kbdd")
 	--dbus.add_match("session", "interface='ru.gentoo.kbdd',member='layoutChanged'")
@@ -64,7 +65,8 @@ local function worker(args)
 				--layout = 0
 			--end
 		--end
-		kbdtext:set_markup(kbdstrings[layout])
+		--kbdtext:set_markup(kbdstrings[layout])
+		widgets.set_markup(kbdtext,kbdstrings[layout])
 		--kbdtext.n = layout
 		local text ='<span font="Cantarel 50">'..kbdstrings[layout].."</span>"
 		naughty.destroy(kbddnotify)
@@ -132,7 +134,8 @@ function kbddwidget.enable_client_specific_layouts(args)
 end
 function kbddwidget.temporary_eng()
 	local layout = awesome.xkb_get_layout_group() or 0
-	awesome.xkb_set_layout_group(0)
+	--awesome.xkb_set_layout_group(0)
+	kbddwidget.set_en()
 	return function()
 		awesome.xkb_set_layout_group(layout)
 	end
