@@ -201,6 +201,7 @@ function taskwidget.modal_menu(args)
 	local tasks = args.tasks or taskwidget:get_tasks()
 	local show_projects = args.projects or "yes"
 	local ret_actions = args.ret_actions
+	local add_preset = args.add_preset or ""
 	local filter = args.filter or function(task)
 		if task:is_waiting() then
 			return false
@@ -220,7 +221,7 @@ function taskwidget.modal_menu(args)
 		--func = task.modal_actions(item,modal_sc),
 		func = function()
 			--mouse.screen.mypromptbox(" add ") 
-			prompt(" add ")
+			prompt(" add "..add_preset.." ")
 		end,
 	})
 	local notif_desc = ""
@@ -386,6 +387,7 @@ function taskwidget.modal_menu(args)
 			end
 			args.projects = "no"
 			args.ret_actions = true
+			args.add_preset = "project:"..project
 			local acts = taskwidget.modal_menu(args)
 			table.insert(actions,{
 				desc=firstToUpper(project),

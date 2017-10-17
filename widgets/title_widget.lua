@@ -15,12 +15,22 @@ local function worker(args)
 		--layout:set_right(title)
 		--layout:add(title)
 		title.align = "center"
+		local scroll = wibox.widget {
+			layout = wibox.container.scroll.horizontal,
+			--max_size = 200,
+			--extra_space = 100,
+			--expand = true,
+			step_function = wibox.container.scroll.step_functions.waiting_nonlinear_back_and_forth,
+			speed = 50,
+			title,
+		}
+		--scroll:pause()
 		local title_widget = widgetcreator(
 		{
 			--image = beautiful.widget_mem,
 			--text = "CPU",
 			--textboxes = {layout}
-			textboxes = {title}
+			textboxes = {scroll}
 		})
 		local function set_title(c)
 			if c then
@@ -41,6 +51,16 @@ local function worker(args)
 		client.connect_signal("focus",set_title)
 		client.connect_signal("property::name",set_title)
 		titlewidget.widget = title_widget
+
+		--title_widget:connect_signal("mouse::enter",
+		--function () 
+			--scroll:continue()
+		--end)
+		--title_widget:connect_signal("mouse::leave",
+		--function () 
+			--scroll:pause()
+			--scroll:reset_scrolling()
+		--end)
 		return title_widget
 	end
 end
