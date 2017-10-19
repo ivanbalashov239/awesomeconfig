@@ -5,6 +5,7 @@ local titlewidget ={}
 
 local function worker(args)
 	local args = args or {}
+	local started = args.started or false
 	if titlewidget.widget then
 		return titlewidget.widget
 	else
@@ -24,7 +25,6 @@ local function worker(args)
 			speed = 50,
 			title,
 		}
-		--scroll:pause()
 		local title_widget = widgetcreator(
 		{
 			--image = beautiful.widget_mem,
@@ -47,20 +47,23 @@ local function worker(args)
 				widgets.set_markup(title,name)
 			end
 		end
-		
+
 		client.connect_signal("focus",set_title)
 		client.connect_signal("property::name",set_title)
 		titlewidget.widget = title_widget
 
-		--title_widget:connect_signal("mouse::enter",
-		--function () 
-			--scroll:continue()
-		--end)
-		--title_widget:connect_signal("mouse::leave",
-		--function () 
-			--scroll:pause()
-			--scroll:reset_scrolling()
-		--end)
+		if not started then
+			scroll:pause()
+			title_widget:connect_signal("mouse::enter",
+			function () 
+				scroll:continue()
+			end)
+			title_widget:connect_signal("mouse::leave",
+			function () 
+				scroll:pause()
+				scroll:reset_scrolling()
+			end)
+		end
 		return title_widget
 	end
 end
