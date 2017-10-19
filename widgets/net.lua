@@ -8,6 +8,7 @@ local naughty = require("naughty")
 local net_widgets = require("net_widgets")
 local modal_sc = require("modal_sc")      
 
+local utf8 = require("lua-utf8")
 local netwidget ={}
 netwidget.shortcuts = {}
 local function split(s, delimiter)
@@ -97,6 +98,25 @@ local function output_to_ssids(output)
 	end
 	return ssids
 end
+local function get_desc(active,name,chan,signal,bars,security)
+	local function to_n(str,n)
+		local n = n
+		local l = utf8.len(str)
+		local result = ""
+		if l > n then
+			result = utf8.sub(str,1,n)
+		elseif l == n then
+			result = str
+		else
+			local d = (n-l)/2%1
+			local dif1 = (n-l)/2-d
+			local dif2 = (n-l)/2+d
+			result = string.rep(" ",dif1)..str..string.rep(" ",dif2)
+		end
+		return result
+	end
+	return to_n(active,2)..""..to_n(name,10).." | "..to_n(chan,2).." | "..to_n(signal,3).."|"..bars.."|"..to_n(security,11)
+end
 
 function netwidget.menu(args)
 	local args = args or {}
@@ -104,12 +124,14 @@ function netwidget.menu(args)
 		--print(err)
 		local actions = {}
 		local ssids = output_to_ssids(output)
+		local n = 0
+		local others = {}
 		for _,ssid in ipairs(ssids) do
 			local active = " "
 			if ssid.active then
 				active = "*"
 			end
-			local desc = active.." "..ssid.name.." | "..ssid.chan.." | "..ssid.signal.." |"..ssid.bars.."| "..ssid.security
+			local desc = get_desc(active,ssid.name,ssid.chan,ssid.signal,ssid.bars,ssid.security)
 			--print(desc,5)
 			--print(desc,5)
 			local action = {
@@ -117,8 +139,19 @@ function netwidget.menu(args)
 				modal = true,
 				actions = ssid.actions()
 			}
-			table.insert(actions,action)
+			n = n + 1
+			if n>5 then
+				table.insert(others,action)
+			else
+				table.insert(actions,action)
+			end
 		end
+		table.insert(actions,{
+			hint = "o",
+			desc = "Others",
+			modal = true,
+			actions = others,
+		})
 		modal_sc({
 			name = "NetworkManager menu",
 			actions = actions,
