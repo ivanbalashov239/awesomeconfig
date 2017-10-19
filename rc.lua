@@ -1159,6 +1159,8 @@ globalkeys = gears.table.join(config.globalkeys,
 	    end),
 	    awful.key({ modkey,  }, "Left",     function() brightnessdec() end),
 	    awful.key({ modkey,  }, "Right",    function() brightnessinc() end),
+	    awful.key({ modkey  }, "\\",   widgets.net.menu),
+	    awful.key({ modkey  }, "F10",   widgets.net.menu),
 	    awful.key({ modkey,altgr  }, "h",   function() brightnessdec() end),
 	    awful.key({ modkey,altgr  }, "s",   function() brightnessinc() end)
 	    --awful.key({ altkey  }, "-",   widgets.kbdd.toggle)

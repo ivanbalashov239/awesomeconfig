@@ -161,6 +161,7 @@ function pulsewidget.menu()
 						pulsewidget.update()
 					end
 					function sink:default()
+						--print(cmd)
 						os.execute(cmd.."set-default")
 						pulsewidget.update()
 					end

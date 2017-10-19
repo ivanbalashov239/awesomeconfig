@@ -38,6 +38,7 @@ local run_or_kill = rork.run_or_kill
 local modal_sc = require("modal_sc")      
 
 local widgets = require("widgets")
+widgets.text_size = host.widgets_text_size or widgets.text_size
 widgets.taskwidget = require("widgets.task")
 --local json = require('cjson')
 
@@ -117,6 +118,7 @@ config.panel.right = {
 	widgets.mem(),"primary"),
 	host.widgets.mail,
 	widgets.fs({
+		disk_type=host.disk_type
 		--watch = true,
 	}),
 	host.widgets.battery,

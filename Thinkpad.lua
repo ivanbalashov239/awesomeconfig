@@ -7,6 +7,8 @@ config.cpu_tmpfile = "/sys/class/hwmon/hwmon0/temp1_input"
 config.wired_interface = "enp2s0"
 config.wireless_interface = "wlp0s18f2u3"
 config.autostart = {}
+config.disk_type = "HDD"
+config.widgets_text_size = 8
 config.autostart.execute = {
 	"xset s on",
 	"xset +dpms",

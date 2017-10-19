@@ -1,4 +1,5 @@
 local widgetcreator = require("widgets")
+local widgets = widgetcreator
 local beautiful = require("beautiful")
 local wibox = require("wibox")
 local lain = require("lain")
@@ -20,7 +21,8 @@ local function worker(args)
 			if bat_now.status == "Charging" then
 				baticon:set_image(beautiful.widget_ac)
 			elseif bat_now.perc == "N/A" then
-				widget:set_markup("AC")
+				--widget:set_markup("AC")
+				widgets.set_markup(widget,"AC")
 				baticon:set_image(beautiful.widget_ac)
 				return
 			elseif tonumber(bat_now.perc) <= 5 then
@@ -30,7 +32,8 @@ local function worker(args)
 			else
 				baticon:set_image(beautiful.widget_battery)
 			end
-			widget:set_markup(bat_now.perc .. "%")
+			--widget:set_markup(bat_now.perc .. "%")
+			widgets.set_markup(widget,bat_now.perc.."%")
 		end
 	})
 	local batterywidget = widgetcreator(

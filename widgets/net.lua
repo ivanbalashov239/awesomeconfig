@@ -6,10 +6,125 @@ local lain = require("lain")
 local awful = require("awful")
 local naughty = require("naughty")
 local net_widgets = require("net_widgets")
+local modal_sc = require("modal_sc")      
 
 local netwidget ={}
 netwidget.shortcuts = {}
+local function split(s, delimiter)
+	result = {};
+	for match in (s..delimiter):gmatch("(.-)"..delimiter) do
+		table.insert(result, match);
+	end
+	return result;
+end
+local function prompt(args)
+	local args = args or {}
+	local text = args.text or ""
+	local prompt=args.prompt or ""
+	local action = args.action or function(text)end
+	--task:show(0)
+	awful.prompt.run({
+		prompt = prompt,
+		text=text,
+		exe_callback = action,
+		--history_path = awful.util.getdir("cache") .. "/task_history",
+	},
+	mouse.screen.mypromptbox.widget
+	--task.promptbox[mouse.screen].widget,
+	)
+end
+local function output_to_ssids(output)
+	local ssids = {}
+	local output = split(output,"\n")
+	for _,k in pairs(output) do
+		--print(k,5)
+		local ssid = {}
+		local str = split(k,":")
+		local i = 1
+		if #str==8 and str[1] == "*" then
+			ssid.active = true
+			--i = 1
+			--print(k)
+		else
+			ssid.active = false
+		end
+		ssid.name = str[1+i] or ""
+		ssid.mode = str[2+i] or ""
+		ssid.chan = str[3+i] or ""
+		ssid.rate = str[4+i] or ""
+		ssid.signal = str[5+i] or "0"
+		ssid.bars = str[6+i] or "___"
+		ssid.security=str[7+i] or "none"
+		ssid.actions = function()
+			local actions = {
+			}
+			if ssid.active then
+				table.insert(actions,{
+					hint = "d",
+					desc = "disconnect",
+					func = function()
+						os.execute("nmcli dev disconnect wlp3s0")
+					end,
+				})
+			else
+				table.insert(actions,{
+					hint = "c",
+					desc = "connect",
+					func = function()
+						awful.spawn.easy_async({"nmcli","connection","up",ssid.name or " "},function(stdout, stderr, reason, exit_code)
+							if not exit_code == 0 then
+								prompt({
+									prompt = "Password: ",
+									action = function(password)
+										awful.spawn.easy_async({"nmcli","device wifi connect",ssid.name,"password",password},function(output,err)
+											print(err or output,5)
+										end)
+									end,
+								})
+							else
+								print(stdout,5)
+							end
+						end)
+					end,
+				})
+			end
+			return actions
+		end
+		if ssid.chan == "" then
+		else
+			table.insert(ssids,ssid)
+		end
+	end
+	return ssids
+end
 
+function netwidget.menu(args)
+	local args = args or {}
+	awful.spawn.easy_async({"nmcli","-t","dev","wifi"},function(output,err)
+		--print(err)
+		local actions = {}
+		local ssids = output_to_ssids(output)
+		for _,ssid in ipairs(ssids) do
+			local active = " "
+			if ssid.active then
+				active = "*"
+			end
+			local desc = active.." "..ssid.name.." | "..ssid.chan.." | "..ssid.signal.." |"..ssid.bars.."| "..ssid.security
+			--print(desc,5)
+			--print(desc,5)
+			local action = {
+				desc =desc,
+				modal = true,
+				actions = ssid.actions()
+			}
+			table.insert(actions,action)
+		end
+		modal_sc({
+			name = "NetworkManager menu",
+			actions = actions,
+		})()
+	end)
+end
 local function worker(args)
 	local args = args or {}
 	local wired_interface = args.wired_interface or "enp5s0"
@@ -44,6 +159,7 @@ local function worker(args)
 	background:set_bgimage(beautiful.widget_display)
 	wifitextlayout:add(background)
 	wifitextlayout:add(widgets.display_r)
+	local menu = netwidget.menu
 
 	local netwidget = widgetcreator(
 	{
@@ -52,6 +168,9 @@ local function worker(args)
 		--textboxes = {net_wireless.textbox}
 	})
 	net_widgets.wireless:attach(netwidget)  --,{
+	local buttons = awful.util.table.join(awful.button({ }, 1,menu
+	))
+	netwidget:buttons(buttons)
 	--onclick = run_or_kill(wifi_menu, { role = "WIFI_MENU" }, {x = mouse.coords().x, y = mouse.coords().y+2})})
 	--net_widgetdl = wibox.widget.textbox()
 	--net_widgetul = lain.widgets.net({
