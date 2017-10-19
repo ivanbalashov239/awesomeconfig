@@ -1139,8 +1139,12 @@ globalkeys = gears.table.join(config.globalkeys,
 			    --t:delete()
 			    t:delete({fallback_tag=tags["all"], force=true})
 			    client.focus = cf
-			    client.focus:tags()[1]:view_only()
-			    client.focus = cf
+			    if #client.focus:tags() == 0 then
+				    client.focus:tags({tags["all"]})
+			    else
+				    client.focus:tags()[1]:view_only()
+				    client.focus = cf
+			    end
 			    --tags["all"]:view_only()
 			    --local tag = awful.tag.selected()
 			    --local tag = mouse.screen.selected_tag
