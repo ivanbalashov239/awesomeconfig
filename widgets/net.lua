@@ -73,7 +73,7 @@ local function output_to_ssids(output)
 					desc = "connect",
 					func = function()
 						awful.spawn.easy_async({"nmcli","connection","up",ssid.name or " "},function(stdout, stderr, reason, exit_code)
-							if not exit_code == 0 then
+							if not (exit_code == 0) then
 								prompt({
 									prompt = "Password: ",
 									action = function(password)
@@ -151,6 +151,14 @@ function netwidget.menu(args)
 			desc = "Others",
 			modal = true,
 			actions = others,
+		})
+		table.insert(actions,{
+			hint = "e",
+			desc = "Connection Editor",
+			func = function()
+				awful.spawn("nm-connection-editor")
+				
+			end,
 		})
 		modal_sc({
 			name = "NetworkManager menu",
