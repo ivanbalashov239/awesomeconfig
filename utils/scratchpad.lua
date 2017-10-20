@@ -30,9 +30,10 @@ end
 function scratchpad.functions.im_geometry(c)
 	local screen = c and c.screen or capi.mouse.screen
 	local screengeom = screen.workarea
+	local width = scratchpad.width or 0.25
 	local geometry = {}
 
-	geometry.width  = screengeom.width * 0.25
+	geometry.width  = screengeom.width * width
 	geometry.height = screengeom.height * 1
 
 	geometry.x =  screengeom.x+screengeom.width-geometry.width
@@ -59,6 +60,7 @@ local function worker(args)
 	local args = args or {}
 	local opacity = args.opacity or 1
 	local hide_on_unfocus = args.hide_on_unfocus or false
+	scratchpad.width = args.geometry_coefficent
 	local scratch = {}
 	scratch.client = args.client
 	local command = args.command

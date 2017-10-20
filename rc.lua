@@ -237,6 +237,7 @@ tags["im"].hint = "i"
 widgets.taglist.tags = tags
 local im = scratchpad({
 	set_geometry = scratchpad.functions.im_geometry,
+	geometry_coefficent = config.im_width,
 	--hide  = scratchpad.functions.place_away,
 	opacity = 0.8,
 	hide  = function(c,old)
