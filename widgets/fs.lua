@@ -37,31 +37,6 @@ local function worker(args)
 	else
 		fswidget.stop_automount()
 	end
-	local watch = args.watch or false
-	local watch_timeout = args.watch_timeout or 600
-	local dir = args.dir or  "/home/ivn/Downloads"
-	local cmd = "find "..dir.." -type f \\( -name '*.avi' -o -name '*.mkv' \\)"
-	--local text = ""
-	if watch then
-		fswidget.files = {}
-		fswidget.dir = dir
-		local files_watch = lain.widget.watch({
-			timeout = watch_timeout,
-			stoppable = true,
-			cmd = { awful.util.shell, "-c", cmd },
-			settings = function()
-				--print("updating files")
-				--local f = {}
-				--for line in output:lines() do
-				----text = text.."\n"..line
-				--table.insert(f,line)
-				--end
-				fswidget.files = utils.split(output,"\n")
-				--print("finish update files")
-			end
-		})
-		--files_watch.update()
-	end
 	local disk_type = args.disk_type or "SSD"
 	--local fs_widget = wibox.widget.textbox()
 	--vicious.register(fs_widget, vicious.widgets.fs, widgets.vspace1 .. "${/ avail_gb}GB" .. widgets.vspace1, 2)
