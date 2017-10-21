@@ -7,17 +7,10 @@ local awful = require("awful")
 local naughty = require("naughty")
 local net_widgets = require("net_widgets")
 local modal_sc = require("modal_sc")      
+local utils = require("utils")
 
-local utf8 = require("lua-utf8")
 local netwidget ={}
 netwidget.shortcuts = {}
-local function split(s, delimiter)
-	result = {};
-	for match in (s..delimiter):gmatch("(.-)"..delimiter) do
-		table.insert(result, match);
-	end
-	return result;
-end
 local function prompt(args)
 	local args = args or {}
 	local text = args.text or ""
@@ -36,11 +29,11 @@ local function prompt(args)
 end
 local function output_to_ssids(output)
 	local ssids = {}
-	local output = split(output,"\n")
+	local output = utils.split(output,"\n")
 	for _,k in pairs(output) do
 		--print(k,5)
 		local ssid = {}
-		local str = split(k,":")
+		local str = utils.split(k,":")
 		local i = 1
 		if #str==8 and str[1] == "*" then
 			ssid.active = true
@@ -99,22 +92,7 @@ local function output_to_ssids(output)
 	return ssids
 end
 local function get_desc(active,name,chan,signal,bars,security)
-	local function to_n(str,n)
-		local n = n
-		local l = utf8.len(str)
-		local result = ""
-		if l > n then
-			result = utf8.sub(str,1,n)
-		elseif l == n then
-			result = str
-		else
-			local d = (n-l)/2%1
-			local dif1 = (n-l)/2-d
-			local dif2 = (n-l)/2+d
-			result = string.rep(" ",dif1)..str..string.rep(" ",dif2)
-		end
-		return result
-	end
+	local to_n = utils.to_n
 	return to_n(active,2)..""..to_n(name,10).." | "..to_n(chan,2).." | "..to_n(signal,3).."|"..bars.."|"..to_n(security,11)
 end
 

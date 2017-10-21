@@ -15,6 +15,7 @@ hintsetter.init({
 charorder = "aoeuidhtnspyfgcrlqjkxbwvz1234567890"
 })
 local hints 	 = require("utils.hints")
+local udisks = require("utils.udisks")
 --local tyrannical = require("tyrannical")
 local sharedtags = require("sharedtags")
 --local apw 	 = require("apw/widget")
@@ -1254,7 +1255,7 @@ globalkeys = gears.table.join(config.globalkeys,
 	    callback = function(c)
 		    if c.type == "normal" then
 			    c.borders = {}
-			    size = 0.1
+			    size = 0.5
 			    c.top = awful.titlebar(c,{
 				    position = "top",
 				    size = size,
@@ -1293,66 +1294,90 @@ globalkeys = gears.table.join(config.globalkeys,
 				    end
 			    end
 			    hide()
+			    c.border_timer = timer({ timeout = 0.5 })
+			    c:connect_signal("unmanage",function(c)
+				if c.border_timer and c.border_timer.data.source_id ~= nil then
+				  --print("stop on kill")
+				  c.border_timer:stop()
+				end
+			    end)
+			    c.border_timer:connect_signal("timeout", function ()
+			      --print("timeout")
+			      if c.valid then
+				if c.border_timer and c.border_timer.data.source_id ~= nil then
+				  c.border_timer:stop()
+				end
+				c.set_borders()
+			      end
+
+			    end)
 			    local function refresh(c)
-				    if c.fullscreen or c.floating or c.maximized then
-					    hide()
-					    return
-				    end
-				    local geom = c:geometry()
-				    geom.x1 = geom.x
-				    geom.y1 = geom.y
-				    geom.x2 = geom.x + geom.width
-				    geom.y2 = geom.y + geom.height
-				    local scr = c.screen.geometry
-				    if scr.y == 0 then
-					    local panel = c.screen.padding.top or beautiful.panel_size or 22
-					    scr.y = scr.y + panel
-					    scr.height = scr.height - panel
-				    end
-				    scr.x1 = scr.x
-				    scr.y1 = scr.y
-				    scr.x2 = scr.x + scr.width
-				    scr.y2 = scr.y + scr.height
+			      --print("refresh")
+			      if c.border_timer.data.source_id == nil then
+				c.border_timer:start()
+			      end
+			    end
+			    c.set_borders = function()
+			      --print("set_borders "..c.class.." "..c.window)
+			      if c.fullscreen or c.floating or c.maximized then
+				hide()
+				return
+			      end
+			      local geom = c:geometry()
+			      geom.x1 = geom.x
+			      geom.y1 = geom.y
+			      geom.x2 = geom.x + geom.width
+			      geom.y2 = geom.y + geom.height
+			      local scr = c.screen.geometry
+			      if scr.y == 0 then
+				local panel = beautiful.panel_size or 22
+				scr.y = scr.y + panel
+				scr.height = scr.height - panel
+			      end
+			      scr.x1 = scr.x
+			      scr.y1 = scr.y
+			      scr.x2 = scr.x + scr.width
+			      scr.y2 = scr.y + scr.height
 
-				    --print(geom.x1.." "..scr.x1)
-				    --print(geom.y1.." "..scr.y1)
-				    --print(geom.x2.." "..scr.x2)
-				    --print(geom.y2.." "..scr.y2)
+			      --print(geom.x1.." "..scr.x1)
+			      --print(geom.y1.." "..scr.y1)
+			      --print(geom.x2.." "..scr.x2)
+			      --print(geom.y2.." "..scr.y2)
 
-				    if geom.x1 == scr.x1 then
-					    hide("left")
-				    else
-					    --print("left"..geom.x1.." "..scr.x1,5)
-					    show("left")
-				    end
+			      if geom.x1 == scr.x1 then
+				hide("left")
+			      else
+				--print("left"..geom.x1.." "..scr.x1,5)
+				show("left")
+			      end
 
-				    if geom.y1 <= scr.y1 then
-					    hide("top")
-				    else
-					    --print("top"..geom.y1.." "..scr.y1,5)
-					    show("top")
-				    end
+			      if geom.y1 <= scr.y1 then
+				hide("top")
+			      else
+				--print("top "..geom.y1.." "..scr.y1,5)
+				show("top")
+			      end
 
-				    if geom.y2 == scr.y2 then
-					    hide("bottom")
-				    else
-					    show("bottom")
-					    --print(geom.y)
-					    --print(geom.height)
-					    --print(scr.y)
-					    --print(scr.height)
-				    end
-				    --print("bottom "..geom.y2.." "..scr.y2,5)
+			      if geom.y2 == scr.y2 then
+				hide("bottom")
+			      else
+				show("bottom")
+				--print(geom.y)
+				--print(geom.height)
+				--print(scr.y)
+				--print(scr.height)
+			      end
+			      --print("bottom "..geom.y2.." "..scr.y2,5)
 
 
-				    if geom.x2 == scr.x2 then
-					    hide("right")
-				    else
-					    --if c.class == "Gvim" then
-						    --print("right "..c.class.." "..geom.x2.." "..scr.x2,5)
-					    --end
-					    show("right")
-				    end
+			      if geom.x2 == scr.x2 then
+				hide("right")
+			      else
+				--if c.class == "Gvim" then
+				--print("right "..c.class.." "..geom.x2.." "..scr.x2,5)
+				--end
+				show("right")
+			      end
 
 			    end
 			    --refresh(c)

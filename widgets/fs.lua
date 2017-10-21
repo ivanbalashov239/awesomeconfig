@@ -8,19 +8,35 @@ local awful = require("awful")
 local naughty = require("naughty")
 local path = require("path")
 local modal_sc = require("modal_sc")      
+local utils = require("utils")
 
 local fswidget ={}
 fswidget.shortcuts = {}
-local function split(s, delimiter)
-	result = {};
-	for match in (s..delimiter):gmatch("(.-)"..delimiter) do
-		table.insert(result, match);
-	end
-	return result;
+fswidget.automount_stop_cmd = "pkill udiskie"
+fswidget.automount_cmd ="bash -c \""..fswidget.automount_stop_cmd..";".."udiskie -q -0 -a -T".."\""
+fswidget.noautomount_cmd ="bash -c \""..fswidget.automount_stop_cmd..";".."udiskie -q -0 -A -T".."\""
+function fswidget.start_automount()
+	--awful.spawn(fswidget.automount_stop_cmd)
+	awful.spawn(fswidget.automount_cmd)
+	fswidget.automount = true
+end
+function fswidget.stop_automount()
+	--awful.spawn(fswidget.automount_stop_cmd)
+	awful.spawn(fswidget.noautomount_cmd)
+	fswidget.automount = false
 end
 
 local function worker(args)
 	local args = args or {}
+	local automount = args.automount or false
+	print(automount)
+	fswidget.automount = automount
+	if automount then
+		print("Automount")
+		fswidget.start_automount()
+	else
+		fswidget.stop_automount()
+	end
 	local watch = args.watch or false
 	local watch_timeout = args.watch_timeout or 600
 	local dir = args.dir or  "/home/ivn/Downloads"
@@ -40,7 +56,7 @@ local function worker(args)
 				----text = text.."\n"..line
 				--table.insert(f,line)
 				--end
-				fswidget.files = split(output,"\n")
+				fswidget.files = utils.split(output,"\n")
 				--print("finish update files")
 			end
 		})
@@ -189,8 +205,8 @@ function fswidget.media_files_menu(args)
 			local file = assert(io.popen(cmd, 'r'))
 			local out = file:read('*all')
 			file:close()
-			for _,l in pairs(split(out,"\n")) do
-				l = split(l," ;; ")
+			for _,l in pairs(utils.split(out,"\n")) do
+				l = utils.split(l," ;; ")
 				local name = l[2]
 				local value = l[1]
 				table.insert(actions,{
@@ -209,7 +225,7 @@ function fswidget.media_files_menu(args)
 			modal = true,
 			actions = last_seen()
 		})
-		for i,k in pairs(split(output,"\n"))do
+		for i,k in pairs(utils.split(output,"\n"))do
 			local f = file(k)
 			if f.action then
 				table.insert(actions,f.action)
@@ -220,6 +236,221 @@ function fswidget.media_files_menu(args)
 			actions = actions,
 
 		})()
+	end)
+end
+function fswidget.mounts_menu(args)
+	local args = args or {}
+	local separator = args.separator or ";;"
+	local filter = args.filter or function(device)
+		--return true
+		if not device.HintSystem then
+			return true
+		elseif #(device.MountPoints)==0 then
+			return true
+		else
+			for _,m in pairs(device.MountPoints)do
+				if m:find("^/run/media/ivn/") then
+					return true
+				end
+			end
+			return false
+		end
+	end
+	--local directory = args.dir or os.getenv("HOME").."/Downloads"
+	local fm = args.fm or "pcmanfm-qt"
+	local exts  = args.exts or {"avi","mkv","mp4","mpeg","webm"}
+	local function clean(str)
+		return string.gsub(string.gsub(str,"'$",""),"^'","")
+	end
+	local function du_to_devices(output)
+		local devices = {}
+		local output = utils.split(output,"\n")
+		local names = {}
+		for i,k in pairs(output) do
+			if k ~= "" then
+				--print(k)
+				local str = utils.split(k,separator)
+				if i == 1 then
+					names = str
+				else
+					local device = {}
+					for k,data in pairs(str)do
+						local name = names[k]
+						local data = data
+						--print(name)
+						--print(data)
+						if name == "Use%" then
+							name = "Use"
+						end
+						if data == "---" then
+							data = false
+						end
+						if data == "True" then
+							data = true
+						end
+						if data ~= nil then
+							device[name] = data
+						end
+						--print(name)
+						--print(data)
+						--print(name.." "..tostring(data))
+					end
+					devices[device.Filesystem]=device
+					--table.insert(devices,device)
+				end
+			end
+		end
+		return devices
+	end
+	local function output_to_devices(output)
+		local devices = {}
+		local output = utils.split(output,"\n")
+		local names = {}
+		for i,k in pairs(output) do
+			if k ~= "" then
+				local str = utils.split(k,separator)
+				if i == 1 then
+					names = str
+				else
+					local device = {}
+					for k,data in pairs(str)do
+						local name = names[k]
+						local data = data
+						if data == "---" then
+							data = false
+						end
+						if data == "True" then
+							data = true
+						end
+						if k == 8 then
+							--device[name] = {}
+							local mounts = {}
+							if not(data=="[]") then
+								--print(data)
+								local array = string.sub(data,2,#data-1)
+								array = utils.split(array,", ")
+								for i,k in pairs(array) do
+									mounts[i]=clean(k)
+								end
+							end
+							device[name] = mounts
+						else
+							if data ~= nil then
+								device[name] = data
+							end
+							--print(name)
+							--print(data)
+							--print(name.." "..tostring(data))
+						end
+					end
+					function device:actions()
+						local actions = {}
+						if #(device.MountPoints)>0 then
+							table.insert(actions,{
+									hint = "u",
+									desc = "unmount",
+									func = function()
+										awful.spawn("udcli umount "..device.Device)
+									end,
+								})
+						else
+							table.insert(actions,{
+									hint = "m",
+									desc = "mount",
+									func = function()
+										awful.spawn("udcli mount "..device.Device)
+									end,
+								})
+						end
+						table.insert(actions,{
+								hint = "p",
+								desc = "unPower",
+								func = function()
+									awful.spawn("udisksctl power-off -b "..device.Device)
+								end,
+							})
+						return actions
+					end
+					table.insert(devices,device)
+				end
+			end
+		end
+		return devices
+	end
+	awful.spawn.easy_async({"udcli","list","-s="..separator},function(output,err)
+		local actions = {}
+		local names = {}
+		local seen_lines = {}
+		local devices = output_to_devices(output)
+		--awful.spawn.easy_async({"bash -c \"df -H | sed 's/\\s\\s*/"..separator.."/g'".." \""},function(output,err)
+		local output, err = io.popen("/usr/bin/env bash -c \"df -H | sed 's/\\s\\s*/"..separator.."/g'".." \"")
+		local du = ""
+		if output then
+			du = output:read("*all")
+			output:close()
+		end
+		output = du
+		du = du_to_devices(output)
+		for i,device in pairs(devices) do
+			local d = du[device.Device]
+			if d then
+				--print("from_du")
+				device.Size = d.Size
+				device.Used = d.Used
+				device.Use = d.Use
+				devices[i] = device
+			else
+				device.Size = ""
+				device.Used = ""
+				device.Use = ""
+				devices[i] = device
+			end
+		end
+		local to_n = utils.to_n
+		for i,device in pairs(devices) do
+			if filter(device) then
+				local mounts = nil
+				for _,m in pairs(device.MountPoints)do
+					if mounts then
+						mounts = mounts.."\n"..to_n("",49).."|"..m
+					else
+						mounts = m
+					end
+				end
+				mounts = mounts or ""
+				local desc = to_n(device.Device,10).."|"..to_n(device.IdType,10).."|"..to_n(device.IdLabel,10).."|"..to_n(device.Size,4).."|"..to_n(device.Used,4).."|"..to_n(device.Use,4).."|"..to_n(mounts)
+				--oldprint(desc)
+				table.insert(actions,{
+						desc = desc,
+						modal = true,
+						actions = device:actions()
+					})
+			end
+		end
+
+		if not fswidget.automount then
+			table.insert(actions,{
+					hint = "a",
+					desc = "Enable automount",
+					func = function()
+						fswidget.start_automount()
+					end
+				})
+		else
+			table.insert(actions,{
+					hint = "a",
+					desc = "Disable automount",
+					func = function()
+						fswidget.stop_automount()
+					end
+				})
+		end
+		modal_sc({
+				name = "mounts menu".."\n  "..to_n("Device",10).."|"..to_n("FS",10).."|"..to_n("Label",10).."|"..to_n("Size",4).."|"..to_n("Used",4).."|"..to_n("Use%",4).."|"..to_n("Mount Points",15),
+				actions = actions,
+
+			})()
+		--end)
 	end)
 end
 

@@ -6,6 +6,7 @@ config.widgets = {}
 --config.widgets.battery = widgets.battery()
 --config.cpu_tmpfile = "/sys/class/hwmon/hwmon0/temp1_input"
 	
+config.automount = true
 config.widgets.mail = awful.widget.only_on_screen (widgets.mail(),"primary")
 config.wired_interface = "enp5s0"
 config.wireless_interface="wlp0s18f2u3"
@@ -19,7 +20,7 @@ config.autostart.execute = {
 local browser       = "firefox"
 config.autostart.run_once = {
 	browser,
-	"udiskie --tray &",
+	--"udiskie --tray &",
 	--"nm-applet",
 	--"pa-applet",
 	"qbittorrent --style=gtk+",

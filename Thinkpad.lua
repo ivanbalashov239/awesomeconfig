@@ -8,6 +8,7 @@ config.wired_interface = "enp2s0"
 config.wireless_interface = "wlp0s18f2u3"
 config.autostart = {}
 config.disk_type = "HDD"
+config.automount = true
 config.im_width = 0.3
 config.widgets_text_size = 8
 config.autostart.execute = {

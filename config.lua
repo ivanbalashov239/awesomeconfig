@@ -119,7 +119,8 @@ config.panel.right = {
 	widgets.mem(),"primary"),
 	host.widgets.mail,
 	widgets.fs({
-		disk_type=host.disk_type
+		disk_type=host.disk_type,
+		automount = host.automount
 		--watch = true,
 	}),
 	host.widgets.battery,
@@ -232,6 +233,11 @@ config.autostart.execute = gears.table.join(host.autostart.execute,{
 		--bomicontrol("pause")
 	end),
 	awful.key({modkey		  }, "F12",      function () exec("systemctl suspend") end),
+	awful.key({ modkey, "Shift"   }, "w",  function()
+		widgets.fs.mounts_menu({
+		})
+	end
+	),
 	awful.key({ modkey, "Control"   }, "w",  function()
 		widgets.fs.media_files_menu({
 			launcher = "/home/ivn/Downloads/umpv"
