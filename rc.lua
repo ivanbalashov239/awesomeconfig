@@ -15,7 +15,6 @@ hintsetter.init({
 charorder = "aoeuidhtnspyfgcrlqjkxbwvz1234567890"
 })
 local hints 	 = require("utils.hints")
-local udisks = require("utils.udisks")
 --local tyrannical = require("tyrannical")
 local sharedtags = require("sharedtags")
 --local apw 	 = require("apw/widget")
