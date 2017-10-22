@@ -54,7 +54,7 @@ local function worker(args)
 			end
 
 			--widget:set_markup(lain.util.markup(markup, vlevel))
-			widgets.set_markup(widget,vlevel,{font="Tamsyn"})
+			widgets.set_markup(widget,vlevel)
 		end
 	})
 	pulsebar = lain.widget.pulsebar({

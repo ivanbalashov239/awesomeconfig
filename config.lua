@@ -99,7 +99,9 @@ config.panel.left = {
 }
 config.panel.middle = {
 	--widgets.tasklist()
-	widgets.title_widget()
+	widgets.title_widget({
+			started = host.started_title
+		})
 }
 config.panel.right = {
 	widgets.kbdd(),

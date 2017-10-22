@@ -13,7 +13,8 @@ widgets.spr5px:set_image(beautiful.spr5px)
 widgets.bg = beautiful.bg_normal
 widgets.fg = beautiful.fg_normal
 widgets.text_size = 9
-widgets.font = "Tamsyn"
+--widgets.font = "Tamsyn"
+widgets.font = "Termsyn"
 widgets.critical = "#bd6873"
 widgets.task_waiting = "#A57F83"
 widgets.green = "#24B224"

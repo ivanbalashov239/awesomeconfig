@@ -10,6 +10,7 @@ config.automount = true
 config.widgets.mail = awful.widget.only_on_screen (widgets.mail(),"primary")
 config.wired_interface = "enp5s0"
 config.wireless_interface="wlp0s18f2u3"
+config.started_title = true
 config.autostart = {}
 config.autostart.execute = {
 	"pkill dropbox",
@@ -24,7 +25,7 @@ config.autostart.run_once = {
 	--"nm-applet",
 	--"pa-applet",
 	"qbittorrent --style=gtk+",
-	"redshiftgui",
+	--"redshift-gtk",
 	--"indicator-kdeconnect",
 	"dropbox",
 	--"thunderbird",

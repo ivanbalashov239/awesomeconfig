@@ -1,5 +1,6 @@
 local widgetcreator = require("widgets")
 local widgets = widgetcreator
+local utils = require("utils")
 local beautiful = require("beautiful")
 local wibox = require("wibox")
 local lain = require("lain")
@@ -19,7 +20,7 @@ local function worker(args)
 	local cpu_widget = lain.widget.cpu({
 		settings = function()
 			--widget:set_markup(widgets.space3 .. cpu_now.usage .. "%" .. lain.util.markup.font("Tamsyn 4", " "))
-			widgets.set_markup(widget,cpu_now.usage .. "%")
+			widgets.set_markup(widget,utils.to_n(cpu_now.usage .. "%",4))
 		end
 	})
 
@@ -30,7 +31,7 @@ local function worker(args)
 		tempfile = tempfile,
 		settings = function()
 			--widget:set_markup(widgets.space3 .. coretemp_now .. "°C" .. lain.util.markup.font("Tamsyn 4", " "))
-			widgets.set_markup(widget,coretemp_now .. "°C")
+			widgets.set_markup(widget,utils.to_n(coretemp_now .. "°C",6))
 		end
 	})
 

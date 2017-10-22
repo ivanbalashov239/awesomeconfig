@@ -328,7 +328,7 @@ function fswidget.mounts_menu(args)
 						awful.spawn("udisksctl power-off -b "..device.Device)
 					end
 					function device:open()
-						if #devic.MountPoints>0 then
+						if #device.MountPoints>0 then
 							awful.spawn(fm.." "..device.MountPoints[1])
 						end
 					end
@@ -347,7 +347,7 @@ function fswidget.mounts_menu(args)
 									hint = "m",
 									desc = "mount",
 									func = function()
-										deice:mount()
+										device:mount()
 									end,
 								})
 						end
@@ -355,12 +355,13 @@ function fswidget.mounts_menu(args)
 								hint = "p",
 								desc = "unPower",
 								func = function()
+									device:umount()
 									device:unpower()
 								end,
 							})
 						table.insert(actions,{
 								hint = "o",
-								desc = "Open in ",
+								desc = "Open in "..fm,
 								func = function()
 									device:mount()
 									device:open()
