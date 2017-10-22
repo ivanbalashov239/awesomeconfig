@@ -318,6 +318,20 @@ function fswidget.mounts_menu(args)
 							--print(name.." "..tostring(data))
 						end
 					end
+					function device:mount()
+						awful.spawn("udcli mount "..device.Device)
+					end
+					function device:umount()
+						awful.spawn("udcli umount "..device.Device)
+					end
+					function device:unpower()
+						awful.spawn("udisksctl power-off -b "..device.Device)
+					end
+					function device:open()
+						if #devic.MountPoints>0 then
+							awful.spawn(fm.." "..device.MountPoints[1])
+						end
+					end
 					function device:actions()
 						local actions = {}
 						if #(device.MountPoints)>0 then
@@ -325,7 +339,7 @@ function fswidget.mounts_menu(args)
 									hint = "u",
 									desc = "unmount",
 									func = function()
-										awful.spawn("udcli umount "..device.Device)
+										device:umount()
 									end,
 								})
 						else
@@ -333,7 +347,7 @@ function fswidget.mounts_menu(args)
 									hint = "m",
 									desc = "mount",
 									func = function()
-										awful.spawn("udcli mount "..device.Device)
+										deice:mount()
 									end,
 								})
 						end
@@ -341,7 +355,15 @@ function fswidget.mounts_menu(args)
 								hint = "p",
 								desc = "unPower",
 								func = function()
-									awful.spawn("udisksctl power-off -b "..device.Device)
+									device:unpower()
+								end,
+							})
+						table.insert(actions,{
+								hint = "o",
+								desc = "Open in ",
+								func = function()
+									device:mount()
+									device:open()
 								end,
 							})
 						return actions
