@@ -6,16 +6,22 @@ local setmetatable = setmetatable
 local utils = { _NAME = "utils" }
 local utf8 = require("lua-utf8")
 
-function utils.to_n(str,n)
+function utils.to_n(str,n,dots,onlycut)
 	local str = tostring(str)
 	local l = utf8.len(str)
 	local n = n or l
-	local result = ""
+	local result = str
 	if l > n then
 		result = utf8.sub(str,1,n)
+		if dots == true then
+			dots = "…"
+		elseif dots == nil then
+			dots = ""
+		end
+		result = result..dots
 	elseif l == n then
 		result = str
-	else
+	elseif not onlycut then
 		local d = (n-l)/2%1
 		local dif1 = (n-l)/2+d
 		local dif2 = (n-l)/2-d

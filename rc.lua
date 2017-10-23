@@ -15,6 +15,7 @@ hintsetter.init({
 charorder = "aoeuidhtnspyfgcrlqjkxbwvz1234567890"
 })
 local hints 	 = require("utils.hints")
+local clipboard = require("utils.clipboard")
 --local tyrannical = require("tyrannical")
 local sharedtags = require("sharedtags")
 --local apw 	 = require("apw/widget")
@@ -855,6 +856,10 @@ globalkeys = gears.table.join(config.globalkeys,
 		    --widgets.mpd.mpriscontrol("play")
 	    end
 	    widgets.mpd.play_pause()
+    end),
+    awful.key({ modkey,altkey }, "c", 
+    function()
+	    clipboard.menu()
     end),
     awful.key({ modkey }, "F1", 
     function()
