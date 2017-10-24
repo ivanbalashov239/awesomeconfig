@@ -57,7 +57,6 @@ local function worker(args)
 
 
 	local mytextclock    = wibox.widget.textclock( lain.util.markup(widgets.clockgf, widgets.set_markup(nil,"%H:%M")), 15)
-	--mytextcalendar = awful.widget.textclock( lain.util.markup(widgets.clockgf, widgets.space3 .. "%a %d %b"))
 
 	local clockwidget = widgetcreator(
 	{
@@ -65,24 +64,6 @@ local function worker(args)
 		textboxes = {mytextclock}
 	})
 
-
-	--calendarwidget = widgetcreator(
-	--{ 
-		--image = beautiful.widget_cal,
-		--textboxes = {mytextcalendar}
-	--})
-
-	--print(type(clockwidget))
-	--clockwidget:connect_signal("mouse::enter",function()print("mouse entered") end)
-	--lain.widget.calendar({
-		--attach_to = {clockwidget},
-		--notification_preset = {
-			--font = "Terminus bold 15",
-			--fg   = widgets.fg,
-			--bg   = widgets.bg
-		--}
-	--})
-	--lain.widget.calendar.attach(clockwidget)
 	lain.widget.calendar({
 		attach_to = {clockwidget,widgets.calendar.widget},
 		notification_preset = {
@@ -96,15 +77,6 @@ local function worker(args)
 	awful.button({ }, 12,saytime)
 	)
 	clockwidget:buttons(mytextclockbuttons)
-	--.attach(clockwidget)
-	--lain.widget.calendar.attach(clockwidget)
-	--lain.widget.calendar:attach(calendarwidget, 
-	--{ 
-		--font_size = 13,
-		--cal       = "/usr/bin/cal -m "
-	--}
-	--)
-	--calendarwidget:buttons(mytextclockbuttons)
 
 	return clockwidget
 end
