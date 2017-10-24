@@ -74,8 +74,17 @@ local function worker(args)
 
 	--print(type(clockwidget))
 	--clockwidget:connect_signal("mouse::enter",function()print("mouse entered") end)
+	--lain.widget.calendar({
+		--attach_to = {clockwidget},
+		--notification_preset = {
+			--font = "Terminus bold 15",
+			--fg   = widgets.fg,
+			--bg   = widgets.bg
+		--}
+	--})
+	--lain.widget.calendar.attach(clockwidget)
 	lain.widget.calendar({
-		attach_to = {clockwidget},
+		attach_to = {clockwidget,widgets.calendar.widget},
 		notification_preset = {
 			font = "Terminus bold 15",
 			fg   = widgets.fg,
