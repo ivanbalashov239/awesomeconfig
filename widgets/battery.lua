@@ -42,13 +42,13 @@ local function worker(args)
 		textboxes = {batwidget.widget}
 	})
 	local function battery_time_grabber()
-		f = io.popen("acpi -b | awk '{print $5}' | awk -F \":\" '{print $1\":\"$2 }'")
+		f = io.popen("acpi -b | awk '{print $5}' ")--"| awk -F \":\" '{print $1\":\"$2 }'")
 		str = f:read()
 		f.close()
-		if str then
+		if str and not(str == "") then
 			return str.." remaining"
 		else
-			return "no battery"
+			return "no data about time"
 		end
 	end
 	local battery_notify = nil
