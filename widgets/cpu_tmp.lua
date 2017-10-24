@@ -31,7 +31,11 @@ local function worker(args)
 		tempfile = tempfile,
 		settings = function()
 			--widget:set_markup(widgets.space3 .. coretemp_now .. "°C" .. lain.util.markup.font("Tamsyn 4", " "))
-			widgets.set_markup(widget,utils.to_n(coretemp_now .. "°C",6))
+			if tonumber(coretemp_now) then
+				widgets.set_markup(widget,utils.to_n(coretemp_now .. "°C",6))
+			else
+				widgets.set_markup(widget,utils.to_n(coretemp_now,6))
+			end
 		end
 	})
 
