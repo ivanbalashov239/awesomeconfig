@@ -8,6 +8,7 @@ local wibox = require("wibox")
 local shell        = require("awful.util").shell
 local lain = require("lain")
 local awful = require("awful")
+local utils = require("utils")
 local naughty = require("naughty")
 --local task = require("task")
 local timer = require("gears").timer
@@ -579,6 +580,202 @@ function taskwidget.remind()
 	if taskwidget.reminders.due.data.source_id == nil then
 		taskwidget.reminders.due:start()
 	end
+end
+taskwidget.calendar_id = nil
+function taskwidget.show_calendar(args)
+    local args = args or {}
+    local notification_preset = args.notification_preset or {
+            font = "Monospace 10",
+            fg   = "#FFFFFF",
+            bg   = "#000000"
+        }
+    local function get_icon(diff)
+	if diff == 0 then
+	    return string.format("%s%s.png", icons_dir, tonumber(os.date("%d")))
+	end
+    end
+    local diff = args.diff or 0
+    local t_out = args.timeout or notification_preset.timeout or 5
+    local icon = args.icon or get_icon(diff) 
+
+    taskwidget.calendar_id = naughty.notify({
+	    preset  = notification_preset,
+	    text = taskwidget.calendar(diff),
+	    icon    = icon,
+	    timeout = t_out,
+	    replaces_id = taskwidget.calendar_id and taskwidget.calendar_id.id
+	})
+end
+function taskwidget.hide_calendar()
+    if not taskwidget.calendar_id then return end
+    naughty.destroy(taskwidget.calendar_id)
+    taskwidget.calendar_id = nil
+end
+function taskwidget:attach_calendar(widget,args)
+    local args = args or {}
+    local diff = 0
+    local function hover_on()
+	args.diff = diff
+	args.timeout = 0
+	taskwidget.show_calendar(args)
+    end
+    local function hover_off()
+	diff = 0
+	taskwidget.hide_calendar()
+    end
+    local function prev()
+	diff = diff - 1
+	--print(diff)
+	hover_on()
+    end
+    local function next()
+	diff = diff + 1
+	--print(diff)
+	hover_on()
+    end
+    widget:connect_signal("mouse::enter", hover_on)
+    widget:connect_signal("mouse::leave", hover_off)
+    widget:buttons(awful.util.table.join(
+	    awful.button({}, 1, prev),
+	    awful.button({}, 3, next),
+	    awful.button({}, 2, hover_on),
+	    awful.button({}, 4, prev),
+	    awful.button({}, 5, next)
+
+	))
+end
+function taskwidget.calendar(diff)
+    local diff = diff or 0
+    local now = os.time()
+    local date = os.date("*t",now)
+    local today = {year = date.year, month=date.month,day=date.day}
+    local month = date.month + diff
+    local months = {"January","February","March","April","May","June","July","August","September","October","November","December"}
+    local year = date.year
+    if month > 12 then
+	local m = month%12
+	year = year + math.floor(month/12)
+	monht = m
+    elseif month == 0 then
+	local m = month%12
+	year = year + math.floor(month/12)
+	monht = m
+    end
+    date.month = month
+    date.year = year
+    
+    local days = {}
+    local day = nil
+    for i=1,utils.get_days_in_month(month,year) or 28 do
+	--print(i,5)
+	day = os.date("*t",os.time{day=i,month=month,year=year})
+	day.wday = day.wday - 1
+	if day.wday == 0 then
+	    day.wday = 7
+	end
+	if i == 1 then
+	    for i=1,day.wday-1 do
+		table.insert(days,{text=" "})
+	    end
+	end
+	table.insert(days,day)
+    end
+    for i=day.wday,7 do
+	table.insert(days,{text=" "})
+    end
+    local due_days = {}
+    for _,t in pairs(taskwidget.tasks) do
+	if t.due then
+	    local date = utils.to_n(t.due.day,2,nil,nil,"0").."."..utils.to_n(t.due.month,2,nil,nil,"0").."."..t.due.year
+	    if due_days[date] then
+		table.insert(due_days[date],t)
+	    else
+		due_days[date] = {t}
+	    end
+	end
+    end
+    local n = 0
+    local lines = {}
+    local line = ""
+    local critical = {}
+    local due = {}
+    for _,day in ipairs(days) do
+	if day.text then
+	    day.text = utils.to_n(day.text,2)
+	else
+	    day.text = utils.to_n(day.day,2,nil,nil,"0")
+	    local date = utils.to_n(day.day,2,nil,nil,"0").."."..utils.to_n(day.month,2,nil,nil,"0").."."..day.year
+	    day.tasks = due_days[date] 
+	    if today.day == day.day and today.month == day.month  and today.year == day.year then
+		day.text = "<u>"..day.text.."</u>"
+	    end
+
+	    if day.tasks and #(day.tasks)>0 then
+		local color = widgets.fg
+		for _,t in pairs(day.tasks) do
+		    local t = task(t)
+		    if t:is_completed() then
+			break
+		    elseif t:is_overdue() then
+			table.insert(critical,t)
+			color = widgets.critical
+			break
+		    elseif t.due and (t.due.year == day.year and t.due.month == day.month and t.due.day == day.day) then
+			table.insert(due,t)
+			color = widgets.green
+			break
+		    end
+		end
+		day.text = "<span color='"..color.."'>"..day.text.."</span>"
+	    end
+	end
+	n = n + 1
+	line = line.." "..day.text
+	if n == 7 then
+	    n = 0
+	    table.insert(lines,line)
+	    line = ""
+	end
+    end
+    local tasks = {}
+    local function add_task(t,color)
+	local color = color or widgets.fg
+	local text = "<span color='"..color.."'>"..t.description.."</span>"
+	table.insert(tasks,text)
+    end
+    for _,t in ipairs(critical) do
+	add_task(t,widgets.critical)
+    end
+    for _,t in ipairs(due) do
+	add_task(t,widgets.green)
+    end
+    local y = ""
+    if not (today.year == year) then
+	y = " "..year
+    end
+
+    local result = utils.to_n(months[day.month]..y,22).."\n Mo Tu We Th Fr Sa Su"
+    for index,i in pairs(lines) do
+	local t = tasks[index]
+	if not t then
+	    t = ""
+	else
+	    t = " "..index..") "..t
+	end
+	if result then
+	    result = result.."\n"..i..t
+	else
+	    result = i..t
+	end
+    end
+    return result
+    --naughty.notify({
+	    ----preset = fs_notification_preset,
+	    --text = result,
+	    --timeout = 10,
+	    ----screen = mouse.screen,
+	--})
+    --print(result)
 end
 local function worker(args)
 	local args = args or {}

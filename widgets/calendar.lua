@@ -18,6 +18,15 @@ local function worker(args)
 		textboxes = {mytextcalendar}
 	})
 	calendarwidget.widget = widget
+	widgets.task:attach_calendar(widget,{
+			--cal = "/bin/bash -c 'stty rows 100 cols 40; /bin/task calendar'",
+			--attach_to = {clockwidget,widgets.calendar.widget},
+			notification_preset = {
+				font = "Terminus bold 20",
+				fg   = widgets.fg,
+				bg   = widgets.bg
+			}
+		})
 
 	return widget
 end
