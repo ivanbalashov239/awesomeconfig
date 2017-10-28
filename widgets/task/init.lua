@@ -611,6 +611,22 @@ function taskwidget.hide_calendar()
     naughty.destroy(taskwidget.calendar_id)
     taskwidget.calendar_id = nil
 end
+function taskwidget:toggle()
+    local args = {
+	timeout = 0,
+	notification_preset = {
+	    font = "Terminus bold 20",
+	    fg   = widgets.fg,
+	    bg   = widgets.bg
+	}
+
+    }
+    if taskwidget.calendar_id then 
+	taskwidget.hide_calendar()
+    else
+	taskwidget.show_calendar(args)
+    end
+end
 function taskwidget:attach_calendar(widget,args)
     local args = args or {}
     local diff = 0
@@ -714,16 +730,54 @@ function taskwidget.calendar(diff)
 		local color = widgets.fg
 		for _,t in pairs(day.tasks) do
 		    local t = task(t)
-		    if t:is_completed() then
-			break
-		    elseif t:is_overdue() then
-			table.insert(critical,t)
-			color = widgets.critical
-			break
-		    elseif t.due and (t.due.year == day.year and t.due.month == day.month and t.due.day == day.day) then
-			table.insert(due,t)
-			color = widgets.green
-			break
+		    if not color_set then
+			if t:is_completed() then
+			elseif t:is_overdue() then
+			    color = widgets.critical
+			    t.color = color
+			    table.insert(critical,t)
+			    --color_set = false
+			    --break
+			elseif t.due and (t.due.year == day.year and t.due.month == day.month and t.due.day == day.day) then
+			    if t:is_waiting() then
+				color = widgets.task_waiting
+			    else
+				color = widgets.green
+			    end
+			    t.color = color
+			    table.insert(due,t)
+			    --color_set = false
+			    --break
+			end
+		    end
+		end
+	    end
+	    if day.tasks and #(day.tasks)>0 then
+		local color = widgets.fg
+		for _,t in pairs(day.tasks) do
+		    local t = task(t)
+		    if not color_set then
+			if t:is_completed() then
+			    --color_set = false
+			    break
+			elseif t:is_overdue() then
+			    color = widgets.critical
+			    --t.color = color
+			    --table.insert(critical,t)
+			    --color_set = false
+			    break
+			elseif t.due and (t.due.year == day.year and t.due.month == day.month and t.due.day == day.day) then
+			    if t:is_waiting() then
+				color = widgets.task_waiting
+			    else
+				color = widgets.green
+				break
+			    end
+			    --t.color = color
+			    --table.insert(due,t)
+			    --color_set = false
+			    --break
+			end
 		    end
 		end
 		day.text = "<span color='"..color.."'>"..day.text.."</span>"
@@ -743,11 +797,31 @@ function taskwidget.calendar(diff)
 	local text = "<span color='"..color.."'>"..t.description.."</span>"
 	table.insert(tasks,text)
     end
-    for _,t in ipairs(critical) do
-	add_task(t,widgets.critical)
+    local function sort_tasks(tasks)
+	table.sort(tasks,function(a,b)
+		--print("sort")
+		if a.due and b.due then
+			return b.due:greater(a.due)
+		elseif a.due and not b.due then
+			return true
+		elseif not a.due and b.due then
+			return false
+		else
+			if a.id and b.id then
+				--print(a.id.." * "..b.id,1)
+				return a.id < b.id
+			end
+			return a.due
+		end
+		return false
+	end)
+	return tasks
     end
-    for _,t in ipairs(due) do
-	add_task(t,widgets.green)
+    for _,t in ipairs(sort_tasks(critical)) do
+	add_task(t,t.color or widgets.critical)
+    end
+    for _,t in ipairs(sort_tasks(due)) do
+	add_task(t,t.color or widgets.green)
     end
     local y = ""
     if not (today.year == year) then
@@ -766,6 +840,17 @@ function taskwidget.calendar(diff)
 	    result = result.."\n"..i..t
 	else
 	    result = i..t
+	end
+    end
+    if #tasks > #lines then
+	for i=#lines+1,#tasks do
+	    local t = tasks[i]
+	    if not t then
+		t = ""
+	    else
+		t = utils.to_n(" ",22)..i..") "..t
+	    end
+	    result = result.."\n"..t
 	end
     end
     return result

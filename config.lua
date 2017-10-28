@@ -483,7 +483,7 @@ config.autostart.execute = gears.table.join(host.autostart.execute,{
 	function ()
 		awful.util.spawn("/home/ivn/scripts/translate_zenity.sh")
 	end),
-	--awful.key({ modkey,           }, "z",      function () task:toggle() end),
+	awful.key({ modkey,           }, "z",      function () widgets.task:toggle() end),
 	awful.key({ modkey,           }, "w",      function () mainmenu:show() end),
 	awful.key({ modkey, "Control" }, "n",  widgets.pulse.up),
 	awful.key({ modkey, "Control" }, "t",  widgets.pulse.down),
