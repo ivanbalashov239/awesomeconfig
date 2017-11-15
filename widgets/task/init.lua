@@ -188,12 +188,15 @@ end
 function taskwidget:get_tasks()
 	return taskwidget.tasks
 end
-function taskwidget:toggle()
+function taskwidget:toggle_notify()
 	taskwidget.notify = not taskwidget.notify
 	if taskwidget.notify then
 		taskwidget.imagebox:set_image(taskwidget.images.def)
 	else
 		taskwidget.imagebox:set_image(taskwidget.images.red)
+		for _,t in pairs(taskwidget.tasks) do
+		    t:hide()
+		end
 	end
 end
 function taskwidget.modal_menu(args)
@@ -236,7 +239,7 @@ function taskwidget.modal_menu(args)
 		desc = notif_desc,
 		--modal = true,
 		func = function()
-			taskwidget:toggle()
+			taskwidget:toggle_notify()
 		end,
 	})
 	local task_ids = {}

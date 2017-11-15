@@ -208,6 +208,7 @@ config.autostart.execute = gears.table.join(host.autostart.execute,{
 	--im:toggle()
 	--end), 
 	awful.key({ modkey, "Control"  }, "x",      function () exec("/home/ivn/scripts/trackpoint/trackpointkeys.sh switch &") end),
+	awful.key({ modkey            }, "p",      function () run_or_raise("pcmanfm-qt", { class = "pcmanfm-qt" }) end),
 	awful.key({ modkey            }, "g",      function () run_or_raise("gvim", { class = "Gvim" }) end),
 	awful.key({ modkey            }, "Print",  function () exec("screengrab") end),
 	awful.key({ modkey, "Control" }, "p",      function () exec("screengrab --region") end),
