@@ -70,7 +70,7 @@ local function output_to_ssids(output)
 								prompt({
 									prompt = "Password: ",
 									action = function(password)
-										awful.spawn.easy_async({"nmcli","device wifi connect",ssid.name,"password",password},function(output,err)
+										awful.spawn.easy_async({"/bin/nmcli","device wifi connect",ssid.name,"password",password},function(output,err)
 											print(err or output,5)
 										end)
 									end,
